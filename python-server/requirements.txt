@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-dotenv
+g4f[all]
+g4f[webdriver]
+nest_asyncio
+python-multipart
+shazamio
+pydub
+# ffmpeg is a required file to run in the dockerfile
