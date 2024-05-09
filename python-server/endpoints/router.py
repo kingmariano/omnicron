@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from shazamio import Shazam
 
 from utils.g4f_utils import get_chat_completion_response, handle_image_processing
+   
 
 router = APIRouter()
 env_path = Path(__file__).resolve().parents[2] / ".env"
@@ -63,8 +64,8 @@ async def chat_completion(request: ChatCompletionRequest, api_key: str = Depends
     try:
         response = get_chat_completion_response(request.messages, request.api_key, request.proxy, request.stream, request.timeout, request.model, request.shuffle)
         return {"response": response}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) 
+    except Exception as err:
+        raise HTTPException(status_code=400, detail=f"Failed to download image: {err}") 
 
 @router.post("/vision")
 async def vision_endpoint(request: VisionRequest, api_key: str = Depends(check_api_key)):

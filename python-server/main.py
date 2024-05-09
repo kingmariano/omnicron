@@ -1,6 +1,12 @@
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from endpoints import router
+
+loop = asyncio.get_event_loop()
+print(f"Using event loop: {type(loop)}\n")
+print(f"Current event loop policy: {asyncio.get_event_loop_policy()}")
+
 app = FastAPI(title="omnicron backend server")
 
 app.add_middleware(

@@ -7,8 +7,8 @@ class Message(str, Enum):
     content: str
     
 _providers = [
-    g4f.Provider.Blackbox,
     g4f.Provider.DuckDuckGo,
+    g4f.Provider.Blackbox,
     g4f.Provider.Cnote,
     g4f.Provider.HuggingFace,
     g4f.Provider.Ecosia,
@@ -18,8 +18,8 @@ _providers = [
     g4f.Provider.Llama,
     g4f.Provider.Replicate,
     g4f.Provider.Groq,
-   g4f.Provider.FreeChatgpt,
     g4f.Provider.MetaAI,
+   g4f.Provider.FreeChatgpt,
 ]
 g4f.debug.logging = True
 
