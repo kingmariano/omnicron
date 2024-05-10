@@ -65,7 +65,7 @@ async def chat_completion(request: ChatCompletionRequest, api_key: str = Depends
         response = get_chat_completion_response(request.messages, request.api_key, request.proxy, request.stream, request.timeout, request.model, request.shuffle)
         return {"response": response}
     except Exception as err:
-        raise HTTPException(status_code=400, detail=f"Failed to download image: {err}") 
+        raise HTTPException(status_code=400, detail=f"Failed to complete chat: {err}") 
 
 @router.post("/vision")
 async def vision_endpoint(request: VisionRequest, api_key: str = Depends(check_api_key)):
