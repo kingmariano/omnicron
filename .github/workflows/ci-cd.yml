@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Set up Docker
-        uses: actions/setup-docker@v3
+        uses: docker/setup-buildx-action@v3
 
       - name: Check for existing lsb-release package
         id: check_lsb_release
