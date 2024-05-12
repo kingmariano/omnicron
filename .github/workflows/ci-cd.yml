@@ -44,9 +44,8 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
           cd python-server
-          docker build --build-arg MY_API_KEY=${{ env.API_KEY }} --build-arg GROK_API_KEY=${{ env.GROK_API_KEY }} --build-arg GEMINI_PRO_API_KEY=${{ env.GEMINI_API_KEY }} -t omnicron-pys .
-          docker login -u ${{ env.DOCKER_USERNAME }} -p ${{ env.DOCKER_PASSWORD }}
-          docker push omnicron-pys
+          docker build --build-arg MY_API_KEY=${{ env.API_KEY }} --build-arg GROK_API_KEY=${{ env.GROK_API_KEY }} --build-arg GEMINI_PRO_API_KEY=${{ env.GEMINI_API_KEY }} -t docker.io/omnicron-pys .
+          docker push docker.io/omnicron-pys
           if [ "${{ steps.check_docker.outputs.docker_installed }}" = "false" ]
           then
             echo "Docker was not installed, skipping docker login and push."
