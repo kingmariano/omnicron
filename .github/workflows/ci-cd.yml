@@ -28,11 +28,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
-          cache: 'pip'
 
       - name: Build and push Python Docker image
         uses: docker/build-push-action@v3
