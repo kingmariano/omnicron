@@ -1,0 +1,43 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  setup_and_build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
+
+      - name: Build and push Python Docker image
+        env:
+          API_KEY: ${{ secrets.MY_API_KEY }}
+          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_PRO_API_KEY }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USER_NAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          cd python-server
+          docker build --build-arg MY_API_KEY=${{ env.API_KEY }} --build-arg GROK_API_KEY=${{ env.GROK_API_KEY }} --build-arg GEMINI_PRO_API_KEY=${{ env.GEMINI_API_KEY }} -t omnicron-pys .
+          docker login -u ${{ env.DOCKER_USERNAME }} -p ${{ env.DOCKER_PASSWORD }}
+          docker push omnicron-pys
+          
