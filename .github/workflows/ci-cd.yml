@@ -13,12 +13,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install Docker
+      - name: Check for existing Docker installation
+        id: check_docker
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker.io
-          sudo systemctl start docker
-          sudo systemctl enable docker
+          if ! command -v docker &> /dev/null
+          then
+            echo "Docker not found, installing..."
+            sudo apt-get update
+            sudo apt-get install -y docker.io
+            sudo systemctl start docker
+            sudo systemctl enable docker
+          else
+            echo "Docker already installed."
+          fi
 
       - name: Checkout code
         uses: actions/checkout@v2
@@ -40,4 +47,7 @@ jobs:
           docker build --build-arg MY_API_KEY=${{ env.API_KEY }} --build-arg GROK_API_KEY=${{ env.GROK_API_KEY }} --build-arg GEMINI_PRO_API_KEY=${{ env.GEMINI_API_KEY }} -t omnicron-pys .
           docker login -u ${{ env.DOCKER_USERNAME }} -p ${{ env.DOCKER_PASSWORD }}
           docker push omnicron-pys
-          
+          if [ "${{ steps.check_docker.outputs.docker_installed }}" = "false" ]
+          then
+            echo "Docker was not installed, skipping docker login and push."
+          fi
