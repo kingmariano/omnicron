@@ -11,39 +11,36 @@ on:
 jobs:
   setup_and_build:
     runs-on: ubuntu-latest
+    container: docker:latest
 
     steps:
-      - name: Check for existing Docker installation
-        id: check_docker
-        run: |
-          if ! command -v docker &> /dev/null
-          then
-            echo "Docker not found, installing..."
-            sudo apt-get update
-            sudo apt-get install -y docker.io
-            sudo systemctl start docker
-            sudo systemctl enable docker
-          else
-            echo "Docker already installed."
-          fi
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+            username: ${{ secrets.DOCKER_USER_NAME}}
+            password: ${{ secrets.DOCKER_ACCESS_TOKEN}}
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Build and push Python Docker image
-        env:
-          API_KEY: ${{ secrets.MY_API_KEY }}
-          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_PRO_API_KEY }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USER_NAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_ACCESS_TOKEN }}
-        run: |
-          cd python-server
-          docker build --build-arg MY_API_KEY=${{ env.API_KEY }} --build-arg GROK_API_KEY=${{ env.GROK_API_KEY }} --build-arg GEMINI_PRO_API_KEY=${{ env.GEMINI_API_KEY }} -t omnicron-pys:latest .
-          docker push omnicron-pys:latest
-        #  docker build --build-arg MY_API_KEY=${{ env.API_KEY }} --build-arg GROK_API_KEY=${{ env.GROK_API_KEY }} --build-arg GEMINI_PRO_API_KEY=${{ env.GEMINI_API_KEY }} -t ${{ env.DOCKER_USERNAME }}/omnicron-pys .
+        uses: docker/build-push-action@v3
+        with:
+          context: ./python-server
+          push: true
+          tags: charlesozo/omnicron-pys:latest
+          build-args: |
+            MY_API_KEY=${{ secrets.MY_API_KEY }}
+            GROK_API_KEY=${{ secrets.GROK_API_KEY }}
+            GEMINI_PRO_API_KEY=${{ secrets.GEMINI_PRO_API_KEY }}
