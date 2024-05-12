@@ -45,5 +45,6 @@ jobs:
         run: |
           cd python-server
           docker build --build-arg MY_API_KEY=${{ env.API_KEY }} --build-arg GROK_API_KEY=${{ env.GROK_API_KEY }} --build-arg GEMINI_PRO_API_KEY=${{ env.GEMINI_API_KEY }} -t omnicron-pys:latest .
+          docker login -u ${{ env.DOCKER_USERNAME }} -p ${{ env.DOCKER_PASSWORD}}
           docker push omnicron-pys:latest
         #  docker build --build-arg MY_API_KEY=${{ env.API_KEY }} --build-arg GROK_API_KEY=${{ env.GROK_API_KEY }} --build-arg GEMINI_PRO_API_KEY=${{ env.GEMINI_API_KEY }} -t ${{ env.DOCKER_USERNAME }}/omnicron-pys .
