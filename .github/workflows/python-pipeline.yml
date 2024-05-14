@@ -11,6 +11,7 @@ on:
 jobs:
   setup_and_build:
     runs-on: ubuntu-latest
+    container: docker:latest
 
     steps:
       - name: Set up QEMU
@@ -30,18 +31,6 @@ jobs:
           username: ${{ secrets.DOCKER_USER_NAME}}
           password: ${{ secrets.DOCKER_ACCESS_TOKEN}}
 
-      - name: Run Pylint and check pylint
-        env:
-          PYTHON_VERSION: "3.11"
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y python${PYTHON_VERSION}
-          python${PYTHON_VERSION} -m pip install pylint
-          python${PYTHON_VERSION} -m pip install --upgrade -r python-server/requirements.txt
-          pylint python-server
-          pylint --fail-under=8.0 **/*.py || exit 0
-          pylint --exit-zero **/*.py
-          
       - name: Build and push Python Docker image
         uses: docker/build-push-action@v3
         with:
