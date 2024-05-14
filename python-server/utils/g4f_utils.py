@@ -1,43 +1,80 @@
+"""
+This module defines the function that interacts with the g4f package.
+"""
+from enum import Enum
+from typing import List
 import g4f
 from g4f.Provider import RetryProvider, GeminiPro
-from typing import List
-from enum import Enum
+import g4f.image
+
+
 class Message(str, Enum):
+    """ Message enum with role and content attributes """
     role: str
     content: str
-    
-_providers = [
+
+
+_PROVIDERS = [
+    g4f.Provider.Ecosia,
     g4f.Provider.DuckDuckGo,
-    g4f.Provider.Blackbox,
+    g4f.Provider.Feedough,
+    g4f.Provider.Aichatos,
+    g4f.Provider.Llama,
     g4f.Provider.Cnote,
     g4f.Provider.HuggingFace,
-    g4f.Provider.Ecosia,
     g4f.Provider.Liaobots,
-    g4f.Provider.Feedough,
     g4f.Provider.Koala,
-    g4f.Provider.Llama,
+    g4f.Provider.Blackbox,
     g4f.Provider.Replicate,
     g4f.Provider.Groq,
+    g4f.Provider.FreeChatgpt,
     g4f.Provider.MetaAI,
-   g4f.Provider.FreeChatgpt,
 ]
+
 g4f.debug.logging = True
 
-def handle_stream_response(response: str):
-    streamResponse = []
-    streamResponse.append(response)
-    return streamResponse
+
+def _create_message_list(messages: List[Message]) -> List[dict]:
+    """Create a list of dictionaries from Message enum"""
+    return [{"role": message.role, "content": message.content} for message in messages]
 
 
-def get_chat_completion_response(messages: List[Message], api_key: str = None, proxy: str = None, stream: bool = False, timeout: int = None, model: str = None, shuffle: bool = False):
-    response = ""
+def _handle_stream_response(response: iter) -> List[str]:
+    """Handle stream response and return a list of strings"""
+    return list(response)
+
+
+def get_chat_completion_response(
+    grok_api_key: str,
+    gemini_api_key: str,
+    messages: List[Message],
+    model: str = None,
+    stream: bool = False,
+    proxy: str = None,
+    timeout: int = None,
+    shuffle: bool = False,
+    image: bytes = None
+):
+    """
+    Get chat completion response from g4f library
+
+    Args:
+        messages: List of Message enum
+        api_key: API key for g4f library
+        proxy: Proxy URL for g4f library
+        stream: Whether to stream the response
+        timeout: Timeout for g4f library
+        model: Model to use for chat completion
+        shuffle: Whether to shuffle providers
+
+
+    """
     try:
-        # Convert messages to a list of dictionaries
-        message_list = [{"role": message.role, "content": message.content} for message in messages]
+        message_list = _create_message_list(messages)
 
         if model is not None and model not in ["gpt-3.5-turbo", "gpt-4"]:
-            raise ValueError("Invalid model. Only 'gpt-3.5-turbo' or 'gpt-4' are allowed.")
-        
+            raise ValueError(
+                "Invalid model. Only 'gpt-3.5-turbo' or 'gpt-4' are allowed.")
         if model in ["gpt-3.5-turbo", "gpt-4"]:
             response = g4f.ChatCompletion.create(
                 model=model,
@@ -46,69 +83,85 @@ def get_chat_completion_response(messages: List[Message], api_key: str = None, p
                 proxy=proxy,
                 timeout=timeout
             )
+        if image is not None:
+            response = g4f.ChatCompletion.create(
+                provider=GeminiPro,
+                model=model,
+                image=image,
+                api_key=gemini_api_key,
+                messages=message_list,
+                stream=stream,
+                proxy=proxy,
+                timeout=timeout,
+            )
         else:
             response = g4f.ChatCompletion.create(
                 model=g4f.models.default,
-                provider=RetryProvider(_providers, shuffle=shuffle),
-                api_key=api_key,
+                provider=RetryProvider(_PROVIDERS, shuffle=shuffle),
+                api_key=grok_api_key,
                 messages=message_list,
-                stream=stream, 
+                stream=stream,
                 proxy=proxy,
                 timeout=timeout,
-            
-                
             )
 
         if stream:
-            # Handle streaming response
-            streamResponse = []
-            for message in response:
-                streamResponse.append(message)
-            return streamResponse    
-        else:
-            # Handle non-streaming response
-            # Process the response as needed
-            pass
+            return _handle_stream_response(response)
 
-    except Exception as e:
-        # If an error occurs, handle it here
+        return response
+
+    except ValueError as e:
         if model == "gpt-4":
             print("Fallback to 'gpt-3.5-turbo'")
-            # Retry with a different model
-            return get_chat_completion_response(messages, api_key, proxy, stream, timeout, model="gpt-3.5-turbo")
-        raise Exception(e)
+            return get_chat_completion_response(
+                messages, grok_api_key, proxy, stream, timeout, model="gpt-3.5-turbo"
+            )
+        raise e
 
-    return response
-
-
-def handle_image_processing(image: bytes, messages: List[Message], api_key: str = None, proxy: str = None, stream: bool = False, timeout: int = None, model: str = None):
-    response = ""
-    try:
-        message_list = [{"role": message.role, "content": message.content} for message in messages]
-     
-        response = g4f.ChatCompletion.create(
-            model = model,
-            provider= GeminiPro,
-            image = image,
-            api_key=api_key,
-            messages=message_list,
-            stream=stream, 
-            proxy=proxy,
-            timeout=timeout,
-        ) 
-        
-        if stream:
-            # Handle streaming response
-            streamResponse = []
-            for message in response:
-                streamResponse.append(message)
-            return streamResponse    
-        else:
-            # Handle non-streaming response
-            # Process the response as needed
-            pass   
-        
     except Exception as e:
+        raise e
 
-        raise Exception(e)
-    return response    
+# def handle_image_processing(
+#     image: bytes,
+#     messages: List[Message],
+#     api_key: str = None,
+#     proxy: str = None,
+#     stream: bool = False,
+#     timeout: int = None,
+#     model: str = None
+# ):
+#     """
+#     Handle image processing for g4f library
+
+#     Args:
+#         image: Image in bytes format
+#         messages: List of Message enum
+#         api_key: API key for g4f library
+#         proxy: Proxy URL for g4f library
+#         stream: Whether to stream the response
+#         timeout: Timeout for g4f library
+#         model: Model to use for chat completion
+
+
+#     """
+#     try:
+#         message_list = _create_message_list(messages)
+
+#         response = g4f.ChatCompletion.create(
+#             model=model,
+#             provider=GeminiPro,
+#             image=image,
+#             api_key=api_key,
+#             messages=message_list,
+#             stream=stream,
+#             proxy=proxy,
+#             timeout=timeout,
+#         )
+
+#         if stream:
+#             return _handle_stream_response(response)
+#         else:
+#             return response
+
+#     except Exception as e:
+#         raise Exception("Error occurred while handling image processing") from e
