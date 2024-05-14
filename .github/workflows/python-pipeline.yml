@@ -39,7 +39,7 @@ jobs:
           python${PYTHON_VERSION} -m pip install pylint
           python${PYTHON_VERSION} -m pip install --upgrade -r python-server/requirements.txt
           pylint python-server
-          pylint --fail-under=8.0 **/*.py || exit 0
+          pylint --fail-under=8.0 **/*.py
 
       - name: Build and push Python Docker image
         uses: docker/build-push-action@v3
