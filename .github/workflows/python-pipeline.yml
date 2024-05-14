@@ -35,8 +35,8 @@ jobs:
         env:
           PYTHON_VERSION: "3.11"
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-pip
+          apt-get update -y
+          apt-get install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-pip
           python${PYTHON_VERSION} -m pip install pylint
           pylint python-server
           pylint --fail-under=8.0 **/*.py || exit 0
