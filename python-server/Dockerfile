@@ -22,21 +22,21 @@ ENV MY_API_KEY=$MY_API_KEY
 ENV GROK_API_KEY=$GROK_API_KEY
 ENV GEMINI_PRO_API_KEY=$GEMINI_PRO_API_KEY
 
-ENV HEALTHCHECK_ENDPOINT=http://localhost:8080
+ENV HEALTHCHECK_ENDPOINT=http://localhost:8000
 
-ENV HEALTHCHECK_ENDPOINT_TWO = http://localhost:8000/api/v1/chat/completion
+# ENV HEALTHCHECK_ENDPOINT_TWO = http://localhost:8000/api/v1/chat/completion
 
 ENV UVICORN_LOOP=asyncio
 
 COPY . .
 
 # Define the health check command
-HEALTHCHECK --interval=30s --timeout=2m --retries=10 \
+HEALTHCHECK --interval=1m --timeout=10m --retries=10 \
   CMD curl -f $HEALTHCHECK_ENDPOINT || exit 1
   
 
-# Expose port 8080
-EXPOSE 8080
+# Expose port 8000
+EXPOSE 8000
 
 # Run uvicorn with the specified command
 CMD ["python", "main.py"]
