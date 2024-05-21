@@ -32,6 +32,12 @@ jobs:
         working-directory: ./golang-server
         run: echo "Changed directory to golang-server"
 
+      - name: Set environment variables
+        run: |
+          echo "API_KEY=${{ secrets.MY_API_KEY }}" >> $GITHUB_ENV
+          echo "GROK_API_KEY=${{ secrets.GROK_API_KEY }}" >> $GITHUB_ENV
+          echo "PORT=8000" >> $GITHUB_ENV
+
       - name: Fetch dependencies
         working-directory: ./golang-server
         run: make deps

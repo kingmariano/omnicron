@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
+    "os"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
@@ -15,9 +15,18 @@ import (
 )
 
 func setupRouter(t *testing.T) (*chi.Mux, *config.ApiConfig) {
-	apiKey, grokApiKey, port, err := utils.LoadEnv("../../.env")
-	if err != nil {
-		t.Fatal(err)
+	// apiKey, grokApiKey, port, err := utils.LoadEnv("../../.env")
+
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+
+	apiKey := os.Getenv("API_KEY")
+	grokApiKey := os.Getenv("GROK_API_KEY")
+	port := os.Getenv("PORT")
+
+	if apiKey == "" || grokApiKey == "" || port == "" {
+		t.Fatal("unable to get API key or port from environment variables")
 	}
 	
 	cfg := &config.ApiConfig{
