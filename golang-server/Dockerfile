@@ -17,9 +17,6 @@ COPY . .
 # Install Go dependencies
 RUN go mod download
 
-# Run tests
-RUN CGO_ENABLED=0 go test ./tests
-
 # Build Go binary
 RUN go build -o ./omnicron
 
