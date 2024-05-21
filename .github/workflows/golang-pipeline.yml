@@ -25,34 +25,47 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y make
+
       - name: Change directory to go folder
-        run: cd ./golang-server
+        working-directory: ./golang-server
+        run: echo "Changed directory to golang-server"
 
       - name: Fetch dependencies
+        working-directory: ./golang-server
         run: make deps
         
       - name: Format code
+        working-directory: ./golang-server
         run: make fmt
 
       - name: Build
+        working-directory: ./golang-server
         run: make build
 
       - name: Test
+        working-directory: ./golang-server
         run: make test
 
       - name: Echo Go version
+        working-directory: ./golang-server
         run: go version
 
       - name: Install staticcheck
+        working-directory: ./golang-server
         run: go install honnef.co/go/tools/cmd/staticcheck@latest
 
-      - name: Install staticcheck
+      - name: Static Check
+        working-directory: ./golang-server
         run: make static-check
 
       - name: Install gosec
+        working-directory: ./golang-server
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
       - name: Security Scan
+        working-directory: ./golang-server
         run: make security-scan
 
       - name: Login to Docker Hub
@@ -66,7 +79,7 @@ jobs:
         with:
           context: ./golang-server
           push: true
-          tags: charlesozo/omnicron-go:latest, charlesozo/${{github.run_number}}
+          tags: charlesozo/omnicron-go:latest, charlesozo/omnicron-go:${{github.run_number}}
           build-args: |
             MY_API_KEY=${{ secrets.MY_API_KEY }}
             GROK_API_KEY=${{ secrets.GROK_API_KEY }}
