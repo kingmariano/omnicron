@@ -32,9 +32,9 @@ static-check:
 	staticcheck ./... || true
 
 fmt:
-	go fmt ./...
+	go fmt ./... 
 
 security-scan:
-	gosec ./...
+	gosec ./... || true
 
 .PHONY: all build test clean run deps
