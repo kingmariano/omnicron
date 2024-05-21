@@ -6,5 +6,5 @@ g4f[webdriver]
 python-multipart
 shazamio
 pydub
-# nest_asyncio
+nest_asyncio
 # ffmpeg is a required file to run in the dockerfile

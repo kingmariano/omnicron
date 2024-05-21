@@ -1,0 +1,73 @@
+name: Go CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  setup_and_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.21"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Change directory to go folder
+        run: cd ./golang-server
+
+      - name: Fetch dependencies
+        run: make deps
+        
+      - name: Format code
+        run: make fmt
+
+      - name: Build
+        run: make build
+
+      - name: Test
+        run: make test
+
+      - name: Echo Go version
+        run: go version
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Install staticcheck
+        run: make static-check
+
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Security Scan
+        run: make security-scan
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER_NAME }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+      - name: Build and push Golang Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./golang-server
+          push: true
+          tags: charlesozo/omnicron-go:latest, charlesozo/${{github.run_number}}
+          build-args: |
+            MY_API_KEY=${{ secrets.MY_API_KEY }}
+            GROK_API_KEY=${{ secrets.GROK_API_KEY }}
+            GEMINI_PRO_API_KEY=${{ secrets.GEMINI_PRO_API_KEY }}

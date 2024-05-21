@@ -2,10 +2,15 @@
 This module defines the main FastAPI application for the omnicron python backend server.
 """
 
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from endpoints import router
 import uvicorn
+
+loop = asyncio.get_event_loop()
+print(f"Using evet loop: {type(loop)}\n")
+print(f"Current event loop policy: {asyncio.get_event_loop_policy()}")
 
 app = FastAPI(title="omnicron python backend server")
 

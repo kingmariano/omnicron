@@ -1,0 +1,10 @@
+# github.com/go-chi/chi/v5 v5.0.12
+## explicit; go 1.14
+github.com/go-chi/chi/v5
+github.com/go-chi/chi/v5/middleware
+# github.com/joho/godotenv v1.5.1
+## explicit; go 1.12
+github.com/joho/godotenv
+# github.com/jpoz/groq v0.0.0-20240513145022-7a02894105a0
+## explicit; go 1.22.2
+github.com/jpoz/groq
