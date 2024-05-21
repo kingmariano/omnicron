@@ -35,6 +35,6 @@ fmt:
 	go fmt ./... 
 
 security-scan:
-	gosec ./... || true
+	gosec-severity medium -confidence medium -quiet ./... || exit 1
 
 .PHONY: all build test clean run deps
