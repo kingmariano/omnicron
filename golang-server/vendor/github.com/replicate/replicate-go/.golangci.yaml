@@ -1,0 +1,21 @@
+linters:
+  enable:
+    # Note that these are *additional* linters beyond the defaults:
+    #
+    #   https://golangci-lint.run/usage/linters/#enabled-by-default
+    - exportloopref
+    - gocritic
+    - revive
+    - misspell
+    - unconvert
+    - bodyclose
+
+linters-settings:
+  misspell:
+    locale: US
+issues:
+  exclude-rules:
+    - path: _test\.go$
+      linters:
+        - errcheck
+        - bodyclose

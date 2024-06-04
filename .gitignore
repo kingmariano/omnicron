@@ -1,3 +1,4 @@
 .env
 .gitignore
 golang-server/omnicron
+waste.txt

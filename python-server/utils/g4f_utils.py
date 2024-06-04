@@ -16,6 +16,7 @@ class Message(str, Enum):
 
 _PROVIDERS = [
     g4f.Provider.Ecosia,
+    g4f.Provider.Blackbox,
     g4f.Provider.DuckDuckGo,
     g4f.Provider.Feedough,
     g4f.Provider.Aichatos,
@@ -24,7 +25,6 @@ _PROVIDERS = [
     g4f.Provider.HuggingFace,
     g4f.Provider.Liaobots,
     g4f.Provider.Koala,
-    g4f.Provider.Blackbox,
     g4f.Provider.Replicate,
     g4f.Provider.Groq,
     g4f.Provider.FreeChatgpt,

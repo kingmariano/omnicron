@@ -1,4 +1,5 @@
 package middleware
+
 import (
 	"fmt"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
