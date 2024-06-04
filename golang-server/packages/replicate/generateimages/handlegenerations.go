@@ -8,10 +8,10 @@ import (
 	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
 	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/storage"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
 	"log"
 	"net/http"
-	"strconv"
 )
 
 //	var imagemodelInputProcessors = map[int]func(ctx context.Context, r *http.Request, token string, modelIndex int) (replicate.PredictionInput, error){
@@ -90,18 +90,17 @@ func processHighImageGenerationInput(ctx context.Context, r *http.Request, model
 
 	// Collect form values
 	prompt := r.FormValue("prompt")
-	log.Print("my prompt is ", prompt)
-	setStringValue(r.FormValue("scheduler"), &HighImageGenerationParams.Scheduler)
-	setStringValue(r.FormValue("negative_prompt"), &HighImageGenerationParams.NegativePrompt)
-	setIntValue(r.FormValue("width"), &HighImageGenerationParams.Width)
-	setIntValue(r.FormValue("height"), &HighImageGenerationParams.Height)
-	setIntValue(r.FormValue("num_outputs"), &HighImageGenerationParams.NumOutputs)
-	setFloatValue(r.FormValue("guidance_scale"), &HighImageGenerationParams.GuidanceScale)
-	setIntValue(r.FormValue("num_inference_steps"), &HighImageGenerationParams.NumInferenceSteps)
-	setFloatValue(r.FormValue("lora_scale"), &HighImageGenerationParams.LoraScale)
-	setBoolValue(r.FormValue("apply_watermark"), &HighImageGenerationParams.ApplyWatermark)
-	setFloatValue(r.FormValue("prompt_strength"), &HighImageGenerationParams.PromptStrength)
-	setIntValue(r.FormValue("seed"), &HighImageGenerationParams.Seed)
+	utils.SetStringValue(r.FormValue("scheduler"), &HighImageGenerationParams.Scheduler)
+	utils.SetStringValue(r.FormValue("negative_prompt"), &HighImageGenerationParams.NegativePrompt)
+	utils.SetIntValue(r.FormValue("width"), &HighImageGenerationParams.Width)
+	utils.SetIntValue(r.FormValue("height"), &HighImageGenerationParams.Height)
+	utils.SetIntValue(r.FormValue("num_outputs"), &HighImageGenerationParams.NumOutputs)
+	utils.SetFloatValue(r.FormValue("guidance_scale"), &HighImageGenerationParams.GuidanceScale)
+	utils.SetIntValue(r.FormValue("num_inference_steps"), &HighImageGenerationParams.NumInferenceSteps)
+	utils.SetFloatValue(r.FormValue("lora_scale"), &HighImageGenerationParams.LoraScale)
+	utils.SetBoolValue(r.FormValue("apply_watermark"), &HighImageGenerationParams.ApplyWatermark)
+	utils.SetFloatValue(r.FormValue("prompt_strength"), &HighImageGenerationParams.PromptStrength)
+	utils.SetIntValue(r.FormValue("seed"), &HighImageGenerationParams.Seed)
 	if prompt == "" {
 		return nil, errors.New("prompt cant be empty")
 	}
@@ -157,37 +156,4 @@ func processHighImageGenerationInput(ctx context.Context, r *http.Request, model
 	log.Printf("this is input for highImage %s", input)
 
 	return input, nil
-}
-
-func setIntValue(value string, param **int) {
-	if value != "" {
-		intValue, err := strconv.Atoi(value)
-		if err == nil {
-			*param = &intValue
-		}
-	}
-}
-
-func setFloatValue(value string, param **float64) {
-	if value != "" {
-		floatValue, err := strconv.ParseFloat(value, 64)
-		if err == nil {
-			*param = &floatValue
-		}
-	}
-}
-
-func setBoolValue(value string, param **bool) {
-	if value != "" {
-		boolValue, err := strconv.ParseBool(value)
-		if err == nil {
-			*param = &boolValue
-		}
-	}
-}
-
-func setStringValue(value string, param **string) {
-	if value != "" {
-		*param = &value
-	}
 }

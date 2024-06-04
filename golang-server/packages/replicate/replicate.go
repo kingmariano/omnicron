@@ -16,7 +16,8 @@ type CreateReplicatePrediction func(ctx context.Context, env, version string, pr
 
 type Model map[ReplicateModel]CreateReplicatePrediction
 
-var Models Model
+var ImageGenModels Model
+var ImageUpscaleGenModels Model
 
 type ReplicateModel struct {
 	Name     string
@@ -25,11 +26,17 @@ type ReplicateModel struct {
 }
 
 func init() {
-	Models = make(Model)
+	ImageGenModels = make(Model)
+	ImageUpscaleGenModels = make(Model)
 	for _, imagemodels := range ImageModels {
-		log.Println(imagemodels)
-		Models[imagemodels] = CreatePrediction
+		// log.Println(imagemodels)
+		ImageGenModels[imagemodels] = CreatePrediction
 	}
+	for _, imageupscalemodels := range ImageUpscaleModels {
+		log.Println(imageupscalemodels)
+		ImageUpscaleGenModels[imageupscalemodels] = CreatePrediction
+	}
+
 }
 
 func NewReplicateClient(token string) (*replicate.Client, error) {
@@ -45,6 +52,7 @@ func CreatePrediction(ctx context.Context, token, version string, predictionInpu
 	if err != nil {
 		return nil, err
 	}
+
 	prediction, err := r8.CreatePrediction(ctx, version, predictionInput, webhook, stream)
 	if err != nil {
 		return nil, err

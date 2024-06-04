@@ -32,6 +32,19 @@ var ImageModels = []ReplicateModel{
 	},
 }
 
+var ImageUpscaleModels = []ReplicateModel{
+	{
+		Name:     "nightmareai/real-esrgan",
+		Version:  "350d32041630ffbe63c8352783a26d94126809164e54085352f8326e53999085",
+		Category: "Low",
+	},
+	{
+		Name:     "philz1337x/clarity-upscaler",
+		Version:  "f11a4727f8f995d2795079196ebda1bcbc641938e032154f46488fc3e760eb79",
+		Category: "High",
+	},
+}
+
 func GetModelByName(name string, modelList []ReplicateModel) (*ReplicateModel, error) {
 	for _, model := range modelList {
 		if model.Name == name {

@@ -34,6 +34,60 @@ type HighImageGenerationParams struct {
 	Seed              *int     `json:"seed,omitempty"`
 }
 
+type HighImageUpscaleGenerationParams struct {
+	ImageURL              string   `json:"image_url"`
+	Prompt                *string  `json:"prompt,omitempty"`
+	NegativePrompt        *string  `json:"negative_prompt,omitempty"`
+	ScaleFactor           *float64 `json:"scale_factor,omitempty"`
+	Dynamic               *float64 `json:"dynamic,omitempty"`
+	Creativity            *float64 `json:"creativity,omitempty"`
+	Resemblance           *float64 `json:"resemblance,omitempty"`
+	TilingWidth           *int     `json:"tiling_width,omitempty"`
+	TilingHeight          *int     `json:"tiling_height,omitempty"`
+	SdModel               *string  `json:"sd_model,omitempty"`
+	Scheduler             *string  `json:"scheduler,omitempty"`
+	NumInferenceSteps     *int     `json:"num_inference_steps,omitempty"`
+	Seed                  *int     `json:"seed,omitempty"`
+	Downscaling           *bool    `json:"downscaling,omitempty"`
+	DownscalingResolution *int     `json:"downscaling_resolution,omitempty"`
+	Sharpen               *float64 `json:"sharpen,omitempty"`
+	OutputFormat          *string  `json:"output_format,omitempty"`
+}
+
+type LowImageUpscaleGenerationParams struct {
+	ImageURL    string   `json:"image_url"`
+	Scale       *float64 `json:"scale,omitempty"`
+	FaceEnhance *bool    `json:"face_enhance,omitempty"`
+}
+
+func (m LowImageUpscaleGenerationParams) RealEsrgan() LowImageUpscaleGenerationParams {
+	return LowImageUpscaleGenerationParams{
+		Scale:       utils.Ptr(4.0),
+		FaceEnhance: utils.Ptr(false),
+	}
+}
+
+func (m HighImageUpscaleGenerationParams) NewClarityUpscaler() HighImageUpscaleGenerationParams {
+	return HighImageUpscaleGenerationParams{
+		Prompt:                utils.Ptr("masterpiece, best quality, highres, <lora:more_details:0.5> <lora:SDXLrender_v2.0:1>"),
+		NegativePrompt:        utils.Ptr("(worst quality, low quality, normal quality:2) JuggernautNegative-neg"),
+		ScaleFactor:           utils.Ptr(2.0),
+		Dynamic:               utils.Ptr(6.0),
+		Creativity:            utils.Ptr(0.35),
+		Resemblance:           utils.Ptr(0.6),
+		TilingWidth:           utils.Ptr(112),
+		TilingHeight:          utils.Ptr(144),
+		SdModel:               utils.Ptr("juggernaut_reborn.safetensors [338b85bc4f]"),
+		Scheduler:             utils.Ptr("DPM++ 3M SDE Karras"),
+		NumInferenceSteps:     utils.Ptr(18),
+		Seed:                  utils.Ptr(1337),
+		Downscaling:           utils.Ptr(false),
+		DownscalingResolution: utils.Ptr(768),
+		Sharpen:               utils.Ptr(0.0),
+		OutputFormat:          utils.Ptr("png"),
+	}
+}
+
 func (m LowImageGenerationParams) NewSdxlLightning4StepImageGenerationInput() LowImageGenerationParams {
 	return LowImageGenerationParams{
 		Width:             utils.Ptr(1024),
@@ -103,4 +157,3 @@ func (m HighImageGenerationParams) NewAstra() HighImageGenerationParams {
 		LoraScale:         utils.Ptr(0.6),
 	}
 }
-
