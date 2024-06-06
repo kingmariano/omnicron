@@ -60,6 +60,38 @@ type LowImageUpscaleGenerationParams struct {
 	FaceEnhance *bool    `json:"face_enhance,omitempty"`
 }
 
+type HighVideoGenerationParams struct {
+	Prompt            string   `json:"prompt"`
+	NegativePrompt    *string  `json:"negative_prompt,omitempty"`
+	InitVideoURL      *string  `json:"init_video_url,omitempty"`
+	InitWeight        *float64 `json:"init_weight,omitempty"`
+	NumFrames         *int     `json:"num_frames,omitempty"`
+	NumInferenceSteps *int     `json:"num_inferences_steps,omitempty"`
+	Width             *int     `json:"width,omitempty"`
+	Height            *int     `json:"height,omitempty"`
+	GuidanceScale     *float64 `json:"guidance_scale,omitempty"`
+	FPS               *int     `json:"fps,omitempty"`
+	VideoModel        *string  `json:"video_model,omitempty"`
+	BatchSize         *int     `json:"batch_size,omitempty"`
+	RemoveWatermark   *bool    `json:"remove_watermark,omitempty"`
+}
+
+func (m HighVideoGenerationParams) ZeroscopeV2Xl() HighVideoGenerationParams {
+	return HighVideoGenerationParams{
+		NegativePrompt:    utils.Ptr("blurred, noisy, washed out, distorted, broken, overly dark, low resolution, excessive blue tones, overexposed, unnatural colors, overly saturated, cluttered, pixelated, abstract"),
+		InitWeight:        utils.Ptr(0.5),
+		NumFrames:         utils.Ptr(24),
+		NumInferenceSteps: utils.Ptr(50),
+		Width:             utils.Ptr(1024),
+		Height:            utils.Ptr(1024),
+		GuidanceScale:     utils.Ptr(17.5),
+		FPS:               utils.Ptr(10),
+		VideoModel:        utils.Ptr("xl"),
+		BatchSize:         utils.Ptr(1),
+		RemoveWatermark:   utils.Ptr(false),
+	}
+}
+
 func (m LowImageUpscaleGenerationParams) RealEsrgan() LowImageUpscaleGenerationParams {
 	return LowImageUpscaleGenerationParams{
 		Scale:       utils.Ptr(4.0),

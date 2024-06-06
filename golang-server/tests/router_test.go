@@ -6,6 +6,7 @@ import (
 	ware "github.com/charlesozo/omnicron-backendsever/golang-server/middleware"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/grok"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generateimages"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generatevideos"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/imageupscale"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	"github.com/go-chi/chi/v5"
@@ -54,6 +55,7 @@ func setupRouter(t *testing.T) (*chi.Mux, *config.ApiConfig) {
 	v1Router.Post("/grok/chatcompletion", ware.MiddleWareAuth(grok.ChatCompletion, cfg))
 	v1Router.Post("/replicate/imagegeneration", ware.MiddleWareAuth(generateimages.ImageGeneration, cfg))
 	v1Router.Post("/replicate/imageupscale", ware.MiddleWareAuth(imageupscale.ImageUpscale, cfg))
+	v1Router.Post("/replicate/videogeneration", ware.MiddleWareAuth(generatevideos.VideoGeneration, cfg))
 	v1Router.Post("/grok/transcription", ware.MiddleWareAuth(grok.Transcription, cfg)) // deprecated
 	router.Mount("/api/v1", v1Router)
 
@@ -206,6 +208,37 @@ func TestImageUpscale(t *testing.T) {
 	baseURL := "/api/v1/replicate/imageupscale"
 	params := url.Values{}
 	params.Add("model", "nightmareai/real-esrgan")
+	url := baseURL + "?" + params.Encode()
+	req, err := http.NewRequest("POST", url, &b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.Header.Set("Api-Key", cfg.ApiKey)
+
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		t.Log(rr.Body)
+	}
+
+	// Further checks can be added based on the expected response
+}
+
+func TestVideoGeneration(t *testing.T) {
+	router, cfg := setupRouter(t)
+
+	// Create a buffer to hold the form data
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	w.WriteField("prompt", "A sunrise over a calm ocean, waves gently lapping the shore, seagulls flying overhead.")
+	// Close the multipart writer to flush the buffer
+	w.Close()
+	baseURL := "/api/v1/replicate/videogeneration"
+	params := url.Values{}
+	params.Add("model", "anotherjesse/zeroscope-v2-xl")
 	url := baseURL + "?" + params.Encode()
 	req, err := http.NewRequest("POST", url, &b)
 	if err != nil {

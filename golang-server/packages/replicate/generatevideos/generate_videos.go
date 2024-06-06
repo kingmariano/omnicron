@@ -1,4 +1,4 @@
-package imageupscale
+package generatevideos
 
 import (
 	"context"
@@ -8,33 +8,32 @@ import (
 	"net/http"
 )
 
-func ImageUpscale(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func VideoGeneration(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 	ctx := context.Background()
 	model := r.URL.Query().Get("model")
 	if model == "" {
-		utils.RespondWithError(w, http.StatusBadRequest, "image upscale model query parameter is required")
+		utils.RespondWithError(w, http.StatusBadRequest, "video model query parameter is required")
 		return
 	}
-	repImageUpscaleModel, err := rep.GetModelByName(model, rep.ImageUpscaleModels)
+	repVideoModel, err := rep.GetModelByName(model, rep.VideoModels)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "model not found")
 		return
 	}
-	predictionFunc, ok := rep.ImageUpscaleGenModels[*repImageUpscaleModel]
+	predictionFunc, ok := rep.VideoGenModels[*repVideoModel]
 	if !ok {
 		utils.RespondWithError(w, http.StatusNotFound, "model not found")
 		return
 	}
-	predictionInput, err := processImageUpscaleModelInput(repImageUpscaleModel, ctx, r, cfg)
+	predictionInput, err := processVideoModelInput(repVideoModel, ctx, r, cfg)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	ImageUpscalePrediction, err := predictionFunc(ctx, cfg.ReplicateAPIKey, repImageUpscaleModel.Version, predictionInput, nil, false)
+	videoPrediction, err := predictionFunc(ctx, cfg.ReplicateAPIKey, repVideoModel.Version, predictionInput, nil, false)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	utils.RespondWithJSON(w, http.StatusOK, ImageUpscalePrediction)
+	utils.RespondWithJSON(w, http.StatusOK, videoPrediction)
 }

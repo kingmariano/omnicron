@@ -114,5 +114,6 @@ func processHighUpscalingInput(ctx context.Context, r *http.Request, cfg *config
 		"output_format":          HighImageUpscaleGenerationParams.OutputFormat,
 		"downscaling_resolution": HighImageUpscaleGenerationParams.DownscalingResolution,
 	}
+
 	return input, nil
 }

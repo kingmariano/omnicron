@@ -44,6 +44,13 @@ var ImageUpscaleModels = []ReplicateModel{
 		Category: "High",
 	},
 }
+var VideoModels = []ReplicateModel{
+	{
+		Name:     "anotherjesse/zeroscope-v2-xl",
+		Version:  "9f747673945c62801b13b84701c783929c0ee784e4748ec062204894dda1a351",
+		Category: "High",
+	},
+}
 
 func GetModelByName(name string, modelList []ReplicateModel) (*ReplicateModel, error) {
 	for _, model := range modelList {

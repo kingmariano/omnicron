@@ -18,6 +18,7 @@ type Model map[ReplicateModel]CreateReplicatePrediction
 
 var ImageGenModels Model
 var ImageUpscaleGenModels Model
+var VideoGenModels Model
 
 type ReplicateModel struct {
 	Name     string
@@ -28,13 +29,18 @@ type ReplicateModel struct {
 func init() {
 	ImageGenModels = make(Model)
 	ImageUpscaleGenModels = make(Model)
+	VideoGenModels = make(Model)
 	for _, imagemodels := range ImageModels {
 		// log.Println(imagemodels)
 		ImageGenModels[imagemodels] = CreatePrediction
 	}
 	for _, imageupscalemodels := range ImageUpscaleModels {
-		log.Println(imageupscalemodels)
+		// log.Println(imageupscalemodels)
 		ImageUpscaleGenModels[imageupscalemodels] = CreatePrediction
+	}
+	for _, videomodels := range VideoModels {
+		log.Print(videomodels)
+		VideoGenModels[videomodels] = CreatePrediction
 	}
 
 }

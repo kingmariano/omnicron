@@ -90,6 +90,12 @@ func processHighImageGenerationInput(ctx context.Context, r *http.Request, model
 
 	// Collect form values
 	prompt := r.FormValue("prompt")
+	if prompt == "" {
+		return nil, errors.New("prompt cant be empty")
+	}
+	HighImageGenerationParams.Prompt = prompt
+	log.Println(HighImageGenerationParams)
+	//extract and replace default
 	utils.SetStringValue(r.FormValue("scheduler"), &HighImageGenerationParams.Scheduler)
 	utils.SetStringValue(r.FormValue("negative_prompt"), &HighImageGenerationParams.NegativePrompt)
 	utils.SetIntValue(r.FormValue("width"), &HighImageGenerationParams.Width)
@@ -101,10 +107,7 @@ func processHighImageGenerationInput(ctx context.Context, r *http.Request, model
 	utils.SetBoolValue(r.FormValue("apply_watermark"), &HighImageGenerationParams.ApplyWatermark)
 	utils.SetFloatValue(r.FormValue("prompt_strength"), &HighImageGenerationParams.PromptStrength)
 	utils.SetIntValue(r.FormValue("seed"), &HighImageGenerationParams.Seed)
-	if prompt == "" {
-		return nil, errors.New("prompt cant be empty")
-	}
-	HighImageGenerationParams.Prompt = prompt
+
 	// Handle image file
 	imageFile, _, err := r.FormFile("image")
 	if err == nil {
@@ -153,7 +156,6 @@ func processHighImageGenerationInput(ctx context.Context, r *http.Request, model
 	if HighImageGenerationParams.Seed != nil {
 		input["seed"] = *HighImageGenerationParams.Seed
 	}
-	log.Printf("this is input for highImage %s", input)
 
 	return input, nil
 }
