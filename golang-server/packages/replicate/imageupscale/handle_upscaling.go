@@ -46,7 +46,6 @@ func processLowUpscalingInput(ctx context.Context, r *http.Request, cfg *config.
 	if err != nil {
 		return nil, err
 	}
-	log.Print("my image url is ", imageUrl)
 	LowImageUpscaleGenerationParams.ImageURL = imageUrl
 	utils.SetFloatValue(r.FormValue("scale"), &LowImageUpscaleGenerationParams.Scale)
 	utils.SetBoolValue(r.FormValue("face_enhance"), &LowImageUpscaleGenerationParams.FaceEnhance)
@@ -76,7 +75,6 @@ func processHighUpscalingInput(ctx context.Context, r *http.Request, cfg *config
 	if err != nil {
 		return nil, err
 	}
-	log.Print("my image url is ", imageUrl)
 	HighImageUpscaleGenerationParams.ImageURL = imageUrl
 	// Extract form values and set them
 	utils.SetStringValue(r.FormValue("prompt"), &HighImageUpscaleGenerationParams.Prompt)

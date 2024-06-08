@@ -52,6 +52,24 @@ var VideoModels = []ReplicateModel{
 	},
 }
 
+var TTSModels = []ReplicateModel{
+	{
+		Name: "lucataco/xtts-v2",
+		Version: "684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e",
+		Category: "Low",
+	},
+	{
+      Name: "zsxkib/realistic-voice-cloning",
+	  Version: "0a9c7c558af4c0f20667c1bd1260ce32a2879944a0b9e44e1398660c077b1550",
+	  Category: "Medium",
+	},
+	{
+		Name: "chenxwh/openvoice",
+		Version: "d548923c9d7fc9330a3b7c7f9e2f91b2ee90c83311a351dfcd32af353799223d",
+		Category: "High",
+	},
+}
+
 func GetModelByName(name string, modelList []ReplicateModel) (*ReplicateModel, error) {
 	for _, model := range modelList {
 		if model.Name == name {

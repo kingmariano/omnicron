@@ -76,6 +76,77 @@ type HighVideoGenerationParams struct {
 	RemoveWatermark   *bool    `json:"remove_watermark,omitempty"`
 }
 
+type LowTTSParams struct {
+	Text string `json:"text"`
+	Speaker string `json:"speaker"`
+	Language *string `json:"language,omitempty"`
+	CleanupVoice *bool `json:"cleanup_voice,omitempty"`
+}
+type MediumTTSParams struct{
+	SongInputURL string `json:"song_input_url,omitempty"`
+	RvcModel *string `json:"rvc_model,omitempty"`
+	CustomRvcModelDownloadURL *string `json:"custom_rvc_model_download_url,omitempty"`
+	PitchChange *string `json:"pitch_change,omitempty"`
+	IndexRate *float64 `json:"index_rate,omitempty"`
+	FilterRaidus *int `json:"filter_raidus,omitempty"`
+	RmsMixRate *float64 `json:"rms_mix_rate,omitempty"`
+	PitchDetectionAlgorithm *string `json:"pitch_detection_algorithm,omitempty"`
+	CrepeHopLength *int `json:"crepe_hop_length,omitempty"`
+	Protect *float64 `json:"protect,omitempty"`
+	MainVocalsVolumeChange *float64 `json:"main_vocals_volume_change,omitempty"`
+	BackupVocalsVolumeChange *float64 `json:"backup_vocals_volume_change,omitempty"`
+	InstrumentalVolumeChange *float64 `json:"instrumental_volume_change,omitempty"`
+	PitchChangeAll *float64 `json:"pitch_change_all,omitempty"`
+	ReverbSize *float64 `json:"reverb_size,omitempty"`
+	ReverbWetness *float64 `json:"reverb_wetness,omitempty"`
+	ReverbDryness *float64 `json:"reverb_dryness,omitempty"`
+	ReverbDamping *float64 `json:"reverb_damping,omitempty"`
+	OutputFormat *string `json:"output_format,omitempty"`
+}
+
+type HighTTSParams struct{
+	AudioURL string `json:"audio_url"`
+	Text string `json:"text"`
+	Language *string `json:"language,omitempty"`
+	Speed *float64 `json:"speed,omitempty"`
+}
+
+func (m LowTTSParams)  XTTSV2() LowTTSParams{
+	return LowTTSParams{
+		Language: utils.Ptr("en"),
+		CleanupVoice: utils.Ptr(false),
+	}
+}
+
+func (m MediumTTSParams)  RealisticVoiceCloning() MediumTTSParams{
+	return MediumTTSParams{
+		RvcModel: utils.Ptr("Squidward"),
+		PitchChange: utils.Ptr("no-change"),
+		IndexRate: utils.Ptr(0.5),
+		FilterRaidus: utils.Ptr(3),
+		RmsMixRate: utils.Ptr(0.25),
+		PitchDetectionAlgorithm: utils.Ptr("rmvpe"),
+		CrepeHopLength: utils.Ptr(128),
+		Protect: utils.Ptr(0.33),
+		MainVocalsVolumeChange: utils.Ptr(10.1),
+		BackupVocalsVolumeChange: utils.Ptr(0.0),
+		InstrumentalVolumeChange: utils.Ptr(0.0),
+		PitchChangeAll: utils.Ptr(0.0),
+		ReverbSize: utils.Ptr(0.15),
+		ReverbWetness: utils.Ptr(0.2),
+		ReverbDryness: utils.Ptr(0.8),
+		ReverbDamping: utils.Ptr(0.7),
+		OutputFormat: utils.Ptr("mp3"),
+
+	}
+}
+func (m HighTTSParams) OpenVoice() HighTTSParams {
+	return HighTTSParams{
+		Language: utils.Ptr("EN_NEWEST"),
+		Speed: utils.Ptr(1.0),
+	}
+}
+
 func (m HighVideoGenerationParams) ZeroscopeV2Xl() HighVideoGenerationParams {
 	return HighVideoGenerationParams{
 		NegativePrompt:    utils.Ptr("blurred, noisy, washed out, distorted, broken, overly dark, low resolution, excessive blue tones, overexposed, unnatural colors, overly saturated, cluttered, pixelated, abstract"),

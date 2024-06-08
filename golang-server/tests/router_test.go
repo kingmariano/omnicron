@@ -2,15 +2,6 @@ package tests
 
 import (
 	"bytes"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
-	ware "github.com/charlesozo/omnicron-backendsever/golang-server/middleware"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/grok"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generateimages"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generatevideos"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/imageupscale"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -19,20 +10,31 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
+	ware "github.com/charlesozo/omnicron-backendsever/golang-server/middleware"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/grok"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generateimages"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generatevideos"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/imageupscale"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/tts"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func setupRouter(t *testing.T) (*chi.Mux, *config.ApiConfig) {
-	// apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, err := utils.LoadEnv("../../.env")
+	apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, err := utils.LoadEnv("../../.env")
 
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	apiKey := os.Getenv("API_KEY")
-	grokApiKey := os.Getenv("GROK_API_KEY")
-	port := os.Getenv("PORT")
-	replicateApiKey := os.Getenv("REPLICATE_API_TOKEN")
-	cloudinaryURL  := os.Getenv("CLOUDINARY_URL")
+	// apiKey := os.Getenv("API_KEY")
+	// grokApiKey := os.Getenv("GROK_API_KEY")
+	// port := os.Getenv("PORT")
+	// replicateApiKey := os.Getenv("REPLICATE_API_TOKEN")
+	// cloudinaryURL  := os.Getenv("CLOUDINARY_URL")
 
 	if apiKey == "" || grokApiKey == "" || replicateApiKey == "" || cloudinaryURL == "" || port == "" {
 		t.Fatal("unable to get API key or port from environment variables")
@@ -56,6 +58,7 @@ func setupRouter(t *testing.T) (*chi.Mux, *config.ApiConfig) {
 	v1Router.Post("/replicate/imagegeneration", ware.MiddleWareAuth(generateimages.ImageGeneration, cfg))
 	v1Router.Post("/replicate/imageupscale", ware.MiddleWareAuth(imageupscale.ImageUpscale, cfg))
 	v1Router.Post("/replicate/videogeneration", ware.MiddleWareAuth(generatevideos.VideoGeneration, cfg))
+	v1Router.Post("/replicate/tts", ware.MiddleWareAuth(tts.TTS, cfg))
 	v1Router.Post("/grok/transcription", ware.MiddleWareAuth(grok.Transcription, cfg)) // deprecated
 	router.Mount("/api/v1", v1Router)
 
@@ -239,6 +242,96 @@ func TestVideoGeneration(t *testing.T) {
 	baseURL := "/api/v1/replicate/videogeneration"
 	params := url.Values{}
 	params.Add("model", "anotherjesse/zeroscope-v2-xl")
+	url := baseURL + "?" + params.Encode()
+	req, err := http.NewRequest("POST", url, &b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.Header.Set("Api-Key", cfg.ApiKey)
+
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		t.Log(rr.Body)
+	}
+
+	// Further checks can be added based on the expected response
+}
+
+func TestTTS(t *testing.T){
+	router, cfg := setupRouter(t)
+
+	// Create a buffer to hold the form data
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	w.WriteField("text", "Also, keep in mind that looping large audio files can still be resource-intensive, especially if you're dealing with very large files. You may want to consider using a more efficient audio processing library or optimizing the code further to reduce memory usage.")
+	audioPath := "../../assets/documents/sample.mp3"
+	file, err := os.Open(audioPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fw, err := w.CreateFormFile("audio", "audio.mp3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = io.Copy(fw, file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file.Close()
+	// Close the multipart writer to flush the buffer
+	w.Close()
+	baseURL := "/api/v1/replicate/tts"
+	params := url.Values{}
+	params.Add("model", "lucataco/xtts-v2")
+	url := baseURL + "?" + params.Encode()
+	req, err := http.NewRequest("POST", url, &b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.Header.Set("Api-Key", cfg.ApiKey)
+
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		t.Log(rr.Body)
+	}
+
+	// Further checks can be added based on the expected response
+}
+
+func TestRVC(t *testing.T){
+	router, cfg := setupRouter(t)
+
+	// Create a buffer to hold the form data
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	w.WriteField("rvc_model", "Drake")
+	audioPath := "../../assets/documents/sample1.mp3"
+	file, err := os.Open(audioPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fw, err := w.CreateFormFile("audio", "audio.mp3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = io.Copy(fw, file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file.Close()
+	// Close the multipart writer to flush the buffer
+	w.Close()
+	baseURL := "/api/v1/replicate/tts"
+	params := url.Values{}
+	params.Add("model", "zsxkib/realistic-voice-cloning")
 	url := baseURL + "?" + params.Encode()
 	req, err := http.NewRequest("POST", url, &b)
 	if err != nil {

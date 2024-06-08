@@ -25,7 +25,6 @@ func processVideoModelInput(imageModel *rep.ReplicateModel, ctx context.Context,
 }
 
 func processHighVideoInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
-	log.Println("This is  High video generation")
 	var HighVideoGenerationParams rep.HighVideoGenerationParams
 	err := r.ParseMultipartForm(50 << 20) // 50MB
 	if err != nil {

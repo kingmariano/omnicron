@@ -11,6 +11,7 @@ import (
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generateimages"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generatevideos"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/imageupscale"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/tts"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -38,6 +39,7 @@ func main() {
 	v1Router.Post("/replicate/imagegeneration", ware.MiddleWareAuth(generateimages.ImageGeneration, cfg))
 	v1Router.Post("/replicate/imageupscale", ware.MiddleWareAuth(imageupscale.ImageUpscale, cfg))
 	v1Router.Post("/replicate/videogeneration", ware.MiddleWareAuth(generatevideos.VideoGeneration, cfg))
+	v1Router.Post("/replicate/tts", ware.MiddleWareAuth(tts.TTS, cfg))
 	v1Router.Post("/grok/transcription", ware.MiddleWareAuth(grok.Transcription, cfg)) // deprecated
 	router.Mount("/api/v1", v1Router)
 	server := &http.Server{
