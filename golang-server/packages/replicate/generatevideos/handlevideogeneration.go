@@ -9,7 +9,6 @@ import (
 	"github.com/charlesozo/omnicron-backendsever/golang-server/storage"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
-	"log"
 	"net/http"
 )
 
@@ -32,7 +31,6 @@ func processHighVideoInput(ctx context.Context, r *http.Request, cfg *config.Api
 	}
 
 	HighVideoGenerationParams = rep.HighVideoGenerationParams{}.ZeroscopeV2Xl()
-	log.Println(HighVideoGenerationParams)
 	prompt := r.FormValue("prompt")
 	if prompt == "" {
 		return nil, errors.New("prompt cant be empty")

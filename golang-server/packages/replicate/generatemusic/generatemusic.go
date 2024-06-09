@@ -1,4 +1,4 @@
-package tts
+package generatemusic
 
 import (
 	"context"
@@ -8,34 +8,34 @@ import (
 	"net/http"
 )
 
-func TTS(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func MusicGen(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 	ctx := context.Background()
 	model := r.URL.Query().Get("model")
 	if model == "" {
-		utils.RespondWithError(w, http.StatusBadRequest, "tts model query parameter is required")
+		utils.RespondWithError(w, http.StatusBadRequest, "music generation model query parameter is required")
 		return
 	}
-	repTTSModel, err := rep.GetModelByName(model, rep.TTSModels)
+	repMusicModel, err := rep.GetModelByName(model, rep.MusicModels)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "model not found")
 		return
 	}
-	predictionFunc, ok := rep.TTSGenModels[*repTTSModel]
+	predictionFunc, ok := rep.MusicGenModels[*repMusicModel]
 	if !ok {
 		utils.RespondWithError(w, http.StatusNotFound, "model not found")
 		return
 	}
-	predictionInput, err := processTTSModelInput(repTTSModel, ctx, r, cfg)
+	predictionInput, err := processMusicModelInput(repMusicModel, ctx, r, cfg)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	TTSPrediction, err := predictionFunc(ctx, cfg.ReplicateAPIKey, repTTSModel.Version, predictionInput, nil, false)
+	MusicGenPrediction, err := predictionFunc(ctx, cfg.ReplicateAPIKey, repMusicModel.Version, predictionInput, nil, false)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, TTSPrediction)
+	utils.RespondWithJSON(w, http.StatusOK, MusicGenPrediction)
 
 }

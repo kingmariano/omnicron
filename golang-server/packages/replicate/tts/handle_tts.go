@@ -1,16 +1,16 @@
 package tts
 
 import (
-	"fmt"
-	"log"
-	"net/http"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
+	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/storage"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
-	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
 	replicate "github.com/replicate/replicate-go"
+	"log"
+	"net/http"
 )
 
 func processTTSModelInput(TTSModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
@@ -20,15 +20,15 @@ func processTTSModelInput(TTSModel *rep.ReplicateModel, ctx context.Context, r *
 			return nil, err
 		}
 		return replicateInput, nil
-	}else if(TTSModel.Category == "Medium"){
+	} else if TTSModel.Category == "Medium" {
 		replicateInput, err := processMediumTTSInput(ctx, r, cfg)
 		if err != nil {
 			return nil, err
 		}
 		return replicateInput, nil
-	}else if(TTSModel.Category == "High"){
+	} else if TTSModel.Category == "High" {
 		replicateInput, err := processHighTTSInput(ctx, r, cfg)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		return replicateInput, nil
@@ -104,25 +104,24 @@ func processMediumTTSInput(ctx context.Context, r *http.Request, cfg *config.Api
 	utils.SetFloatValue(r.FormValue("reverb_damping"), &MediumTTSParams.ReverbDamping)
 	utils.SetStringValue(r.FormValue("output_format"), &MediumTTSParams.OutputFormat)
 
-	
 	input := replicate.PredictionInput{
-		"protect": MediumTTSParams.Protect,
-		"rvc_model": MediumTTSParams.RvcModel,
-		"index_rate": MediumTTSParams.IndexRate,
-		"song_input": MediumTTSParams.SongInputURL,
-		"reverb_size": MediumTTSParams.ReverbSize,
-		"pitch_change": MediumTTSParams.PitchChange,
-		"rms_mix_rate": MediumTTSParams.RmsMixRate,
-		"filter_radius": MediumTTSParams.FilterRaidus,
-		"output_format": MediumTTSParams.OutputFormat,
-		"reverb_damping": MediumTTSParams.ReverbDamping,
-		"reverb_dryness": MediumTTSParams.ReverbDamping, 
-		"reverb_wetness": MediumTTSParams.ReverbWetness,
-		"crepe_hop_length": MediumTTSParams.CrepeHopLength,
-		"pitch_change_all": MediumTTSParams.PitchChangeAll,
-		"main_vocals_volume_change": MediumTTSParams.MainVocalsVolumeChange,
-		"pitch_detection_algorithm": MediumTTSParams.PitchDetectionAlgorithm,
-		"instrumental_volume_change": MediumTTSParams.InstrumentalVolumeChange,
+		"protect":                     MediumTTSParams.Protect,
+		"rvc_model":                   MediumTTSParams.RvcModel,
+		"index_rate":                  MediumTTSParams.IndexRate,
+		"song_input":                  MediumTTSParams.SongInputURL,
+		"reverb_size":                 MediumTTSParams.ReverbSize,
+		"pitch_change":                MediumTTSParams.PitchChange,
+		"rms_mix_rate":                MediumTTSParams.RmsMixRate,
+		"filter_radius":               MediumTTSParams.FilterRaidus,
+		"output_format":               MediumTTSParams.OutputFormat,
+		"reverb_damping":              MediumTTSParams.ReverbDamping,
+		"reverb_dryness":              MediumTTSParams.ReverbDamping,
+		"reverb_wetness":              MediumTTSParams.ReverbWetness,
+		"crepe_hop_length":            MediumTTSParams.CrepeHopLength,
+		"pitch_change_all":            MediumTTSParams.PitchChangeAll,
+		"main_vocals_volume_change":   MediumTTSParams.MainVocalsVolumeChange,
+		"pitch_detection_algorithm":   MediumTTSParams.PitchDetectionAlgorithm,
+		"instrumental_volume_change":  MediumTTSParams.InstrumentalVolumeChange,
 		"backup_vocals_volume_change": MediumTTSParams.BackupVocalsVolumeChange,
 	}
 	if *MediumTTSParams.RvcModel == "CUSTOM" {
@@ -131,10 +130,10 @@ func processMediumTTSInput(ctx context.Context, r *http.Request, cfg *config.Api
 			return nil, errors.New("speech model cant be empty")
 		}
 		MediumTTSParams.CustomRvcModelDownloadURL = &speechModel
-		
+
 		input["custom_rvc_model_download_url"] = *MediumTTSParams.CustomRvcModelDownloadURL
 	}
-   return input, nil
+	return input, nil
 }
 func processHighTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
 	log.Println("This is  High TTS")
@@ -157,14 +156,14 @@ func processHighTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiCo
 		return nil, errors.New("please provide the text parameter")
 	}
 	HighTTSParams.Text = text
-    HighTTSParams.AudioURL = audioUrl
+	HighTTSParams.AudioURL = audioUrl
 	utils.SetStringValue(r.FormValue("language"), &HighTTSParams.Language)
 	utils.SetFloatValue(r.FormValue("Speed"), &HighTTSParams.Speed)
 	input := replicate.PredictionInput{
-		"text": HighTTSParams.Text,
-		"audio": HighTTSParams.AudioURL,
-		"speed": HighTTSParams.Speed,
+		"text":     HighTTSParams.Text,
+		"audio":    HighTTSParams.AudioURL,
+		"speed":    HighTTSParams.Speed,
 		"language": HighTTSParams.Language,
 	}
-   return input, nil
+	return input, nil
 }

@@ -124,6 +124,56 @@ type HighSTTParams struct {
 	BatchSize *int    `json:"batch_size,omitempty"`
 	Timestamp *string `json:"timestamp,omitempty"`
 }
+type LowMusicGenerationParams struct {
+	PromptA           string   `json:"prompt_a"`
+	Denoising         *float64 `json:"denoising,omitempty"`
+	PromptB           *string  `json:"prompt_b,omitempty"`
+	Alpha             *float64 `json:"alpha,omitempty"`
+	NumInferenceSteps *int     `json:"num_inference_steps,omitempty"`
+	SeedImageID       *string  `json:"seed_image_id,omitempty"`
+}
+type HighMusicGenerationParams struct {
+	Prompt                 string   `json:"prompt"`
+	ModelVersion           *string  `json:"model_version,omitempty"`
+	InputAudioURL          *string  `json:"input_audio_url,omitempty"`
+	Duration               *int     `json:"duration,omitempty"`
+	Continuation           *bool    `json:"continuation,omitempty"`
+	ContinuationStart      *int     `json:"continuation_start,omitempty"`
+	ContinuationEnd        *int     `json:"continuation_end,omitempty"`
+	MultiBandDiffusion     *bool    `json:"multi_band_diffusion,omitempty"`
+	NormalizationStrategy  *string  `json:"normalization_strategy,omitempty"`
+	TopK                   *int     `json:"top_k,omitempty"`
+	TopP                   *float64 `json:"top_p,omitempty"`
+	Temperature            *float64 `json:"temperature,omitempty"`
+	ClassifierFreeGuidance *int     `json:"classifier_free_guidance,omitempty"`
+	OutputFormat           *string  `json:"output_format,omitempty"`
+}
+
+func (m LowMusicGenerationParams) Riffusion() LowMusicGenerationParams {
+	return LowMusicGenerationParams{
+		Denoising:         utils.Ptr(0.75),
+		Alpha:             utils.Ptr(0.5),
+		NumInferenceSteps: utils.Ptr(50),
+		SeedImageID:       utils.Ptr("vibes"),
+	}
+}
+
+func (m HighMusicGenerationParams) MusicGen() HighMusicGenerationParams {
+	return HighMusicGenerationParams{
+		ModelVersion:           utils.Ptr("stereo-melody-large"),
+		Duration:               utils.Ptr(10),
+		Continuation:           utils.Ptr(false),
+		ContinuationStart:      utils.Ptr(0),
+		ContinuationEnd:        utils.Ptr(0),
+		MultiBandDiffusion:     utils.Ptr(false),
+		NormalizationStrategy:  utils.Ptr("peak"),
+		TopK:                   utils.Ptr(50),
+		TopP:                   utils.Ptr(0.0),
+		Temperature:            utils.Ptr(1.0),
+		ClassifierFreeGuidance: utils.Ptr(3),
+		OutputFormat:           utils.Ptr("mp3"),
+	}
+}
 
 func (m LowSTTParams) Whisper() LowSTTParams {
 	return LowSTTParams{
@@ -135,7 +185,7 @@ func (m LowSTTParams) Whisper() LowSTTParams {
 }
 func (m HighSTTParams) InsanelyFastWhisperWithVideo() HighSTTParams {
 	return HighSTTParams{
-		Task: utils.Ptr("transcribe"),
+		Task:      utils.Ptr("transcribe"),
 		BatchSize: utils.Ptr(64),
 		Timestamp: utils.Ptr("chunk"),
 	}

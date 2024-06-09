@@ -54,32 +54,44 @@ var VideoModels = []ReplicateModel{
 
 var TTSModels = []ReplicateModel{
 	{
-		Name: "lucataco/xtts-v2",
-		Version: "684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e",
+		Name:     "lucataco/xtts-v2",
+		Version:  "684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e",
 		Category: "Low",
 	},
 	{
-      Name: "zsxkib/realistic-voice-cloning",
-	  Version: "0a9c7c558af4c0f20667c1bd1260ce32a2879944a0b9e44e1398660c077b1550",
-	  Category: "Medium",
+		Name:     "zsxkib/realistic-voice-cloning",
+		Version:  "0a9c7c558af4c0f20667c1bd1260ce32a2879944a0b9e44e1398660c077b1550",
+		Category: "Medium",
 	},
 	{
-		Name: "chenxwh/openvoice",
-		Version: "d548923c9d7fc9330a3b7c7f9e2f91b2ee90c83311a351dfcd32af353799223d",
+		Name:     "chenxwh/openvoice",
+		Version:  "d548923c9d7fc9330a3b7c7f9e2f91b2ee90c83311a351dfcd32af353799223d",
 		Category: "High",
 	},
 }
 
 var STTModels = []ReplicateModel{
 	{
-      Name: "openai/whisper",
-	  Version: "4d50797290df275329f202e48c76360b3f22b08d28c196cbc54600319435f8d2",
-	  Category: "Low",
+		Name:     "openai/whisper",
+		Version:  "4d50797290df275329f202e48c76360b3f22b08d28c196cbc54600319435f8d2",
+		Category: "Low",
 	},
 	{
-      Name: "turian/insanely-fast-whisper-with-video",
-	  Version: "4f41e90243af171da918f04da3e526b2c247065583ea9b757f2071f573965408",
-	  Category: "High",
+		Name:     "turian/insanely-fast-whisper-with-video",
+		Version:  "4f41e90243af171da918f04da3e526b2c247065583ea9b757f2071f573965408",
+		Category: "High",
+	},
+}
+var MusicModels = []ReplicateModel{
+	{
+		Name:     "riffusion/riffusion",
+		Version:  "8cf61ea6c56afd61d8f5b9ffd14d7c216c0a93844ce2d82ac1c9ecc9c7f24e05",
+		Category: "Low",
+	},
+	{
+		Name:     "meta/musicgen",
+		Version:  "671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36a837eedcfb",
+		Category: "High",
 	},
 }
 

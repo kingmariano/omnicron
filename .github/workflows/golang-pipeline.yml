@@ -52,9 +52,9 @@ jobs:
         working-directory: ./golang-server
         run: make build
 
-      # - name: Test
-      #   working-directory: ./golang-server
-      #   run: make test
+      - name: Test
+        working-directory: ./golang-server
+        run: make test
 
       - name: Echo Go version
         working-directory: ./golang-server

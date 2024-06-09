@@ -21,6 +21,7 @@ var ImageUpscaleGenModels Model
 var VideoGenModels Model
 var TTSGenModels Model
 var STTGenModels Model
+var MusicGenModels Model
 
 type ReplicateModel struct {
 	Name     string
@@ -34,28 +35,26 @@ func init() {
 	VideoGenModels = make(Model)
 	TTSGenModels = make(Model)
 	STTGenModels = make(Model)
+	MusicGenModels = make(Model)
 	for _, imagemodels := range ImageModels {
-		// log.Println(imagemodels)
 		ImageGenModels[imagemodels] = CreatePrediction
 	}
 	for _, imageupscalemodels := range ImageUpscaleModels {
-		// log.Println(imageupscalemodels)
 		ImageUpscaleGenModels[imageupscalemodels] = CreatePrediction
 	}
 	for _, videomodels := range VideoModels {
-		// log.Print(videomodels)
 		VideoGenModels[videomodels] = CreatePrediction
 	}
 
-	for _, ttsmodels := range TTSModels{
-    //   log.Print(ttsmodels)
-	  TTSGenModels[ttsmodels] = CreatePrediction
+	for _, ttsmodels := range TTSModels {
+		TTSGenModels[ttsmodels] = CreatePrediction
 	}
-	for _, sttmodels :=  range STTModels{
-        log.Print(sttmodels)
+	for _, sttmodels := range STTModels {
 		STTGenModels[sttmodels] = CreatePrediction
 	}
-
+	for _, musicmodels := range MusicModels {
+		MusicGenModels[musicmodels] = CreatePrediction
+	}
 }
 
 func NewReplicateClient(token string) (*replicate.Client, error) {

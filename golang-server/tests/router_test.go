@@ -1,10 +1,9 @@
 package tests
 
 import (
-	
 	"net/http"
 	"net/http/httptest"
-	
+
 	"strings"
 	"testing"
 
@@ -12,10 +11,11 @@ import (
 	ware "github.com/charlesozo/omnicron-backendsever/golang-server/middleware"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/grok"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generateimages"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generatemusic"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/generatevideos"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/imageupscale"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/tts"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/stt"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/tts"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -58,6 +58,7 @@ func setupRouter(t *testing.T) (*chi.Mux, *config.ApiConfig) {
 	v1Router.Post("/replicate/videogeneration", ware.MiddleWareAuth(generatevideos.VideoGeneration, cfg))
 	v1Router.Post("/replicate/tts", ware.MiddleWareAuth(tts.TTS, cfg))
 	v1Router.Post("/replicate/stt", ware.MiddleWareAuth(stt.STT, cfg))
+	v1Router.Post("/replicate/musicgeneration", ware.MiddleWareAuth(generatemusic.MusicGen, cfg))
 	v1Router.Post("/grok/transcription", ware.MiddleWareAuth(grok.Transcription, cfg)) // deprecated
 	router.Mount("/api/v1", v1Router)
 
