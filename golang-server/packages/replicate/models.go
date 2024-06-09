@@ -70,6 +70,19 @@ var TTSModels = []ReplicateModel{
 	},
 }
 
+var STTModels = []ReplicateModel{
+	{
+      Name: "openai/whisper",
+	  Version: "4d50797290df275329f202e48c76360b3f22b08d28c196cbc54600319435f8d2",
+	  Category: "Low",
+	},
+	{
+      Name: "turian/insanely-fast-whisper-with-video",
+	  Version: "4f41e90243af171da918f04da3e526b2c247065583ea9b757f2071f573965408",
+	  Category: "High",
+	},
+}
+
 func GetModelByName(name string, modelList []ReplicateModel) (*ReplicateModel, error) {
 	for _, model := range modelList {
 		if model.Name == name {
