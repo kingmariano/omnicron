@@ -14,6 +14,7 @@ import (
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/imageupscale"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/stt"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/tts"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/videodownloader"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -38,13 +39,14 @@ func main() {
 	v1Router := chi.NewRouter()
 	v1Router.Get("/readiness", utils.HandleReadiness())
 	v1Router.Post("/grok/chatcompletion", ware.MiddleWareAuth(grok.ChatCompletion, cfg))
+	v1Router.Post("/grok/transcription", ware.MiddleWareAuth(grok.Transcription, cfg)) // deprecated
 	v1Router.Post("/replicate/imagegeneration", ware.MiddleWareAuth(generateimages.ImageGeneration, cfg))
 	v1Router.Post("/replicate/imageupscale", ware.MiddleWareAuth(imageupscale.ImageUpscale, cfg))
 	v1Router.Post("/replicate/videogeneration", ware.MiddleWareAuth(generatevideos.VideoGeneration, cfg))
 	v1Router.Post("/replicate/tts", ware.MiddleWareAuth(tts.TTS, cfg))
 	v1Router.Post("/replicate/stt", ware.MiddleWareAuth(stt.STT, cfg))
 	v1Router.Post("/replicate/musicgeneration", ware.MiddleWareAuth(generatemusic.MusicGen, cfg))
-	v1Router.Post("/grok/transcription", ware.MiddleWareAuth(grok.Transcription, cfg)) // deprecated
+	v1Router.Post("/downloadvideo", ware.MiddleWareAuth(videodownloader.Download, cfg))
 	router.Mount("/api/v1", v1Router)
 	server := &http.Server{
 		Addr:              ":" + port,

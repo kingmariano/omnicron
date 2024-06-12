@@ -33,6 +33,9 @@ static-check:
 
 fmt:
 	go fmt ./... 
+	
+vendor:
+    go mod vendor
 
 security-scan:
 	gosec-severity medium -confidence medium -quiet ./... || true
