@@ -31,8 +31,6 @@ deps:
 static-check:
 	staticcheck ./... || true
 
-vendor:
-    go mod vendor
 fmt:
 	go fmt ./... 
 
