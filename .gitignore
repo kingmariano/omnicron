@@ -3,4 +3,4 @@
 golang-server/omnicron
 waste.txt
 golang-server/tests/replicate_test.go
-golang-server/vendor/
+vendor/
