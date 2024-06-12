@@ -31,9 +31,11 @@ deps:
 static-check:
 	staticcheck ./... || true
 
+vendor:
+    go mod vendor
 fmt:
 	go fmt ./... 
-
+	
 security-scan:
 	gosec-severity medium -confidence medium -quiet ./... || true
 

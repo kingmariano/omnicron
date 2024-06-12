@@ -1,0 +1,336 @@
+# github.com/EDDYCJY/fake-useragent v0.2.0
+## explicit
+github.com/EDDYCJY/fake-useragent
+github.com/EDDYCJY/fake-useragent/downloader
+github.com/EDDYCJY/fake-useragent/scheduler
+github.com/EDDYCJY/fake-useragent/setting
+github.com/EDDYCJY/fake-useragent/spiders
+github.com/EDDYCJY/fake-useragent/useragent
+github.com/EDDYCJY/fake-useragent/useragent/cache
+# github.com/MercuryEngineering/CookieMonster v0.0.0-20180304172713-1584578b3403
+## explicit
+github.com/MercuryEngineering/CookieMonster
+# github.com/PuerkitoBio/goquery v1.8.0
+## explicit; go 1.13
+github.com/PuerkitoBio/goquery
+# github.com/VividCortex/ewma v1.2.0
+## explicit; go 1.12
+github.com/VividCortex/ewma
+# github.com/andybalholm/cascadia v1.3.1
+## explicit; go 1.16
+github.com/andybalholm/cascadia
+# github.com/antchfx/htmlquery v1.2.3
+## explicit; go 1.14
+github.com/antchfx/htmlquery
+# github.com/antchfx/xmlquery v1.3.1
+## explicit; go 1.14
+github.com/antchfx/xmlquery
+# github.com/antchfx/xpath v1.1.10
+## explicit
+github.com/antchfx/xpath
+# github.com/bitly/go-simplejson v0.5.0
+## explicit
+github.com/bitly/go-simplejson
+# github.com/buger/jsonparser v1.1.1
+## explicit; go 1.13
+github.com/buger/jsonparser
+# github.com/cheggaaa/pb/v3 v3.0.8
+## explicit; go 1.12
+github.com/cheggaaa/pb/v3
+github.com/cheggaaa/pb/v3/termutil
+# github.com/cloudinary/cloudinary-go v1.7.0
+## explicit; go 1.15
+github.com/cloudinary/cloudinary-go
+github.com/cloudinary/cloudinary-go/api
+github.com/cloudinary/cloudinary-go/api/admin
+github.com/cloudinary/cloudinary-go/api/admin/metadata
+github.com/cloudinary/cloudinary-go/api/admin/search
+github.com/cloudinary/cloudinary-go/api/uploader
+github.com/cloudinary/cloudinary-go/asset
+github.com/cloudinary/cloudinary-go/config
+github.com/cloudinary/cloudinary-go/internal/signature
+github.com/cloudinary/cloudinary-go/logger
+github.com/cloudinary/cloudinary-go/transformation
+# github.com/cpuguy83/go-md2man/v2 v2.0.1
+## explicit; go 1.11
+github.com/cpuguy83/go-md2man/v2/md2man
+# github.com/creasty/defaults v1.5.1
+## explicit; go 1.13
+github.com/creasty/defaults
+# github.com/dlclark/regexp2 v1.7.0
+## explicit; go 1.13
+github.com/dlclark/regexp2
+github.com/dlclark/regexp2/syntax
+# github.com/dop251/goja v0.0.0-20230304130813-e2f543bf4b4c
+## explicit; go 1.16
+github.com/dop251/goja
+github.com/dop251/goja/ast
+github.com/dop251/goja/file
+github.com/dop251/goja/ftoa
+github.com/dop251/goja/ftoa/internal/fast
+github.com/dop251/goja/parser
+github.com/dop251/goja/token
+github.com/dop251/goja/unistring
+# github.com/fatih/color v1.13.0
+## explicit; go 1.13
+github.com/fatih/color
+# github.com/go-chi/chi/v5 v5.0.12
+## explicit; go 1.14
+github.com/go-chi/chi/v5
+github.com/go-chi/chi/v5/middleware
+# github.com/go-sourcemap/sourcemap v2.1.3+incompatible
+## explicit
+github.com/go-sourcemap/sourcemap
+github.com/go-sourcemap/sourcemap/internal/base64vlq
+# github.com/gobwas/glob v0.2.3
+## explicit
+github.com/gobwas/glob
+github.com/gobwas/glob/compiler
+github.com/gobwas/glob/match
+github.com/gobwas/glob/syntax
+github.com/gobwas/glob/syntax/ast
+github.com/gobwas/glob/syntax/lexer
+github.com/gobwas/glob/util/runes
+github.com/gobwas/glob/util/strings
+# github.com/gocolly/colly/v2 v2.1.0
+## explicit; go 1.12
+github.com/gocolly/colly/v2
+github.com/gocolly/colly/v2/debug
+github.com/gocolly/colly/v2/storage
+# github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
+## explicit
+github.com/golang/groupcache/lru
+# github.com/golang/protobuf v1.5.0
+## explicit; go 1.9
+github.com/golang/protobuf/proto
+# github.com/google/pprof v0.0.0-20230207041349-798e818bf904
+## explicit; go 1.19
+github.com/google/pprof/profile
+# github.com/google/uuid v1.2.0
+## explicit
+github.com/google/uuid
+# github.com/gorilla/schema v1.2.0
+## explicit
+github.com/gorilla/schema
+# github.com/iawia002/lux v0.24.1
+## explicit; go 1.22
+github.com/iawia002/lux/app
+github.com/iawia002/lux/config
+github.com/iawia002/lux/downloader
+github.com/iawia002/lux/extractors
+github.com/iawia002/lux/extractors/acfun
+github.com/iawia002/lux/extractors/bcy
+github.com/iawia002/lux/extractors/bilibili
+github.com/iawia002/lux/extractors/douyin
+github.com/iawia002/lux/extractors/douyu
+github.com/iawia002/lux/extractors/eporner
+github.com/iawia002/lux/extractors/facebook
+github.com/iawia002/lux/extractors/geekbang
+github.com/iawia002/lux/extractors/haokan
+github.com/iawia002/lux/extractors/hupu
+github.com/iawia002/lux/extractors/huya
+github.com/iawia002/lux/extractors/instagram
+github.com/iawia002/lux/extractors/iqiyi
+github.com/iawia002/lux/extractors/ixigua
+github.com/iawia002/lux/extractors/kuaishou
+github.com/iawia002/lux/extractors/mgtv
+github.com/iawia002/lux/extractors/miaopai
+github.com/iawia002/lux/extractors/netease
+github.com/iawia002/lux/extractors/pinterest
+github.com/iawia002/lux/extractors/pixivision
+github.com/iawia002/lux/extractors/pornhub
+github.com/iawia002/lux/extractors/qq
+github.com/iawia002/lux/extractors/reddit
+github.com/iawia002/lux/extractors/rumble
+github.com/iawia002/lux/extractors/streamtape
+github.com/iawia002/lux/extractors/tangdou
+github.com/iawia002/lux/extractors/tiktok
+github.com/iawia002/lux/extractors/tumblr
+github.com/iawia002/lux/extractors/twitter
+github.com/iawia002/lux/extractors/udn
+github.com/iawia002/lux/extractors/universal
+github.com/iawia002/lux/extractors/vimeo
+github.com/iawia002/lux/extractors/vk
+github.com/iawia002/lux/extractors/weibo
+github.com/iawia002/lux/extractors/xiaohongshu
+github.com/iawia002/lux/extractors/ximalaya
+github.com/iawia002/lux/extractors/xinpianchang
+github.com/iawia002/lux/extractors/xvideos
+github.com/iawia002/lux/extractors/yinyuetai
+github.com/iawia002/lux/extractors/youku
+github.com/iawia002/lux/extractors/youtube
+github.com/iawia002/lux/extractors/zhihu
+github.com/iawia002/lux/extractors/zingmp3
+github.com/iawia002/lux/parser
+github.com/iawia002/lux/request
+github.com/iawia002/lux/utils
+# github.com/itchyny/gojq v0.12.7
+## explicit; go 1.16
+github.com/itchyny/gojq
+# github.com/itchyny/timefmt-go v0.1.3
+## explicit; go 1.14
+github.com/itchyny/timefmt-go
+# github.com/joho/godotenv v1.5.1
+## explicit; go 1.12
+github.com/joho/godotenv
+# github.com/jpoz/groq v0.0.0-20240513145022-7a02894105a0
+## explicit; go 1.22.2
+github.com/jpoz/groq
+# github.com/json-iterator/go v1.1.12
+## explicit; go 1.12
+github.com/json-iterator/go
+# github.com/kennygrant/sanitize v1.2.4
+## explicit
+github.com/kennygrant/sanitize
+# github.com/kkdai/youtube/v2 v2.7.18
+## explicit; go 1.18
+github.com/kkdai/youtube/v2
+# github.com/kr/pretty v0.3.0
+## explicit; go 1.12
+github.com/kr/pretty
+# github.com/kr/text v0.2.0
+## explicit
+github.com/kr/text
+# github.com/mattn/go-colorable v0.1.12
+## explicit; go 1.13
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.14
+## explicit; go 1.12
+github.com/mattn/go-isatty
+# github.com/mattn/go-runewidth v0.0.14
+## explicit; go 1.9
+github.com/mattn/go-runewidth
+# github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+## explicit
+github.com/modern-go/concurrent
+# github.com/modern-go/reflect2 v1.0.2
+## explicit; go 1.12
+github.com/modern-go/reflect2
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
+# github.com/replicate/replicate-go v0.18.1
+## explicit; go 1.21
+github.com/replicate/replicate-go
+# github.com/rivo/uniseg v0.4.3
+## explicit; go 1.18
+github.com/rivo/uniseg
+# github.com/robertkrimen/otto v0.0.0-20211024170158-b87d35c0b86f
+## explicit; go 1.14
+github.com/robertkrimen/otto
+github.com/robertkrimen/otto/ast
+github.com/robertkrimen/otto/dbg
+github.com/robertkrimen/otto/file
+github.com/robertkrimen/otto/parser
+github.com/robertkrimen/otto/registry
+github.com/robertkrimen/otto/token
+# github.com/rogpeppe/go-internal v1.9.0
+## explicit; go 1.17
+github.com/rogpeppe/go-internal/fmtsort
+# github.com/russross/blackfriday/v2 v2.1.0
+## explicit
+github.com/russross/blackfriday/v2
+# github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
+## explicit
+github.com/saintfish/chardet
+# github.com/temoto/robotstxt v1.1.1
+## explicit; go 1.11
+github.com/temoto/robotstxt
+# github.com/urfave/cli/v2 v2.6.0
+## explicit; go 1.18
+github.com/urfave/cli/v2
+# go.uber.org/multierr v1.10.0
+## explicit; go 1.19
+go.uber.org/multierr
+# go.uber.org/zap v1.27.0
+## explicit; go 1.19
+go.uber.org/zap
+go.uber.org/zap/buffer
+go.uber.org/zap/internal
+go.uber.org/zap/internal/bufferpool
+go.uber.org/zap/internal/color
+go.uber.org/zap/internal/exit
+go.uber.org/zap/internal/pool
+go.uber.org/zap/internal/stacktrace
+go.uber.org/zap/zapcore
+# golang.org/x/net v0.23.0
+## explicit; go 1.18
+golang.org/x/net/context
+golang.org/x/net/html
+golang.org/x/net/html/atom
+golang.org/x/net/html/charset
+# golang.org/x/sync v0.7.0
+## explicit; go 1.18
+golang.org/x/sync/errgroup
+# golang.org/x/sys v0.18.0
+## explicit; go 1.18
+golang.org/x/sys/unix
+# golang.org/x/text v0.14.0
+## explicit; go 1.18
+golang.org/x/text/cases
+golang.org/x/text/collate
+golang.org/x/text/encoding
+golang.org/x/text/encoding/charmap
+golang.org/x/text/encoding/htmlindex
+golang.org/x/text/encoding/internal
+golang.org/x/text/encoding/internal/identifier
+golang.org/x/text/encoding/japanese
+golang.org/x/text/encoding/korean
+golang.org/x/text/encoding/simplifiedchinese
+golang.org/x/text/encoding/traditionalchinese
+golang.org/x/text/encoding/unicode
+golang.org/x/text/internal
+golang.org/x/text/internal/colltab
+golang.org/x/text/internal/language
+golang.org/x/text/internal/language/compact
+golang.org/x/text/internal/tag
+golang.org/x/text/internal/utf8internal
+golang.org/x/text/language
+golang.org/x/text/runes
+golang.org/x/text/transform
+golang.org/x/text/unicode/norm
+golang.org/x/text/unicode/rangetable
+# google.golang.org/appengine v1.6.6
+## explicit; go 1.11
+google.golang.org/appengine/internal
+google.golang.org/appengine/internal/base
+google.golang.org/appengine/internal/datastore
+google.golang.org/appengine/internal/log
+google.golang.org/appengine/internal/remote_api
+google.golang.org/appengine/internal/urlfetch
+google.golang.org/appengine/urlfetch
+# google.golang.org/protobuf v1.33.0
+## explicit; go 1.17
+google.golang.org/protobuf/encoding/prototext
+google.golang.org/protobuf/encoding/protowire
+google.golang.org/protobuf/internal/descfmt
+google.golang.org/protobuf/internal/descopts
+google.golang.org/protobuf/internal/detrand
+google.golang.org/protobuf/internal/editiondefaults
+google.golang.org/protobuf/internal/encoding/defval
+google.golang.org/protobuf/internal/encoding/messageset
+google.golang.org/protobuf/internal/encoding/tag
+google.golang.org/protobuf/internal/encoding/text
+google.golang.org/protobuf/internal/errors
+google.golang.org/protobuf/internal/filedesc
+google.golang.org/protobuf/internal/filetype
+google.golang.org/protobuf/internal/flags
+google.golang.org/protobuf/internal/genid
+google.golang.org/protobuf/internal/impl
+google.golang.org/protobuf/internal/order
+google.golang.org/protobuf/internal/pragma
+google.golang.org/protobuf/internal/set
+google.golang.org/protobuf/internal/strs
+google.golang.org/protobuf/internal/version
+google.golang.org/protobuf/proto
+google.golang.org/protobuf/reflect/protodesc
+google.golang.org/protobuf/reflect/protoreflect
+google.golang.org/protobuf/reflect/protoregistry
+google.golang.org/protobuf/runtime/protoiface
+google.golang.org/protobuf/runtime/protoimpl
+google.golang.org/protobuf/types/descriptorpb
+google.golang.org/protobuf/types/gofeaturespb
+# gopkg.in/sourcemap.v1 v1.0.5
+## explicit
+gopkg.in/sourcemap.v1
+gopkg.in/sourcemap.v1/base64vlq
