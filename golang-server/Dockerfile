@@ -20,12 +20,20 @@ RUN go mod download
 # Build Go binary
 RUN go build -o ./omnicron
 
+# Install ffmpeg
+RUN apk add --no-cache ffmpeg
+
 # Deploy the application binary into a lean image
-FROM gcr.io/distroless/base-debian11 
+FROM gcr.io/distroless/base-debian11
 
 WORKDIR /app
 
+# Copy the built Go binary
 COPY --from=builder /build/omnicron ./omnicron
+
+# Copy ffmpeg binary from the builder stage
+COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
+COPY --from=builder /usr/share/ffmpeg /usr/share/ffmpeg
 
 # Define the health check command
 HEALTHCHECK --interval=1m --timeout=10m --retries=10 \
@@ -36,4 +44,3 @@ EXPOSE 9000
 
 # Run the application
 CMD ["/app/omnicron"]
-

@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y make
 
+      - name: Install ffmpeg
+        run: sudo apt-get install -y ffmpeg
+
       - name: Change directory to go folder
         working-directory: ./golang-server
         run: echo "Changed directory to golang-server"
