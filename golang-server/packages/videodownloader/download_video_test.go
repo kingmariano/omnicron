@@ -17,7 +17,7 @@ func TestDownloadVideoData(t *testing.T) {
 		name string
 		args args
 	}{
-		
+
 		{
 			name: "Download 720p video",
 			args: args{
@@ -27,7 +27,7 @@ func TestDownloadVideoData(t *testing.T) {
 				resolution: "720p",
 			},
 		},
-		
+
 		{
 			name: "Download 360p video",
 			args: args{
