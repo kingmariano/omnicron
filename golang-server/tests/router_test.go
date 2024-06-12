@@ -111,7 +111,7 @@ func TestChatCompletion(t *testing.T) {
 
 func TestDownloadYoutubeURL(t *testing.T) {
 	router, cfg := setupRouter(t)
-	requestBody := `{"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "resolution": "360p"`
+	requestBody := `{"url": "https://www.youtube.com/watch?v=TG6XSFeOT3g", "resolution": "360p"`
 	req, err := http.NewRequest("POST", "/api/v1/downloadvideo", strings.NewReader(requestBody))
 	if err != nil {
 		t.Fatal(err)
