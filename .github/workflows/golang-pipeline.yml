@@ -46,7 +46,11 @@ jobs:
       - name: Fetch dependencies
         working-directory: ./golang-server
         run: make deps
-       
+
+      - name: Update dependencies
+        working-directory: ./golang-server
+        run: make update
+        
       - name: Format code
         working-directory: ./golang-server
         run: make fmt

@@ -6,6 +6,7 @@ GOBUILD = $(GOCMD) build
 GOCLEAN = $(GOCMD) clean
 GOTEST = $(GOCMD) test
 GOGET = $(GOCMD) get
+GOMOD = $(GOCMD) mod
 BINARY_NAME = omicron
 
 # Targets
@@ -27,6 +28,12 @@ run:
 
 deps:
 	$(GOGET) -v ./...
+
+update:
+	$(GOMOD) tidy
+	$(GOGET) -u ./...
+	$(GOMOD) vendor
+	$(GOMOD) tidy
 
 static-check:
 	staticcheck ./... || true

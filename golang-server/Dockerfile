@@ -19,6 +19,7 @@ RUN go mod download
 
 # Update Go dependencies to the latest version
 RUN go get -u ./...
+RUN go mod vendor
 RUN go mod tidy
 
 # Build Go binary
