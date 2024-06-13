@@ -109,26 +109,3 @@ func TestChatCompletion(t *testing.T) {
 	// Further checks can be added based on the expected response
 }
 
-func TestDownloadYoutubeURL(t *testing.T) {
-	router, cfg := setupRouter(t)
-	requestBody := `{"url": "https://www.youtube.com/watch?v=TG6XSFeOT3g", "resolution": ""}`
-	req, err := http.NewRequest("POST", "/api/v1/downloadvideo", strings.NewReader(requestBody))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Api-Key", cfg.ApiKey)
-
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-		t.Log(rr.Body)
-	}
-
-	// Further checks can be added based on the expected response
-}

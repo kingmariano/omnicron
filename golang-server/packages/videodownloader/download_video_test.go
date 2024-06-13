@@ -19,6 +19,15 @@ func TestDownloadVideoData(t *testing.T) {
 	}{
 
 		{
+			name: "Download 1080p video",
+			args: args{
+				url:        "https://www.youtube.com/watch?v=TG6XSFeOT3g",
+				outputName: "test_video_720p",
+				outputPath: "./test_videos",
+				resolution: "",
+			},
+		},
+		{
 			name: "Download 720p video",
 			args: args{
 				url:        "https://youtu.be/ZT0yQgUIZho",
