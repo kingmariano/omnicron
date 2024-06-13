@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
 	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/storage"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
 	"log"
@@ -75,13 +74,13 @@ func processHighMusicGenInput(ctx context.Context, r *http.Request, cfg *config.
 	utils.SetFloatValue(r.FormValue("temperature"), &HighMusicGenerationParams.Temperature)
 	utils.SetIntValue(r.FormValue("classifier_free_guidance"), &HighMusicGenerationParams.ClassifierFreeGuidance)
 	utils.SetStringValue(r.FormValue("output_format"), &HighMusicGenerationParams.OutputFormat)
-	inputAudioFile, _, err := r.FormFile("input_audio")
+	inputAudioFile, inputAudioFileHeader, err := r.FormFile("input_audio")
 	if err == nil {
-		inputAudioUrl, err := storage.HandleFileUpload(ctx, inputAudioFile, cfg)
+		repFile, err := rep.RequestFileToReplicateFile(ctx, inputAudioFileHeader, cfg.ReplicateAPIKey)
 		if err != nil {
 			return nil, err
 		}
-		HighMusicGenerationParams.InputAudioURL = &inputAudioUrl
+		HighMusicGenerationParams.InputAudioFile = repFile
 	}
 	if inputAudioFile != nil {
 		defer inputAudioFile.Close()
@@ -101,8 +100,8 @@ func processHighMusicGenInput(ctx context.Context, r *http.Request, cfg *config.
 		"classifier_free_guidance": HighMusicGenerationParams.ClassifierFreeGuidance,
 		"output_format":            HighMusicGenerationParams.OutputFormat,
 	}
-	if HighMusicGenerationParams.InputAudioURL != nil {
-		input["input_audio"] = *HighMusicGenerationParams.InputAudioURL
+	if HighMusicGenerationParams.InputAudioFile != nil {
+		input["input_audio"] = HighMusicGenerationParams.InputAudioFile
 	}
 	return input, nil
 

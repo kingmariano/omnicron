@@ -1,9 +1,9 @@
 package xmlquery
 
 import (
-	"bytes"
 	"encoding/xml"
 	"fmt"
+	"html"
 	"strings"
 )
 
@@ -14,8 +14,8 @@ const (
 	// DocumentNode is a document object that, as the root of the document tree,
 	// provides access to the entire XML document.
 	DocumentNode NodeType = iota
-	// DeclarationNode is the document type declaration, indicated by the following
-	// tag (for example, <!DOCTYPE...> ).
+	// DeclarationNode is the document type declaration, indicated by the
+	// following tag (for example, <!DOCTYPE...> ).
 	DeclarationNode
 	// ElementNode is an element (for example, <item> ).
 	ElementNode
@@ -27,7 +27,15 @@ const (
 	CommentNode
 	// AttributeNode is an attribute of element.
 	AttributeNode
+	// NotationNode is a directive represents in document (for example, <!text...>).
+	NotationNode
 )
+
+type Attr struct {
+	Name         xml.Name
+	Value        string
+	NamespaceURI string
+}
 
 // A Node consists of a NodeType and some Data (tag name for
 // element nodes, content for text) and are part of a tree of Nodes.
@@ -38,34 +46,88 @@ type Node struct {
 	Data         string
 	Prefix       string
 	NamespaceURI string
-	Attr         []xml.Attr
+	Attr         []Attr
 
 	level int // node level in the tree
 }
 
+type outputConfiguration struct {
+	printSelf              bool
+	preserveSpaces         bool
+	emptyElementTagSupport bool
+	skipComments           bool
+}
+
+type OutputOption func(*outputConfiguration)
+
+// WithOutputSelf configures the Node to print the root node itself
+func WithOutputSelf() OutputOption {
+	return func(oc *outputConfiguration) {
+		oc.printSelf = true
+	}
+}
+
+// WithEmptyTagSupport empty tags should be written as <empty/> and
+// not as <empty></empty>
+func WithEmptyTagSupport() OutputOption {
+	return func(oc *outputConfiguration) {
+		oc.emptyElementTagSupport = true
+	}
+}
+
+// WithoutComments will skip comments in output
+func WithoutComments() OutputOption {
+	return func(oc *outputConfiguration) {
+		oc.skipComments = true
+	}
+}
+
+// WithPreserveSpace will preserve spaces in output
+func WithPreserveSpace() OutputOption {
+	return func(oc *outputConfiguration) {
+		oc.preserveSpaces = true
+	}
+}
+
+func newXMLName(name string) xml.Name {
+	if i := strings.IndexByte(name, ':'); i > 0 {
+		return xml.Name{
+			Space: name[:i],
+			Local: name[i+1:],
+		}
+	}
+	return xml.Name{
+		Local: name,
+	}
+}
+
+func (n *Node) Level() int {
+	return n.level
+}
+
 // InnerText returns the text between the start and end tags of the object.
 func (n *Node) InnerText() string {
-	var output func(*bytes.Buffer, *Node)
-	output = func(buf *bytes.Buffer, n *Node) {
+	var output func(*strings.Builder, *Node)
+	output = func(b *strings.Builder, n *Node) {
 		switch n.Type {
 		case TextNode, CharDataNode:
-			buf.WriteString(n.Data)
+			b.WriteString(n.Data)
 		case CommentNode:
 		default:
 			for child := n.FirstChild; child != nil; child = child.NextSibling {
-				output(buf, child)
+				output(b, child)
 			}
 		}
 	}
 
-	var buf bytes.Buffer
-	output(&buf, n)
-	return buf.String()
+	var b strings.Builder
+	output(&b, n)
+	return b.String()
 }
 
 func (n *Node) sanitizedData(preserveSpaces bool) string {
 	if preserveSpaces {
-		return strings.Trim(n.Data, "\n\t")
+		return n.Data
 	}
 	return strings.TrimSpace(n.Data)
 }
@@ -79,84 +141,142 @@ func calculatePreserveSpaces(n *Node, pastValue bool) bool {
 	return pastValue
 }
 
-func outputXML(buf *bytes.Buffer, n *Node, preserveSpaces bool) {
+func outputXML(b *strings.Builder, n *Node, preserveSpaces bool, config *outputConfiguration) {
 	preserveSpaces = calculatePreserveSpaces(n, preserveSpaces)
 	switch n.Type {
-	case TextNode, CharDataNode:
-		xml.EscapeText(buf, []byte(n.sanitizedData(preserveSpaces)))
+	case TextNode:
+		b.WriteString(html.EscapeString(n.sanitizedData(preserveSpaces)))
+		return
+	case CharDataNode:
+		b.WriteString("<![CDATA[")
+		b.WriteString(n.Data)
+		b.WriteString("]]>")
 		return
 	case CommentNode:
-		buf.WriteString("<!--")
-		buf.WriteString(n.Data)
-		buf.WriteString("-->")
+		if !config.skipComments {
+			b.WriteString("<!--")
+			b.WriteString(n.Data)
+			b.WriteString("-->")
+		}
+		return
+	case NotationNode:
+		fmt.Fprintf(b, "<!%s>", n.Data)
 		return
 	case DeclarationNode:
-		buf.WriteString("<?" + n.Data)
+		b.WriteString("<?" + n.Data)
 	default:
 		if n.Prefix == "" {
-			buf.WriteString("<" + n.Data)
+			b.WriteString("<" + n.Data)
 		} else {
-			buf.WriteString("<" + n.Prefix + ":" + n.Data)
+			fmt.Fprintf(b, "<%s:%s", n.Prefix, n.Data)
 		}
 	}
 
 	for _, attr := range n.Attr {
 		if attr.Name.Space != "" {
-			buf.WriteString(fmt.Sprintf(` %s:%s=`, attr.Name.Space, attr.Name.Local))
+			fmt.Fprintf(b, ` %s:%s=`, attr.Name.Space, attr.Name.Local)
 		} else {
-			buf.WriteString(fmt.Sprintf(` %s=`, attr.Name.Local))
+			fmt.Fprintf(b, ` %s=`, attr.Name.Local)
 		}
-		buf.WriteByte('"')
-		xml.EscapeText(buf, []byte(attr.Value))
-		buf.WriteByte('"')
+		b.WriteByte('"')
+		b.WriteString(html.EscapeString(attr.Value))
+		b.WriteByte('"')
 	}
 	if n.Type == DeclarationNode {
-		buf.WriteString("?>")
+		b.WriteString("?>")
 	} else {
-		buf.WriteString(">")
+		if n.FirstChild != nil || !config.emptyElementTagSupport {
+			b.WriteString(">")
+		} else {
+			b.WriteString("/>")
+			return
+		}
 	}
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
-		outputXML(buf, child, preserveSpaces)
+		outputXML(b, child, preserveSpaces, config)
 	}
 	if n.Type != DeclarationNode {
 		if n.Prefix == "" {
-			buf.WriteString(fmt.Sprintf("</%s>", n.Data))
+			fmt.Fprintf(b, "</%s>", n.Data)
 		} else {
-			buf.WriteString(fmt.Sprintf("</%s:%s>", n.Prefix, n.Data))
+			fmt.Fprintf(b, "</%s:%s>", n.Prefix, n.Data)
 		}
 	}
 }
 
 // OutputXML returns the text that including tags name.
 func (n *Node) OutputXML(self bool) string {
-	var buf bytes.Buffer
-	if self {
-		outputXML(&buf, n, false)
+
+	config := &outputConfiguration{
+		printSelf:              true,
+		emptyElementTagSupport: false,
+	}
+	preserveSpaces := calculatePreserveSpaces(n, false)
+	var b strings.Builder
+	if self && n.Type != DocumentNode {
+		outputXML(&b, n, preserveSpaces, config)
 	} else {
 		for n := n.FirstChild; n != nil; n = n.NextSibling {
-			outputXML(&buf, n, false)
+			outputXML(&b, n, preserveSpaces, config)
 		}
 	}
 
-	return buf.String()
+	return b.String()
+}
+
+// OutputXMLWithOptions returns the text that including tags name.
+func (n *Node) OutputXMLWithOptions(opts ...OutputOption) string {
+
+	config := &outputConfiguration{}
+	// Set the options
+	for _, opt := range opts {
+		opt(config)
+	}
+	pastPreserveSpaces := config.preserveSpaces
+	preserveSpaces := calculatePreserveSpaces(n, pastPreserveSpaces)
+	var b strings.Builder
+	if config.printSelf && n.Type != DocumentNode {
+		outputXML(&b, n, preserveSpaces, config)
+	} else {
+		for n := n.FirstChild; n != nil; n = n.NextSibling {
+			outputXML(&b, n, preserveSpaces, config)
+		}
+	}
+
+	return b.String()
 }
 
 // AddAttr adds a new attribute specified by 'key' and 'val' to a node 'n'.
 func AddAttr(n *Node, key, val string) {
-	var attr xml.Attr
-	if i := strings.Index(key, ":"); i > 0 {
-		attr = xml.Attr{
-			Name:  xml.Name{Space: key[:i], Local: key[i+1:]},
-			Value: val,
-		}
-	} else {
-		attr = xml.Attr{
-			Name:  xml.Name{Local: key},
-			Value: val,
+	attr := Attr{
+		Name:  newXMLName(key),
+		Value: val,
+	}
+	n.Attr = append(n.Attr, attr)
+}
+
+// SetAttr allows an attribute value with the specified name to be changed.
+// If the attribute did not previously exist, it will be created.
+func (n *Node) SetAttr(key, value string) {
+	name := newXMLName(key)
+	for i, attr := range n.Attr {
+		if attr.Name == name {
+			n.Attr[i].Value = value
+			return
 		}
 	}
+	AddAttr(n, key, value)
+}
 
-	n.Attr = append(n.Attr, attr)
+// RemoveAttr removes the attribute with the specified name.
+func (n *Node) RemoveAttr(key string) {
+	name := newXMLName(key)
+	for i, attr := range n.Attr {
+		if attr.Name == name {
+			n.Attr = append(n.Attr[:i], n.Attr[i+1:]...)
+			return
+		}
+	}
 }
 
 // AddChild adds a new node 'n' to a node 'parent' as its last child.

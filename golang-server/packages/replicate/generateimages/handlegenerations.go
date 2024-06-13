@@ -7,10 +7,8 @@ import (
 	"fmt"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
 	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/storage"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
-	"log"
 	"net/http"
 )
 
@@ -94,7 +92,6 @@ func processHighImageGenerationInput(ctx context.Context, r *http.Request, model
 		return nil, errors.New("prompt cant be empty")
 	}
 	HighImageGenerationParams.Prompt = prompt
-	log.Println(HighImageGenerationParams)
 	//extract and replace default
 	utils.SetStringValue(r.FormValue("scheduler"), &HighImageGenerationParams.Scheduler)
 	utils.SetStringValue(r.FormValue("negative_prompt"), &HighImageGenerationParams.NegativePrompt)
@@ -109,26 +106,26 @@ func processHighImageGenerationInput(ctx context.Context, r *http.Request, model
 	utils.SetIntValue(r.FormValue("seed"), &HighImageGenerationParams.Seed)
 
 	// Handle image file
-	imageFile, _, err := r.FormFile("image")
+	imageFile, imageFileHeader, err := r.FormFile("image")
 	if err == nil {
-		imageUrl, err := storage.HandleFileUpload(ctx, imageFile, cfg)
-		if err != nil {
+		repFile, err := rep.RequestFileToReplicateFile(ctx, imageFileHeader, cfg.ReplicateAPIKey)
+		if err != nil{
 			return nil, err
 		}
-		HighImageGenerationParams.ImageURL = &imageUrl
+		HighImageGenerationParams.ImageFile = repFile
 	}
 	if imageFile != nil {
 		defer imageFile.Close()
 	}
 
 	// Handle mask file
-	maskFile, _, err := r.FormFile("mask")
+	maskFile, maskFileHeader, err := r.FormFile("mask")
 	if err == nil {
-		maskUrl, err := storage.HandleFileUpload(ctx, maskFile, cfg)
-		if err != nil {
+		repFile, err := rep.RequestFileToReplicateFile(ctx, maskFileHeader, cfg.ReplicateAPIKey)
+		if err != nil{
 			return nil, err
 		}
-		HighImageGenerationParams.MaskURL = &maskUrl
+		HighImageGenerationParams.MaskFile = repFile
 	}
 	if maskFile != nil {
 		defer maskFile.Close()
@@ -147,11 +144,11 @@ func processHighImageGenerationInput(ctx context.Context, r *http.Request, model
 		"prompt_strength":     HighImageGenerationParams.PromptStrength,
 		"num_inference_steps": HighImageGenerationParams.NumInferenceSteps,
 	}
-	if HighImageGenerationParams.ImageURL != nil {
-		input["image"] = *HighImageGenerationParams.ImageURL
+	if HighImageGenerationParams.ImageFile != nil {
+		input["image"] = HighImageGenerationParams.ImageFile
 	}
-	if HighImageGenerationParams.MaskURL != nil {
-		input["mask"] = *HighImageGenerationParams.MaskURL
+	if HighImageGenerationParams.MaskFile != nil {
+		input["mask"] = HighImageGenerationParams.MaskFile
 	}
 	if HighImageGenerationParams.Seed != nil {
 		input["seed"] = *HighImageGenerationParams.Seed

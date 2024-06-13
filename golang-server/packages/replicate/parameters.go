@@ -2,6 +2,7 @@ package replicate
 
 import (
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
+	"github.com/replicate/replicate-go"
 )
 
 // doesnt support file upload
@@ -27,15 +28,15 @@ type HighImageGenerationParams struct {
 	NegativePrompt    *string  `json:"negative_prompt,omitempty"`
 	NumInferenceSteps *int     `json:"num_inference_steps,omitempty"`
 	LoraScale         *float64 `json:"lora_scale,omitempty"`
-	ImageURL          *string  `json:"image_url,omitempty"`
-	MaskURL           *string  `json:"mask_url,omitempty"`
+	ImageFile          *replicate.File  `json:"image_file,omitempty"`
+	MaskFile          *replicate.File `json:"mask_file,omitempty"`
 	PromptStrength    *float64 `json:"prompt_strength,omitempty"`
 	ApplyWatermark    *bool    `json:"apply_watermark,omitempty"`
 	Seed              *int     `json:"seed,omitempty"`
 }
 
 type HighImageUpscaleGenerationParams struct {
-	ImageURL              string   `json:"image_url"`
+	ImageFile               *replicate.File   `json:"image_file"`
 	Prompt                *string  `json:"prompt,omitempty"`
 	NegativePrompt        *string  `json:"negative_prompt,omitempty"`
 	ScaleFactor           *float64 `json:"scale_factor,omitempty"`
@@ -55,7 +56,7 @@ type HighImageUpscaleGenerationParams struct {
 }
 
 type LowImageUpscaleGenerationParams struct {
-	ImageURL    string   `json:"image_url"`
+	ImageFile    *replicate.File   `json:"image_file"`
 	Scale       *float64 `json:"scale,omitempty"`
 	FaceEnhance *bool    `json:"face_enhance,omitempty"`
 }
@@ -63,7 +64,7 @@ type LowImageUpscaleGenerationParams struct {
 type HighVideoGenerationParams struct {
 	Prompt            string   `json:"prompt"`
 	NegativePrompt    *string  `json:"negative_prompt,omitempty"`
-	InitVideoURL      *string  `json:"init_video_url,omitempty"`
+	InitVideoFile      *replicate.File  `json:"init_video_file,omitempty"`
 	InitWeight        *float64 `json:"init_weight,omitempty"`
 	NumFrames         *int     `json:"num_frames,omitempty"`
 	NumInferenceSteps *int     `json:"num_inferences_steps,omitempty"`
@@ -78,12 +79,12 @@ type HighVideoGenerationParams struct {
 
 type LowTTSParams struct {
 	Text         string  `json:"text"`
-	Speaker      string  `json:"speaker"`
+	SpeakerFile     *replicate.File  `json:"speaker"`
 	Language     *string `json:"language,omitempty"`
 	CleanupVoice *bool   `json:"cleanup_voice,omitempty"`
 }
 type MediumTTSParams struct {
-	SongInputURL              string   `json:"song_input_url,omitempty"`
+	SongInputFile              *replicate.File   `json:"song_input_file"`
 	RvcModel                  *string  `json:"rvc_model,omitempty"`
 	CustomRvcModelDownloadURL *string  `json:"custom_rvc_model_download_url,omitempty"`
 	PitchChange               *string  `json:"pitch_change,omitempty"`
@@ -105,13 +106,13 @@ type MediumTTSParams struct {
 }
 
 type HighTTSParams struct {
-	AudioURL string   `json:"audio_url"`
+	AudioFile *replicate.File   `json:"audio_file"`
 	Text     string   `json:"text"`
 	Language *string  `json:"language,omitempty"`
 	Speed    *float64 `json:"speed,omitempty"`
 }
 type LowSTTParams struct {
-	AudioURL                string   `json:"audio_url"`
+	AudioFile               *replicate.File   `json:"audio_file"`
 	Transcription           *string  `json:"transcription,omitempty"`
 	Temperature             *float64 `json:"temperature,omitempty"`
 	Translate               *bool    `json:"translate,omitempty"`
@@ -119,7 +120,8 @@ type LowSTTParams struct {
 	ConditionOnPreviousText *bool    `json:"condition_on_previous_text,omitempty"`
 }
 type HighSTTParams struct {
-	AudioURL  string  `json:"audio_url"`
+	AudioFile  *replicate.File  `json:"audio_file"`
+	URL *string `json:"url,omitempty"`
 	Task      *string `json:"task,omitempty"`
 	BatchSize *int    `json:"batch_size,omitempty"`
 	Timestamp *string `json:"timestamp,omitempty"`
@@ -135,7 +137,7 @@ type LowMusicGenerationParams struct {
 type HighMusicGenerationParams struct {
 	Prompt                 string   `json:"prompt"`
 	ModelVersion           *string  `json:"model_version,omitempty"`
-	InputAudioURL          *string  `json:"input_audio_url,omitempty"`
+	InputAudioFile          *replicate.File  `json:"input_audio_file,omitempty"`
 	Duration               *int     `json:"duration,omitempty"`
 	Continuation           *bool    `json:"continuation,omitempty"`
 	ContinuationStart      *int     `json:"continuation_start,omitempty"`

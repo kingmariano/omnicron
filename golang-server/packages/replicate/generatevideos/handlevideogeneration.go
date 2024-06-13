@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
 	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/storage"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
 	"net/http"
@@ -38,7 +37,6 @@ func processHighVideoInput(ctx context.Context, r *http.Request, cfg *config.Api
 	HighVideoGenerationParams.Prompt = prompt
 	//extract and replace default
 	utils.SetStringValue(r.FormValue("negative_prompt"), &HighVideoGenerationParams.NegativePrompt)
-	utils.SetStringValue(r.FormValue("init_video_url"), &HighVideoGenerationParams.InitVideoURL)
 	utils.SetFloatValue(r.FormValue("init_weight"), &HighVideoGenerationParams.InitWeight)
 	utils.SetIntValue(r.FormValue("num_frames"), &HighVideoGenerationParams.NumFrames)
 	utils.SetIntValue(r.FormValue("num_inferences_steps"), &HighVideoGenerationParams.NumInferenceSteps)
@@ -50,13 +48,13 @@ func processHighVideoInput(ctx context.Context, r *http.Request, cfg *config.Api
 	utils.SetIntValue(r.FormValue("batch_size"), &HighVideoGenerationParams.BatchSize)
 	utils.SetBoolValue(r.FormValue("remove_watermark"), &HighVideoGenerationParams.RemoveWatermark)
 	// Handle initial video file
-	videoFile, _, err := r.FormFile("video")
+	videoFile, videoFileHeader, err := r.FormFile("video")
 	if err == nil {
-		videoUrl, err := storage.HandleFileUpload(ctx, videoFile, cfg)
-		if err != nil {
+	    repFile, err := rep.RequestFileToReplicateFile(ctx, videoFileHeader, cfg.ReplicateAPIKey)
+		if err != nil{
 			return nil, err
 		}
-		HighVideoGenerationParams.InitVideoURL = &videoUrl
+		HighVideoGenerationParams.InitVideoFile = repFile
 	}
 	if videoFile != nil {
 		defer videoFile.Close()
@@ -76,8 +74,8 @@ func processHighVideoInput(ctx context.Context, r *http.Request, cfg *config.Api
 		"remove_watermark":    HighVideoGenerationParams.RemoveWatermark,
 		"num_inference_steps": HighVideoGenerationParams.NumInferenceSteps,
 	}
-	if HighVideoGenerationParams.InitVideoURL != nil {
-		input["init_video"] = *HighVideoGenerationParams.InitVideoURL
+	if HighVideoGenerationParams.InitVideoFile != nil {
+		input["init_video"] = *HighVideoGenerationParams.InitVideoFile
 	}
 	return input, nil
 

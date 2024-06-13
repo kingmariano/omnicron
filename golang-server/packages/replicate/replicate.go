@@ -3,12 +3,9 @@ package replicate
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"log"
 	"mime/multipart"
-	"os"
-
 	replicate "github.com/replicate/replicate-go"
 )
 
@@ -103,27 +100,8 @@ func RequestFileToReplicateFile(ctx context.Context, fileHeader *multipart.FileH
 	}
 	file, err := r8.CreateFileFromBuffer(ctx, buf, &replicate.CreateFileOptions{})
 
-	log.Println("this is file URL", file.URLs["get"])
 	if err != nil {
 		return nil, err
 	}
-	jsonData, err := json.MarshalIndent(file, "", " ")
-	if err != nil {
-		return nil, err
-	}
-
-	jsonfile, err := os.Create("file.json")
-	if err != nil {
-
-		return nil, err
-	}
-	defer jsonfile.Close()
-
-	_, err = jsonfile.Write(jsonData)
-	if err != nil {
-		return nil, err
-	}
-	log.Println("JSON data written to params.json successfully")
-
 	return file, err
 }

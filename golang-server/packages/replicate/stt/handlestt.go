@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
 	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/storage"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
 	"log"
@@ -39,15 +38,15 @@ func processLowSTTInput(ctx context.Context, r *http.Request, cfg *config.ApiCon
 		return nil, fmt.Errorf("error parsing multipart form: %v", err)
 	}
 	LowSTTParams = rep.LowSTTParams{}.Whisper()
-	audioFile, _, err := r.FormFile("audio")
+	_, audioFileHeader, err := r.FormFile("audio")
 	if err != nil {
 		return nil, fmt.Errorf("provide audio file: %v", err)
 	}
-	audioUrl, err := storage.HandleFileUpload(ctx, audioFile, cfg)
+	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader, cfg.ReplicateAPIKey)
 	if err != nil {
 		return nil, err
 	}
-	LowSTTParams.AudioURL = audioUrl
+	LowSTTParams.AudioFile = repFile
 
 	utils.SetStringValue(r.FormValue("transcription"), &LowSTTParams.Transcription)
 	utils.SetStringValue(r.FormValue("initial_prompt"), &LowSTTParams.InitialPrompt)
@@ -58,7 +57,7 @@ func processLowSTTInput(ctx context.Context, r *http.Request, cfg *config.ApiCon
 	//set InitialPrompt if present
 
 	input := replicate.PredictionInput{
-		"audio":                      LowSTTParams.AudioURL,
+		"audio":                      LowSTTParams.AudioFile,
 		"transcription":              LowSTTParams.Transcription,
 		"translate":                  LowSTTParams.Translate,
 		"temperature":                LowSTTParams.Temperature,
@@ -79,23 +78,34 @@ func processHighSTTInput(ctx context.Context, r *http.Request, cfg *config.ApiCo
 		return nil, fmt.Errorf("error parsing multipart form: %v", err)
 	}
 	HighSTTParams = rep.HighSTTParams{}.InsanelyFastWhisperWithVideo()
-	audioFile, _, err := r.FormFile("audio")
-	if err != nil {
-		return nil, fmt.Errorf("provide audio file: %v", err)
+	audioFile, audioFileHeader, err := r.FormFile("audio")
+	if err == nil {
+		repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader, cfg.ReplicateAPIKey)
+		if err != nil {
+			return nil, err
+		}
+		HighSTTParams.AudioFile = repFile
 	}
-	audioUrl, err := storage.HandleFileUpload(ctx, audioFile, cfg)
-	if err != nil {
-		return nil, err
+	if audioFile != nil {
+		defer audioFile.Close()
 	}
-	HighSTTParams.AudioURL = audioUrl
+    utils.SetStringValue(r.FormValue("url"), &HighSTTParams.URL)
 	utils.SetStringValue(r.FormValue("task"), &HighSTTParams.Task)
 	utils.SetIntValue(r.FormValue("batch_size"), &HighSTTParams.BatchSize)
 	utils.SetStringValue(r.FormValue("timestamp"), &HighSTTParams.Timestamp)
 	input := replicate.PredictionInput{
-		"audio":      HighSTTParams.AudioURL,
 		"task":       HighSTTParams.Task,
 		"batch_size": HighSTTParams.BatchSize,
 		"timestamp":  HighSTTParams.Timestamp,
+	}
+    if HighSTTParams.AudioFile != nil && HighSTTParams.URL != nil{
+		return nil, errors.New("audio file and url can't be present at the same time")
+	} else if HighSTTParams.AudioFile == nil && HighSTTParams.URL == nil{
+		return nil, errors.New("either audio file or url must be present at the")
+	}else if HighSTTParams.AudioFile != nil {
+		input["audio"] = HighSTTParams.AudioFile
+	}else if HighSTTParams.URL != nil{
+		input["url"] = *HighSTTParams.URL
 	}
 	return input, nil
 }

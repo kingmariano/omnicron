@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
 	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/storage"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
 	"log"
@@ -44,11 +43,11 @@ func processLowTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiCon
 		return nil, fmt.Errorf("error parsing multipart form: %v", err)
 	}
 	LowTTSParams = rep.LowTTSParams{}.XTTSV2()
-	audioFile, _, err := r.FormFile("audio")
+	_, audioFileHeader, err := r.FormFile("audio")
 	if err != nil {
 		return nil, fmt.Errorf("provide audio file: %v", err)
 	}
-	audioUrl, err := storage.HandleFileUpload(ctx, audioFile, cfg)
+	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader,cfg.ReplicateAPIKey)
 	if err != nil {
 		return nil, err
 	}
@@ -56,13 +55,13 @@ func processLowTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiCon
 	if text == "" {
 		return nil, errors.New("please provide the text parameter")
 	}
-	LowTTSParams.Speaker = audioUrl
+	LowTTSParams.SpeakerFile = repFile
 	LowTTSParams.Text = text
 	utils.SetStringValue(r.FormValue("language"), &LowTTSParams.Language)
 	utils.SetBoolValue(r.FormValue("cleanup_voice"), &LowTTSParams.CleanupVoice)
 	input := replicate.PredictionInput{
 		"text":          LowTTSParams.Text,
-		"speaker":       LowTTSParams.Speaker,
+		"speaker":       LowTTSParams.SpeakerFile,
 		"language":      LowTTSParams.Language,
 		"cleanup_voice": LowTTSParams.CleanupVoice,
 	}
@@ -77,15 +76,15 @@ func processMediumTTSInput(ctx context.Context, r *http.Request, cfg *config.Api
 		return nil, fmt.Errorf("error parsing multipart form: %v", err)
 	}
 	MediumTTSParams = rep.MediumTTSParams{}.RealisticVoiceCloning()
-	audioFile, _, err := r.FormFile("audio")
+	_, audioFileHeader, err := r.FormFile("audio")
 	if err != nil {
 		return nil, fmt.Errorf("provide audio file: %v", err)
 	}
-	audioUrl, err := storage.HandleFileUpload(ctx, audioFile, cfg)
+	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader,cfg.ReplicateAPIKey)
 	if err != nil {
 		return nil, err
 	}
-	MediumTTSParams.SongInputURL = audioUrl
+	MediumTTSParams.SongInputFile = repFile
 	utils.SetStringValue(r.FormValue("rvc_model"), &MediumTTSParams.RvcModel)
 	utils.SetStringValue(r.FormValue("pitch_change"), &MediumTTSParams.PitchChange)
 	utils.SetFloatValue(r.FormValue("index_rate"), &MediumTTSParams.IndexRate)
@@ -108,7 +107,7 @@ func processMediumTTSInput(ctx context.Context, r *http.Request, cfg *config.Api
 		"protect":                     MediumTTSParams.Protect,
 		"rvc_model":                   MediumTTSParams.RvcModel,
 		"index_rate":                  MediumTTSParams.IndexRate,
-		"song_input":                  MediumTTSParams.SongInputURL,
+		"song_input":                  MediumTTSParams.SongInputFile,
 		"reverb_size":                 MediumTTSParams.ReverbSize,
 		"pitch_change":                MediumTTSParams.PitchChange,
 		"rms_mix_rate":                MediumTTSParams.RmsMixRate,
@@ -143,11 +142,11 @@ func processHighTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiCo
 		return nil, fmt.Errorf("error parsing multipart form: %v", err)
 	}
 	HighTTSParams = rep.HighTTSParams{}.OpenVoice()
-	audioFile, _, err := r.FormFile("audio")
+	_, audioFileHeader, err := r.FormFile("audio")
 	if err != nil {
 		return nil, fmt.Errorf("provide audio file: %v", err)
 	}
-	audioUrl, err := storage.HandleFileUpload(ctx, audioFile, cfg)
+	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader,cfg.ReplicateAPIKey)
 	if err != nil {
 		return nil, err
 	}
@@ -156,12 +155,12 @@ func processHighTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiCo
 		return nil, errors.New("please provide the text parameter")
 	}
 	HighTTSParams.Text = text
-	HighTTSParams.AudioURL = audioUrl
+	HighTTSParams.AudioFile = repFile
 	utils.SetStringValue(r.FormValue("language"), &HighTTSParams.Language)
 	utils.SetFloatValue(r.FormValue("Speed"), &HighTTSParams.Speed)
 	input := replicate.PredictionInput{
 		"text":     HighTTSParams.Text,
-		"audio":    HighTTSParams.AudioURL,
+		"audio":    HighTTSParams.AudioFile,
 		"speed":    HighTTSParams.Speed,
 		"language": HighTTSParams.Language,
 	}

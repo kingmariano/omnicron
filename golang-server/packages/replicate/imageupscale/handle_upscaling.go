@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
 	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/storage"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
 	"log"
@@ -38,19 +37,19 @@ func processLowUpscalingInput(ctx context.Context, r *http.Request, cfg *config.
 	}
 	//set the parameters to their default
 	LowImageUpscaleGenerationParams = rep.LowImageUpscaleGenerationParams{}.RealEsrgan()
-	imageFile, _, err := r.FormFile("image")
+	_, imageFileHeader, err := r.FormFile("image")
 	if err != nil {
 		return nil, fmt.Errorf("provide image file: %v", err)
 	}
-	imageUrl, err := storage.HandleFileUpload(ctx, imageFile, cfg)
-	if err != nil {
+	repFile, err := rep.RequestFileToReplicateFile(ctx, imageFileHeader, cfg.ReplicateAPIKey)
+	if err != nil{
 		return nil, err
 	}
-	LowImageUpscaleGenerationParams.ImageURL = imageUrl
+	LowImageUpscaleGenerationParams.ImageFile = repFile
 	utils.SetFloatValue(r.FormValue("scale"), &LowImageUpscaleGenerationParams.Scale)
 	utils.SetBoolValue(r.FormValue("face_enhance"), &LowImageUpscaleGenerationParams.FaceEnhance)
 	input := replicate.PredictionInput{
-		"image":        LowImageUpscaleGenerationParams.ImageURL,
+		"image":        LowImageUpscaleGenerationParams.ImageFile,
 		"scale":        LowImageUpscaleGenerationParams.Scale,
 		"face_enhance": LowImageUpscaleGenerationParams.FaceEnhance,
 	}
@@ -67,15 +66,15 @@ func processHighUpscalingInput(ctx context.Context, r *http.Request, cfg *config
 	//set the parameters to their default
 	HighImageUpscaleGenerationParams = rep.HighImageUpscaleGenerationParams{}.NewClarityUpscaler()
 
-	imageFile, _, err := r.FormFile("image")
+	_, imageFileHeader, err := r.FormFile("image")
 	if err != nil {
 		return nil, fmt.Errorf("provide image file: %v", err)
 	}
-	imageUrl, err := storage.HandleFileUpload(ctx, imageFile, cfg)
-	if err != nil {
+	repFile, err := rep.RequestFileToReplicateFile(ctx, imageFileHeader, cfg.ReplicateAPIKey)
+	if err != nil{
 		return nil, err
 	}
-	HighImageUpscaleGenerationParams.ImageURL = imageUrl
+	HighImageUpscaleGenerationParams.ImageFile = repFile
 	// Extract form values and set them
 	utils.SetStringValue(r.FormValue("prompt"), &HighImageUpscaleGenerationParams.Prompt)
 	utils.SetStringValue(r.FormValue("negative_prompt"), &HighImageUpscaleGenerationParams.NegativePrompt)
@@ -94,7 +93,7 @@ func processHighUpscalingInput(ctx context.Context, r *http.Request, cfg *config
 	utils.SetFloatValue(r.FormValue("sharpen"), &HighImageUpscaleGenerationParams.Sharpen)
 	utils.SetStringValue(r.FormValue("output_format"), &HighImageUpscaleGenerationParams.OutputFormat)
 	input := replicate.PredictionInput{
-		"image":                  HighImageUpscaleGenerationParams.ImageURL,
+		"image":                  HighImageUpscaleGenerationParams.ImageFile,
 		"prompt":                 HighImageUpscaleGenerationParams.Prompt,
 		"negative_prompt":        HighImageUpscaleGenerationParams.NegativePrompt,
 		"scale_factor":           HighImageUpscaleGenerationParams.ScaleFactor,

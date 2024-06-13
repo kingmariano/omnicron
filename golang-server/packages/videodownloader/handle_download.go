@@ -69,6 +69,7 @@ func DownloadVideoData(url string, outputName string, outputPath string, stream 
 		OutputName:   outputName,
 		OutputPath:   outputPath,
 		Stream:       stream,
+		RetryTimes: 25,
 		MultiThread:  true,
 		ThreadNumber: 50,
 	})

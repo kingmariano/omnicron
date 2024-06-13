@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 )
 
-const outputPath = "./downloadedvideo/" //The output path where the downloaded video will be temporarily stored
 type DownloadParams struct {
 	URL        string `json:"url"`
 	Resolution string `json:"resolution"`
@@ -31,25 +30,41 @@ func Download(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error unmarshalling json, %v", err))
 		return
 	}
+
 	stream := HandleStreamResolution(params.Resolution)
 	outputName := "youtube"
+	outputPath := "./downloadedvideo/"
+
+	// Check if the folder "downloadedvideo" exists, create if not
+	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+		err := os.Mkdir(outputPath, os.ModePerm)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error creating directory, %v", err))
+			return
+		}
+		defer os.RemoveAll(outputPath) // Ensure the folder is deleted after task completion
+	}
+
 	err = DownloadVideoData(params.URL, outputName, outputPath, stream)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
 	files, err := filepath.Glob(outputPath + outputName + ".*")
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	videoPath := files[0]
+
 	urlLink, err := storage.HandleFileUpload(ctx, videoPath, cfg)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	//remove the video file after uploading
+
+	// Remove the video file after uploading
 	err = os.Remove(videoPath)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())

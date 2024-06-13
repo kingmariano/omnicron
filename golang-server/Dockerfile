@@ -17,6 +17,10 @@ COPY . .
 # Install Go dependencies
 RUN go mod download
 
+# Update Go dependencies to the latest version
+RUN go get -u ./...
+RUN go mod tidy
+
 # Build Go binary
 RUN go build -o ./omnicron
 
@@ -36,7 +40,7 @@ COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=builder /usr/share/ffmpeg /usr/share/ffmpeg
 
 # Define the health check command
-HEALTHCHECK --interval=1m --timeout=10m --retries=10 \
+HEALTHCHECK --interval=1m --timeout=10s --retries=10 \
   CMD curl -f $HEALTHCHECK_ENDPOINT || exit 1
 
 # Expose port 9000
