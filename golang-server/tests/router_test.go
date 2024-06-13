@@ -3,7 +3,7 @@ package tests
 import (
 	"net/http"
 	"net/http/httptest"
-	// "os"
+	"os"
 	"strings"
 	"testing"
 
@@ -23,17 +23,17 @@ import (
 )
 
 func setupRouter(t *testing.T) (*chi.Mux, *config.ApiConfig) {
-	apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, err := utils.LoadEnv("../../.env")
+	// apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, err := utils.LoadEnv("../../.env")
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
 
-	// apiKey := os.Getenv("API_KEY")
-	// grokApiKey := os.Getenv("GROK_API_KEY")
-	// port := os.Getenv("PORT")
-	// replicateApiKey := os.Getenv("REPLICATE_API_TOKEN")
-	// cloudinaryURL := os.Getenv("CLOUDINARY_URL")
+	apiKey := os.Getenv("API_KEY")
+	grokApiKey := os.Getenv("GROK_API_KEY")
+	port := os.Getenv("PORT")
+	replicateApiKey := os.Getenv("REPLICATE_API_TOKEN")
+	cloudinaryURL := os.Getenv("CLOUDINARY_URL")
 
 	if apiKey == "" || grokApiKey == "" || replicateApiKey == "" || cloudinaryURL == "" || port == "" {
 		t.Fatal("unable to get API key or port from environment variables")
