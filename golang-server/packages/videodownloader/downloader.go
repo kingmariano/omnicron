@@ -56,8 +56,20 @@ func Download(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	if len(files) == 0 {
+		utils.RespondWithError(w, http.StatusInternalServerError, "No video file found")
+		return
+	}
 	videoPath := files[0]
-
+    fileInfo, err := os.Stat(videoPath)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error getting file info, %v", err))
+		return
+	}
+	if fileInfo.Size() == 0 {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Downloaded video file is empty")
+		return
+	}
 	urlLink, err := storage.HandleFileUpload(ctx, videoPath, cfg)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
