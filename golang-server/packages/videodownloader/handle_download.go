@@ -6,7 +6,7 @@ import (
 	"github.com/iawia002/lux/extractors"
 	"log"
 	"os"
-	"path/filepath"
+"path/filepath"
 )
 
 func extractUrl(url string) ([]*extractors.Data, error) {
@@ -41,7 +41,7 @@ func deleteContents(dir string) error {
 
 	return nil
 }
-func HandleStreamResolution(resolution string) string {
+func handleStreamResolution(resolution string) string {
 	var stream string
 	switch resolution {
 	case "1080p":
@@ -59,11 +59,14 @@ func HandleStreamResolution(resolution string) string {
 	}
 	return stream
 }
-func DownloadVideoData(url string, outputName string, outputPath string, stream string) error {
+
+func DownloadVideoData(url string, outputName string, outputPath string, resolution string) error {
 	data, err := extractUrl(url)
 	if err != nil {
 		return err
 	}
+	
+   stream := handleStreamResolution(resolution)
 
 	download := downloader.New(downloader.Options{
 		OutputName:   outputName,

@@ -57,8 +57,8 @@ func TestDownloadVideoData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stream := HandleStreamResolution(tt.args.resolution)
-			err := DownloadVideoData(tt.args.url, tt.args.outputName, tt.args.outputPath, stream)
+
+			err := DownloadVideoData(tt.args.url, tt.args.outputName, tt.args.outputPath, tt.args.resolution)
 			if err != nil {
 				t.Errorf("DownloadVideoData() error = %v", err)
 				return

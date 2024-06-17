@@ -5,5 +5,6 @@ type ApiConfig struct {
 	GrokApiKey      string
 	ReplicateAPIKey string
 	CloudinaryUrl   string
+	YoutubeDeveloperKey string
 	Port            string
 }

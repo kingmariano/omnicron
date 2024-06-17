@@ -15,13 +15,14 @@ import (
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/stt"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate/tts"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/videodownloader"
+	"github.com/charlesozo/omnicron-backendsever/golang-server/packages/musicdownloader"
 	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
-	apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, err := utils.LoadEnv("../.env")
+	apiKey, grokApiKey, replicateApiKey, cloudinaryURL,  port, youtubeDeveloperKey,err := utils.LoadEnv("../.env")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,6 +31,7 @@ func main() {
 		GrokApiKey:      grokApiKey,
 		ReplicateAPIKey: replicateApiKey,
 		CloudinaryUrl:   cloudinaryURL,
+		YoutubeDeveloperKey: youtubeDeveloperKey,
 		Port:            port,
 	}
 	router := chi.NewRouter()
@@ -46,7 +48,8 @@ func main() {
 	v1Router.Post("/replicate/tts", ware.MiddleWareAuth(tts.TTS, cfg))
 	v1Router.Post("/replicate/stt", ware.MiddleWareAuth(stt.STT, cfg))
 	v1Router.Post("/replicate/musicgeneration", ware.MiddleWareAuth(generatemusic.MusicGen, cfg))
-	v1Router.Post("/downloadvideo", ware.MiddleWareAuth(videodownloader.Download, cfg))
+	v1Router.Post("/downloadvideo", ware.MiddleWareAuth(videodownloader.DownloadVideo, cfg))
+	v1Router.Post("/downloadmusic", ware.MiddleWareAuth(musicdownloader.DownloadMusic, cfg))
 	router.Mount("/api/v1", v1Router)
 	server := &http.Server{
 		Addr:              ":" + port,

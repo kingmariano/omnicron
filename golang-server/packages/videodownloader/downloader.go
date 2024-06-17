@@ -20,7 +20,7 @@ type Responseparams struct {
 	Response string `json:"response"`
 }
 
-func Download(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 	ctx := context.Background()
 
 	decode := json.NewDecoder(r.Body)
@@ -30,22 +30,24 @@ func Download(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error unmarshalling json, %v", err))
 		return
 	}
-
-	stream := HandleStreamResolution(params.Resolution)
 	outputName := "youtube"
 	outputPath := "./downloadedvideo/"
-
 	// Check if the folder "downloadedvideo" exists, create if not
-	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
-		err := os.Mkdir(outputPath, os.ModePerm)
-		if err != nil {
-			utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error creating directory, %v", err))
-			return
-		}
-		defer os.RemoveAll(outputPath) // Ensure the folder is deleted after task completion
-	}
+	// if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+	// 	err := os.Mkdir(outputPath, os.ModePerm)
+	// 	if err != nil {
+	// 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error creating directory, %v", err))
+	// 		return
+	// 	}
+	// 	defer os.RemoveAll(outputPath) // Ensure the folder is deleted after task completion
+	// }
+	 utils.CreateFolder(outputPath)
+	// if err != nil{
+	// 	utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error creating directory, %v", err))
+	// 	return
+	// }
 
-	err = DownloadVideoData(params.URL, outputName, outputPath, stream)
+	err = DownloadVideoData(params.URL, outputName, outputPath, params.Resolution)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -61,7 +63,7 @@ func Download(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 		return
 	}
 	videoPath := files[0]
-    fileInfo, err := os.Stat(videoPath)
+	fileInfo, err := os.Stat(videoPath)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error getting file info, %v", err))
 		return

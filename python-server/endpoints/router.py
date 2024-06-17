@@ -23,11 +23,11 @@ load_dotenv(env_path)
 api_key = os.getenv('MY_API_KEY')
 grok_api_key = os.getenv('GROK_API_KEY')
 gemini_api_key = os.getenv('GEMINI_PRO_API_KEY')
-
+print(api_key)
 # Define the API key name
 API_KEY_NAME = "Api-Key"
 # Define a dependency to check for the API key in the headers
-api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+api_key_header = APIKeyHeader(name=API_KEY_NAME)
 
 # Custom dependency to check for the API key in the headers
 
@@ -37,7 +37,9 @@ def check_api_key(key: str = Depends(api_key_header)):
     Check if the API key is valid.
     """
     if key is None:
-        raise HTTPException(status_code=401, detail="Invalid API key")
+        raise HTTPException(status_code=401, detail="Provide Api Key")
+    elif key != api_key:
+        raise HTTPException(status_code=401, detail="Invalid Api Key")
     return key
 
 # Define the request body models
