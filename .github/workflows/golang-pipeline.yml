@@ -41,6 +41,7 @@ jobs:
           echo "GROK_API_KEY=${{ secrets.GROK_API_KEY }}" >> $GITHUB_ENV
           echo "REPLICATE_API_TOKEN=${{secrets.REPLICATE_API_TOKEN}}" >> $GITHUB_ENV
           echo "CLOUDINARY_URL=${{secrets.CLOUDINARY_URL}}" >> $GITHUB_ENV
+          echo "YOUTUBE_DEVELOPER_KEY=${{secrets.YOUTUBE_DEVELOPER_KEY}}" >> $GITHUB_ENV
           echo "PORT=8000" >> $GITHUB_ENV
 
       - name: Fetch dependencies
