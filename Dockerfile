@@ -20,23 +20,33 @@ ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
 
 COPY . .
 
-# Install Go and Python dependencies
+# Install Go dependencies
 RUN apk add --no-cache \
-        ffmpeg \
-        python3 \
-        py3-pip \
-        python3-dev \
-        build-base && \
-    go mod download && \
-    go get -u ./... && \
-    go mod vendor && \
-    go mod tidy && \
-    go build -o ./omnicron
+    go \
+    ffmpeg \
+    python3 \
+    py3-pip \
+    python3-dev \
+    build-base
 
-# Install Python dependencies
+RUN go mod download
+RUN go get -u ./...
+RUN go mod vendor
+RUN go mod tidy
+
+# Build Go binary
+RUN go build -o ./omnicron
+
+# Set up Python virtual environment
+RUN python3 -m venv /build/venv
+ENV PATH="/build/venv/bin:$PATH"
+
+# Install Python dependencies in virtual environment
 COPY ./python/requirements.txt ./python/requirements.txt
-RUN pip3 install --upgrade --no-cache-dir -r ./python/requirements.txt && \
-    pip3 uninstall -y uvloop
+RUN pip install --upgrade --no-cache-dir -r ./python/requirements.txt
+
+# Remove the default uvloop
+RUN pip uninstall -y uvloop
 
 # Deploy stage
 FROM gcr.io/distroless/base-debian11
@@ -50,10 +60,10 @@ COPY --from=builder /build/omnicron ./omnicron
 COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=builder /usr/share/ffmpeg /usr/share/ffmpeg
 
-# Copy Python and dependencies from the builder stage
-COPY --from=builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
-COPY --from=builder /usr/local/bin/python3.11 /usr/local/bin/python3.11
-COPY --from=builder /usr/local/bin/pip3 /usr/local/bin/pip3
+# Copy Python virtual environment
+COPY --from=builder /build/venv /app/venv
+
+# Copy Python scripts
 COPY ./python /app/python
 
 # Define the health check command
