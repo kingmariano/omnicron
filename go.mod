@@ -6,7 +6,7 @@ toolchain go1.22.4
 
 require (
 	github.com/cloudinary/cloudinary-go v1.7.0
-	github.com/go-chi/chi/v5 v5.0.14
+	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/iawia002/lux v0.24.1
