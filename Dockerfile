@@ -20,7 +20,7 @@ ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
 
 COPY . .
 
-# Install Go dependencies
+# Install Go dependencies and required packages
 RUN apk add --no-cache \
     go \
     ffmpeg \
@@ -43,10 +43,11 @@ ENV PATH="/build/venv/bin:$PATH"
 
 # Install Python dependencies in virtual environment
 COPY ./python/requirements.txt ./python/requirements.txt
-RUN pip install --upgrade --no-cache-dir -r ./python/requirements.txt
+RUN /build/venv/bin/pip install --upgrade pip
+RUN /build/venv/bin/pip install --upgrade --no-cache-dir -r ./python/requirements.txt
 
 # Remove the default uvloop
-RUN pip uninstall -y uvloop
+RUN /build/venv/bin/pip uninstall -y uvloop
 
 # Deploy stage
 FROM gcr.io/distroless/base-debian11
