@@ -1,0 +1,109 @@
+name: ci Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  setup_and_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.22.4"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y make
+
+      - name: Install ffmpeg
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install Python 3.11
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
+          sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+          python3 --version
+
+      - name: Set up Python environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+
+      - name: Install Python dependencies
+        run: |
+          source venv/bin/activate
+          pip install -r ./python/requirements.txt
+
+      - name: Set environment variables
+        run: |
+          echo "API_KEY=${{ secrets.MY_API_KEY }}" >> $GITHUB_ENV
+          echo "GROK_API_KEY=${{ secrets.GROK_API_KEY }}" >> $GITHUB_ENV
+          echo "REPLICATE_API_TOKEN=${{ secrets.REPLICATE_API_TOKEN }}" >> $GITHUB_ENV
+          echo "CLOUDINARY_URL=${{ secrets.CLOUDINARY_URL }}" >> $GITHUB_ENV
+          echo "YOUTUBE_DEVELOPER_KEY=${{ secrets.YOUTUBE_DEVELOPER_KEY }}" >> $GITHUB_ENV
+          echo "PORT=8000" >> $GITHUB_ENV
+
+      - name: Fetch dependencies
+        run: make deps
+
+      - name: Update dependencies
+        run: make update
+
+      - name: Format code
+        run: make fmt
+
+      - name: Build
+        run: make build
+
+      - name: Test
+        run: make test
+
+      - name: Echo Go version
+        run: go version
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Static Check
+        run: make static-check
+
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Security Scan
+        run: make security-scan
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER_NAME }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+      - name: Build and push Golang Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: charlesozo/omnicron-go:latest, charlesozo/omnicron-go:${{github.run_number}}
+          build-args: |
+            MY_API_KEY=${{ secrets.MY_API_KEY }}
+            GROK_API_KEY=${{ secrets.GROK_API_KEY }}
+            REPLICATE_API_TOKEN=${{ secrets.REPLICATE_API_TOKEN }}
+            CLOUDINARY_URL=${{ secrets.CLOUDINARY_URL }}
+            GEMINI_PRO_API_KEY=${{ secrets.GEMINI_PRO_API_KEY }}
+            YOUTUBE_DEVELOPER_KEY=${{ secrets.YOUTUBE_DEVELOPER_KEY }}

@@ -1,6 +1,6 @@
 .env
 .gitignore
-golang-server/omnicron
+omnicron
 waste.txt
-golang-server/tests/replicate_test.go
+tests/replicate_test.go
 vendor/
