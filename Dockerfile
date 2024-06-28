@@ -28,7 +28,6 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     musl-dev \
-    golang \
     ffmpeg \
     build-essential \
     curl \
@@ -37,6 +36,15 @@ RUN apt-get update && apt-get install -y \
 
 # Copy Go module files
 COPY go.mod go.sum ./
+
+# Extract Go version from go.mod
+RUN grep '^go ' go.mod | awk '{print $2}' > goversion.txt
+RUN curl -OL https://golang.org/dl/go$(cat goversion.txt).linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go$(cat goversion.txt).linux-amd64.tar.gz && \
+    ln -s /usr/local/go/bin/go /usr/local/bin/go
+
+# Verify Go installation
+RUN go version
 
 # Download Go dependencies
 RUN go mod download
