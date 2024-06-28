@@ -33,8 +33,8 @@ func TestDownloadFileURL(t *testing.T) {
 		url         string
 		shouldExist bool
 	}{
-		{"https://file-examples.com/storage/fed5266c9966708dcaeaea6/2017/04/file_example_MP4_480_1_5MG.mp4", true},
-		{"https://file-examples.com/storage/fed5266c9966708dcaeaea6/2017/11/file_example_MP3_1MG.mp3", true},
+		{"https://res.cloudinary.com/djagytapi/video/upload/v1718161686/zsq3vzbjbtg7eqrpi2ui.mp4", true},
+		{"https://res.cloudinary.com/djagytapi/video/upload/v1718249303/nm1eiabpo8zwo6hz6uxh.mp4", true},
 		{"https://www.example.com/nonexistent.mp3", false},
 	}
 
@@ -98,7 +98,6 @@ func TestConvertReaderToMP3(t *testing.T) {
 func TestConvertURLToMP3(t *testing.T) {
 	testURLs := []string{
 		"https://res.cloudinary.com/djagytapi/video/upload/v1718161686/zsq3vzbjbtg7eqrpi2ui.mp4",
-		"https://file-examples.com/storage/fed5266c9966708dcaeaea6/2017/04/file_example_MP4_480_1_5MG.mp4",
 		"https://res.cloudinary.com/djagytapi/video/upload/v1718249303/nm1eiabpo8zwo6hz6uxh.mp4",
 	}
 	
