@@ -1,15 +1,11 @@
 package videodownloader
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/storage"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/config"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/utils"
 	"net/http"
-	"os"
-	"path/filepath"
 )
 
 type DownloadParams struct {
@@ -20,9 +16,21 @@ type Responseparams struct {
 	Response string `json:"response"`
 }
 
-func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
-	ctx := context.Background()
+// DownloadVideo handles the video download process.
+// It accepts a POST request with JSON body containing URL and resolution.
+// It downloads the video from the provided URL, stores it in a temporary directory,
+// uploads the video to Cloudinary, and returns the Cloudinary URL of the uploaded video.
+//
+// Parameters:
+//  w http.ResponseWriter: The response writer for the HTTP request.
+//  r *http.Request: The HTTP request.
+//  cfg *config.ApiConfig: The API configuration.
+//
+// Return values:
+//  None.
 
+func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+	ctx := r.Context()
 	decode := json.NewDecoder(r.Body)
 	params := DownloadParams{}
 	err := decode.Decode(&params)
@@ -30,56 +38,27 @@ func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error unmarshalling json, %v", err))
 		return
 	}
-	outputName := "youtube"
-	outputPath := "./downloadedvideo/"
-	// Check if the folder "downloadedvideo" exists, create if not
-	// if _, err := os.Stat(outputPath); os.IsNotExist(err) {
-	// 	err := os.Mkdir(outputPath, os.ModePerm)
-	// 	if err != nil {
-	// 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error creating directory, %v", err))
-	// 		return
-	// 	}
-	// 	defer os.RemoveAll(outputPath) // Ensure the folder is deleted after task completion
-	// }
-	 utils.CreateFolder(outputPath)
-	// if err != nil{
-	// 	utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error creating directory, %v", err))
-	// 	return
-	// }
-
-	err = DownloadVideoData(params.URL, outputName, outputPath, params.Resolution)
+	//creates a temporary file to store the downloaded video
+	folderPath, err := utils.CreateUniqueFolder(utils.BasePath)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	videoPath, err := DownloadVideoData(params.URL, utils.OutputName, folderPath, params.Resolution)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	files, err := filepath.Glob(outputPath + outputName + ".*")
-	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if len(files) == 0 {
-		utils.RespondWithError(w, http.StatusInternalServerError, "No video file found")
-		return
-	}
-	videoPath := files[0]
-	fileInfo, err := os.Stat(videoPath)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error getting file info, %v", err))
-		return
-	}
-	if fileInfo.Size() == 0 {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Downloaded video file is empty")
-		return
-	}
-	urlLink, err := storage.HandleFileUpload(ctx, videoPath, cfg)
+	//upload the video file to cloudinary and return the file URL
+	urlLink, err := utils.HandleFileUpload(ctx, videoPath, cfg.CloudinaryUrl)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Remove the video file after uploading
-	err = os.Remove(videoPath)
+	// Remove the directory after uploading
+	err = utils.DeleteFolder(folderPath)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return

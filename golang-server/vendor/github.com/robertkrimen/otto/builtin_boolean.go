@@ -3,26 +3,26 @@ package otto
 // Boolean
 
 func builtinBoolean(call FunctionCall) Value {
-	return boolValue(call.Argument(0).bool())
+	return toValue_bool(call.Argument(0).bool())
 }
 
-func builtinNewBoolean(obj *object, argumentList []Value) Value {
-	return objectValue(obj.runtime.newBoolean(valueOfArrayIndex(argumentList, 0)))
+func builtinNewBoolean(self *_object, argumentList []Value) Value {
+	return toValue_object(self.runtime.newBoolean(valueOfArrayIndex(argumentList, 0)))
 }
 
-func builtinBooleanToString(call FunctionCall) Value {
+func builtinBoolean_toString(call FunctionCall) Value {
 	value := call.This
 	if !value.IsBoolean() {
 		// Will throw a TypeError if ThisObject is not a Boolean
-		value = call.thisClassObject(classBooleanName).primitiveValue()
+		value = call.thisClassObject(classBoolean).primitiveValue()
 	}
-	return stringValue(value.string())
+	return toValue_string(value.string())
 }
 
-func builtinBooleanValueOf(call FunctionCall) Value {
+func builtinBoolean_valueOf(call FunctionCall) Value {
 	value := call.This
 	if !value.IsBoolean() {
-		value = call.thisClassObject(classBooleanName).primitiveValue()
+		value = call.thisClassObject(classBoolean).primitiveValue()
 	}
 	return value
 }

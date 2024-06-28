@@ -1,24 +1,25 @@
 package musicdownloader
-import (
-	"fmt"
-	"net/http"
-	"sync"
-	"log"
-	"context"
-	"encoding/json"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
-)
-type SongRequest struct {
-	Songs      []string `json:"songs"`
 
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/config"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/utils"
+	"net/http"
+)
+
+type SongRequest struct {
+	Song string `json:"song"`
 }
+
 // SongResponse represents the structure of the response
-type SongResponse map[string][]string
+type SongResponse struct {
+	Response []string `json:"response"`
+}
+
 var maxLength int64 //specifies the maxmium length of data returned from the youtube sdk
-func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig){
-	log.Print("started downloading music process")
-	ctx := context.Background()
+func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+	ctx := r.Context()
 	decode := json.NewDecoder(r.Body)
 	params := SongRequest{}
 	err := decode.Decode(&params)
@@ -26,25 +27,24 @@ func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error unmarshalling json, %v", err))
 		return
 	}
-	var wg sync.WaitGroup
-	
-	resultChan := make(chan map[string][]string, len(params.Songs))
+	// create folder to handle downloads
+	folderPath, err := utils.CreateUniqueFolder(utils.BasePath)
+    if err!= nil {
+        utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+        return
+    }
+	//for accurate and precise result maxlength should be set to one.
 	maxLength = 1
-	for _, song := range params.Songs{
-		sng := song
-		wg.Add(1)
-		go searchYouTube(ctx, sng, maxLength, cfg.YoutubeDeveloperKey, &wg, resultChan)
+	audioDirectURL, err := downloadYoutubeLinkAndConvertToMp3(ctx, params.Song, maxLength, cfg.YoutubeDeveloperKey, cfg.CloudinaryUrl, folderPath)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
-	// Close the result channel once all searches are done
-	go func() {
-		wg.Wait()
-		close(resultChan)
-	}()
-    songResponse := make(SongResponse)
-	for result := range resultChan{
-		for k, v := range result {
-			songResponse[k] = v
-		}
+    //clean up; remove folder after uploading
+	err = utils.DeleteFolder(folderPath)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, songResponse)
+	utils.RespondWithJSON(w, http.StatusOK, SongResponse{Response: audioDirectURL})
 }

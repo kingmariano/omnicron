@@ -5,7 +5,41 @@ import (
 	"fmt"
 )
 
-type Path = string
+type PathFlag struct {
+	Name        string
+	Aliases     []string
+	Usage       string
+	EnvVars     []string
+	FilePath    string
+	Required    bool
+	Hidden      bool
+	TakesFile   bool
+	Value       string
+	DefaultText string
+	Destination *string
+	HasBeenSet  bool
+}
+
+// IsSet returns whether or not the flag has been set through env or file
+func (f *PathFlag) IsSet() bool {
+	return f.HasBeenSet
+}
+
+// String returns a readable representation of this value
+// (for usage defaults)
+func (f *PathFlag) String() string {
+	return FlagStringer(f)
+}
+
+// Names returns the names of the flag
+func (f *PathFlag) Names() []string {
+	return flagNames(f.Name, f.Aliases)
+}
+
+// IsRequired returns whether or not the flag is required
+func (f *PathFlag) IsRequired() bool {
+	return f.Required
+}
 
 // TakesValue returns true of the flag takes a value, otherwise false
 func (f *PathFlag) TakesValue() bool {
@@ -17,15 +51,15 @@ func (f *PathFlag) GetUsage() string {
 	return f.Usage
 }
 
-// GetCategory returns the category for the flag
-func (f *PathFlag) GetCategory() string {
-	return f.Category
-}
-
 // GetValue returns the flags value as string representation and an empty
 // string if the flag takes no value at all.
 func (f *PathFlag) GetValue() string {
 	return f.Value
+}
+
+// IsVisible returns true if the flag is not hidden, otherwise false
+func (f *PathFlag) IsVisible() bool {
+	return !f.Hidden
 }
 
 // GetDefaultText returns the default text for this flag
@@ -33,14 +67,10 @@ func (f *PathFlag) GetDefaultText() string {
 	if f.DefaultText != "" {
 		return f.DefaultText
 	}
-	val := f.Value
-	if f.defaultValueSet {
-		val = f.defaultValue
+	if f.Value == "" {
+		return f.Value
 	}
-	if val == "" {
-		return val
-	}
-	return fmt.Sprintf("%q", val)
+	return fmt.Sprintf("%q", f.Value)
 }
 
 // GetEnvVars returns the env vars for this flag
@@ -50,11 +80,7 @@ func (f *PathFlag) GetEnvVars() []string {
 
 // Apply populates the flag given the flag set and environment
 func (f *PathFlag) Apply(set *flag.FlagSet) error {
-	// set default value so that environment wont be able to overwrite it
-	f.defaultValue = f.Value
-	f.defaultValueSet = true
-
-	if val, _, found := flagFromEnvOrFile(f.EnvVars, f.FilePath); found {
+	if val, ok := flagFromEnvOrFile(f.EnvVars, f.FilePath); ok {
 		f.Value = val
 		f.HasBeenSet = true
 	}
@@ -75,15 +101,6 @@ func (f *PathFlag) Get(ctx *Context) string {
 	return ctx.Path(f.Name)
 }
 
-// RunAction executes flag action if set
-func (f *PathFlag) RunAction(c *Context) error {
-	if f.Action != nil {
-		return f.Action(c, c.Path(f.Name))
-	}
-
-	return nil
-}
-
 // Path looks up the value of a local PathFlag, returns
 // "" if not found
 func (cCtx *Context) Path(name string) string {
@@ -95,8 +112,13 @@ func (cCtx *Context) Path(name string) string {
 }
 
 func lookupPath(name string, set *flag.FlagSet) string {
-	if f := set.Lookup(name); f != nil {
-		return f.Value.String()
+	f := set.Lookup(name)
+	if f != nil {
+		parsed, err := f.Value.String(), error(nil)
+		if err != nil {
+			return ""
+		}
+		return parsed
 	}
 	return ""
 }

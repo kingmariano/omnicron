@@ -122,24 +122,24 @@ func (o *objectGoReflect) init() {
 	switch o.fieldsValue.Kind() {
 	case reflect.Bool:
 		o.class = classBoolean
-		o.prototype = o.val.runtime.getBooleanPrototype()
+		o.prototype = o.val.runtime.global.BooleanPrototype
 		o.toString = o._toStringBool
 		o.valueOf = o._valueOfBool
 	case reflect.String:
 		o.class = classString
-		o.prototype = o.val.runtime.getStringPrototype()
+		o.prototype = o.val.runtime.global.StringPrototype
 		o.toString = o._toStringString
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		o.class = classNumber
-		o.prototype = o.val.runtime.getNumberPrototype()
+		o.prototype = o.val.runtime.global.NumberPrototype
 		o.valueOf = o._valueOfInt
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		o.class = classNumber
-		o.prototype = o.val.runtime.getNumberPrototype()
+		o.prototype = o.val.runtime.global.NumberPrototype
 		o.valueOf = o._valueOfUint
 	case reflect.Float32, reflect.Float64:
 		o.class = classNumber
-		o.prototype = o.val.runtime.getNumberPrototype()
+		o.prototype = o.val.runtime.global.NumberPrototype
 		o.valueOf = o._valueOfFloat
 	default:
 		o.class = classObject
@@ -181,6 +181,11 @@ func (o *objectGoReflect) init() {
 		o.toString = o._toStringError
 	}
 
+	if o.toString != nil || o.valueOf != nil {
+		o.baseObject._putProp("toString", o.val.runtime.newNativeFunc(o.toStringFunc, nil, "toString", nil, 0), true, false, true)
+		o.baseObject._putProp("valueOf", o.val.runtime.newNativeFunc(o.valueOfFunc, nil, "valueOf", nil, 0), true, false, true)
+	}
+
 	if len(o.methodsInfo.Names) > 0 && o.fieldsValue.Kind() != reflect.Interface {
 		o.methodsValue = o.fieldsValue.Addr()
 	} else {
@@ -190,6 +195,14 @@ func (o *objectGoReflect) init() {
 	if j, ok := o.origValue.Interface().(JsonEncodable); ok {
 		o.toJson = j.JsonEncodable
 	}
+}
+
+func (o *objectGoReflect) toStringFunc(FunctionCall) Value {
+	return o.toPrimitiveString()
+}
+
+func (o *objectGoReflect) valueOfFunc(FunctionCall) Value {
+	return o.toPrimitiveNumber()
 }
 
 func (o *objectGoReflect) getStr(name unistring.String, receiver Value) Value {
@@ -291,7 +304,7 @@ func (o *objectGoReflect) getOwnPropStr(name unistring.String) Value {
 		}
 	}
 
-	return o.baseObject.getOwnPropStr(name)
+	return nil
 }
 
 func (o *objectGoReflect) setOwnStr(name unistring.String, val Value, throw bool) bool {
@@ -389,7 +402,7 @@ func (o *objectGoReflect) _has(name string) bool {
 }
 
 func (o *objectGoReflect) hasOwnPropertyStr(name unistring.String) bool {
-	return o._has(name.String()) || o.baseObject.hasOwnPropertyStr(name)
+	return o._has(name.String())
 }
 
 func (o *objectGoReflect) _valueOfInt() Value {
@@ -430,6 +443,37 @@ func (o *objectGoReflect) _toStringBool() Value {
 
 func (o *objectGoReflect) _toStringError() Value {
 	return newStringValue(o.origValue.Interface().(error).Error())
+}
+
+func (o *objectGoReflect) toPrimitiveNumber() Value {
+	if o.valueOf != nil {
+		return o.valueOf()
+	}
+	if o.toString != nil {
+		return o.toString()
+	}
+	return o.baseObject.toPrimitiveNumber()
+}
+
+func (o *objectGoReflect) toPrimitiveString() Value {
+	if o.toString != nil {
+		return o.toString()
+	}
+	if o.valueOf != nil {
+		return o.valueOf().toString()
+	}
+	return o.baseObject.toPrimitiveString()
+}
+
+func (o *objectGoReflect) toPrimitive() Value {
+	if o.valueOf != nil {
+		return o.valueOf()
+	}
+	if o.toString != nil {
+		return o.toString()
+	}
+
+	return o.baseObject.toPrimitive()
 }
 
 func (o *objectGoReflect) deleteStr(name unistring.String, throw bool) bool {
@@ -535,17 +579,14 @@ func (r *Runtime) buildFieldInfo(t reflect.Type, index []int, info *reflectField
 	for i := 0; i < n; i++ {
 		field := t.Field(i)
 		name := field.Name
-		isExported := ast.IsExported(name)
-
-		if !isExported && !field.Anonymous {
+		if !ast.IsExported(name) {
 			continue
 		}
-
 		if r.fieldNameMapper != nil {
 			name = r.fieldNameMapper.FieldName(t, field)
 		}
 
-		if name != "" && isExported {
+		if name != "" {
 			if inf, exists := info.Fields[name]; !exists {
 				info.Names = append(info.Names, name)
 			} else {
@@ -560,7 +601,7 @@ func (r *Runtime) buildFieldInfo(t reflect.Type, index []int, info *reflectField
 			copy(idx, index)
 			idx[len(idx)-1] = i
 
-			if name != "" && isExported {
+			if name != "" {
 				info.Fields[name] = reflectFieldInfo{
 					Index:     idx,
 					Anonymous: field.Anonymous,

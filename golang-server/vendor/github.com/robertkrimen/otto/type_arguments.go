@@ -4,97 +4,103 @@ import (
 	"strconv"
 )
 
-func (rt *runtime) newArgumentsObject(indexOfParameterName []string, stash stasher, length int) *object {
-	obj := rt.newClassObject("Arguments")
+func (runtime *_runtime) newArgumentsObject(indexOfParameterName []string, stash _stash, length int) *_object {
+	self := runtime.newClassObject("Arguments")
 
-	for index := range indexOfParameterName {
+	for index, _ := range indexOfParameterName {
 		name := strconv.FormatInt(int64(index), 10)
-		objectDefineOwnProperty(obj, name, property{Value{}, 0o111}, false)
+		objectDefineOwnProperty(self, name, _property{Value{}, 0111}, false)
 	}
 
-	obj.objectClass = classArguments
-	obj.value = argumentsObject{
+	self.objectClass = _classArguments
+	self.value = _argumentsObject{
 		indexOfParameterName: indexOfParameterName,
 		stash:                stash,
 	}
 
-	obj.prototype = rt.global.ObjectPrototype
+	self.prototype = runtime.global.ObjectPrototype
 
-	obj.defineProperty(propertyLength, intValue(length), 0o101, false)
+	self.defineProperty(propertyLength, toValue_int(length), 0101, false)
 
-	return obj
+	return self
 }
 
-type argumentsObject struct {
-	stash                stasher
+type _argumentsObject struct {
 	indexOfParameterName []string
+	// function(abc, def, ghi)
+	// indexOfParameterName[0] = "abc"
+	// indexOfParameterName[1] = "def"
+	// indexOfParameterName[2] = "ghi"
+	// ...
+	stash _stash
 }
 
-func (o argumentsObject) clone(c *cloner) argumentsObject {
-	indexOfParameterName := make([]string, len(o.indexOfParameterName))
-	copy(indexOfParameterName, o.indexOfParameterName)
-	return argumentsObject{
-		indexOfParameterName: indexOfParameterName,
-		stash:                c.stash(o.stash),
+func (in _argumentsObject) clone(clone *_clone) _argumentsObject {
+	indexOfParameterName := make([]string, len(in.indexOfParameterName))
+	copy(indexOfParameterName, in.indexOfParameterName)
+	return _argumentsObject{
+		indexOfParameterName,
+		clone.stash(in.stash),
 	}
 }
 
-func (o argumentsObject) get(name string) (Value, bool) {
+func (self _argumentsObject) get(name string) (Value, bool) {
 	index := stringToArrayIndex(name)
-	if index >= 0 && index < int64(len(o.indexOfParameterName)) {
-		if name = o.indexOfParameterName[index]; name == "" {
+	if index >= 0 && index < int64(len(self.indexOfParameterName)) {
+		name := self.indexOfParameterName[index]
+		if name == "" {
 			return Value{}, false
 		}
-		return o.stash.getBinding(name, false), true
+		return self.stash.getBinding(name, false), true
 	}
 	return Value{}, false
 }
 
-func (o argumentsObject) put(name string, value Value) {
+func (self _argumentsObject) put(name string, value Value) {
 	index := stringToArrayIndex(name)
-	name = o.indexOfParameterName[index]
-	o.stash.setBinding(name, value, false)
+	name = self.indexOfParameterName[index]
+	self.stash.setBinding(name, value, false)
 }
 
-func (o argumentsObject) delete(name string) {
+func (self _argumentsObject) delete(name string) {
 	index := stringToArrayIndex(name)
-	o.indexOfParameterName[index] = ""
+	self.indexOfParameterName[index] = ""
 }
 
-func argumentsGet(obj *object, name string) Value {
-	if value, exists := obj.value.(argumentsObject).get(name); exists {
+func argumentsGet(self *_object, name string) Value {
+	if value, exists := self.value.(_argumentsObject).get(name); exists {
 		return value
 	}
-	return objectGet(obj, name)
+	return objectGet(self, name)
 }
 
-func argumentsGetOwnProperty(obj *object, name string) *property {
-	prop := objectGetOwnProperty(obj, name)
-	if value, exists := obj.value.(argumentsObject).get(name); exists {
-		prop.value = value
+func argumentsGetOwnProperty(self *_object, name string) *_property {
+	property := objectGetOwnProperty(self, name)
+	if value, exists := self.value.(_argumentsObject).get(name); exists {
+		property.value = value
 	}
-	return prop
+	return property
 }
 
-func argumentsDefineOwnProperty(obj *object, name string, descriptor property, throw bool) bool {
-	if _, exists := obj.value.(argumentsObject).get(name); exists {
-		if !objectDefineOwnProperty(obj, name, descriptor, false) {
-			return obj.runtime.typeErrorResult(throw)
+func argumentsDefineOwnProperty(self *_object, name string, descriptor _property, throw bool) bool {
+	if _, exists := self.value.(_argumentsObject).get(name); exists {
+		if !objectDefineOwnProperty(self, name, descriptor, false) {
+			return self.runtime.typeErrorResult(throw)
 		}
 		if value, valid := descriptor.value.(Value); valid {
-			obj.value.(argumentsObject).put(name, value)
+			self.value.(_argumentsObject).put(name, value)
 		}
 		return true
 	}
-	return objectDefineOwnProperty(obj, name, descriptor, throw)
+	return objectDefineOwnProperty(self, name, descriptor, throw)
 }
 
-func argumentsDelete(obj *object, name string, throw bool) bool {
-	if !objectDelete(obj, name, throw) {
+func argumentsDelete(self *_object, name string, throw bool) bool {
+	if !objectDelete(self, name, throw) {
 		return false
 	}
-	if _, exists := obj.value.(argumentsObject).get(name); exists {
-		obj.value.(argumentsObject).delete(name)
+	if _, exists := self.value.(_argumentsObject).get(name); exists {
+		self.value.(_argumentsObject).delete(name)
 	}
 	return true
 }

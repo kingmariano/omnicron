@@ -47,7 +47,7 @@ func (i *importedString) ToInteger() int64 {
 	return asciiString(i.s).ToInteger()
 }
 
-func (i *importedString) toString() String {
+func (i *importedString) toString() valueString {
 	return i
 }
 
@@ -88,7 +88,7 @@ func (i *importedString) ToBoolean() bool {
 }
 
 func (i *importedString) ToObject(r *Runtime) *Object {
-	return r._newString(i, r.getStringPrototype())
+	return r._newString(i, r.global.StringPrototype)
 }
 
 func (i *importedString) SameAs(other Value) bool {
@@ -148,23 +148,23 @@ func (i *importedString) hash(hasher *maphash.Hash) uint64 {
 	return asciiString(i.s).hash(hasher)
 }
 
-func (i *importedString) CharAt(idx int) uint16 {
+func (i *importedString) charAt(idx int) rune {
 	i.ensureScanned()
 	if i.u != nil {
-		return i.u.CharAt(idx)
+		return i.u.charAt(idx)
 	}
-	return asciiString(i.s).CharAt(idx)
+	return asciiString(i.s).charAt(idx)
 }
 
-func (i *importedString) Length() int {
+func (i *importedString) length() int {
 	i.ensureScanned()
 	if i.u != nil {
-		return i.u.Length()
+		return i.u.length()
 	}
-	return asciiString(i.s).Length()
+	return asciiString(i.s).length()
 }
 
-func (i *importedString) Concat(v String) String {
+func (i *importedString) concat(v valueString) valueString {
 	if !i.scanned {
 		if v, ok := v.(*importedString); ok {
 			if !v.scanned {
@@ -174,29 +174,29 @@ func (i *importedString) Concat(v String) String {
 		i.ensureScanned()
 	}
 	if i.u != nil {
-		return i.u.Concat(v)
+		return i.u.concat(v)
 	}
-	return asciiString(i.s).Concat(v)
+	return asciiString(i.s).concat(v)
 }
 
-func (i *importedString) Substring(start, end int) String {
+func (i *importedString) substring(start, end int) valueString {
 	i.ensureScanned()
 	if i.u != nil {
-		return i.u.Substring(start, end)
+		return i.u.substring(start, end)
 	}
-	return asciiString(i.s).Substring(start, end)
+	return asciiString(i.s).substring(start, end)
 }
 
-func (i *importedString) CompareTo(v String) int {
+func (i *importedString) compareTo(v valueString) int {
 	return strings.Compare(i.s, v.String())
 }
 
-func (i *importedString) Reader() io.RuneReader {
+func (i *importedString) reader() io.RuneReader {
 	if i.scanned {
 		if i.u != nil {
-			return i.u.Reader()
+			return i.u.reader()
 		}
-		return asciiString(i.s).Reader()
+		return asciiString(i.s).reader()
 	}
 	return strings.NewReader(i.s)
 }
@@ -204,22 +204,24 @@ func (i *importedString) Reader() io.RuneReader {
 type stringUtf16Reader struct {
 	s      string
 	pos    int
-	second uint16
+	second rune
 }
 
-func (s *stringUtf16Reader) readChar() (c uint16, err error) {
-	if s.second != 0 {
-		c, s.second = s.second, 0
+func (s *stringUtf16Reader) ReadRune() (r rune, size int, err error) {
+	if s.second >= 0 {
+		r = s.second
+		s.second = -1
+		size = 1
 		return
 	}
 	if s.pos < len(s.s) {
 		r1, size1 := utf8.DecodeRuneInString(s.s[s.pos:])
 		s.pos += size1
+		size = 1
 		if r1 <= 0xFFFF {
-			c = uint16(r1)
+			r = r1
 		} else {
-			first, second := utf16.EncodeRune(r1)
-			c, s.second = uint16(first), uint16(second)
+			r, s.second = utf16.EncodeRune(r1)
 		}
 	} else {
 		err = io.EOF
@@ -227,17 +229,7 @@ func (s *stringUtf16Reader) readChar() (c uint16, err error) {
 	return
 }
 
-func (s *stringUtf16Reader) ReadRune() (r rune, size int, err error) {
-	c, err := s.readChar()
-	if err != nil {
-		return
-	}
-	r = rune(c)
-	size = 1
-	return
-}
-
-func (i *importedString) utf16Reader() utf16Reader {
+func (i *importedString) utf16Reader() io.RuneReader {
 	if i.scanned {
 		if i.u != nil {
 			return i.u.utf16Reader()
@@ -245,19 +237,8 @@ func (i *importedString) utf16Reader() utf16Reader {
 		return asciiString(i.s).utf16Reader()
 	}
 	return &stringUtf16Reader{
-		s: i.s,
-	}
-}
-
-func (i *importedString) utf16RuneReader() io.RuneReader {
-	if i.scanned {
-		if i.u != nil {
-			return i.u.utf16RuneReader()
-		}
-		return asciiString(i.s).utf16RuneReader()
-	}
-	return &stringUtf16Reader{
-		s: i.s,
+		s:      i.s,
+		second: -1,
 	}
 }
 
@@ -269,7 +250,7 @@ func (i *importedString) utf16Runes() []rune {
 	return asciiString(i.s).utf16Runes()
 }
 
-func (i *importedString) index(v String, start int) int {
+func (i *importedString) index(v valueString, start int) int {
 	i.ensureScanned()
 	if i.u != nil {
 		return i.u.index(v, start)
@@ -277,7 +258,7 @@ func (i *importedString) index(v String, start int) int {
 	return asciiString(i.s).index(v, start)
 }
 
-func (i *importedString) lastIndex(v String, pos int) int {
+func (i *importedString) lastIndex(v valueString, pos int) int {
 	i.ensureScanned()
 	if i.u != nil {
 		return i.u.lastIndex(v, pos)
@@ -285,7 +266,7 @@ func (i *importedString) lastIndex(v String, pos int) int {
 	return asciiString(i.s).lastIndex(v, pos)
 }
 
-func (i *importedString) toLower() String {
+func (i *importedString) toLower() valueString {
 	i.ensureScanned()
 	if i.u != nil {
 		return toLower(i.s)
@@ -293,7 +274,7 @@ func (i *importedString) toLower() String {
 	return asciiString(i.s).toLower()
 }
 
-func (i *importedString) toUpper() String {
+func (i *importedString) toUpper() valueString {
 	i.ensureScanned()
 	if i.u != nil {
 		caser := cases.Upper(language.Und)

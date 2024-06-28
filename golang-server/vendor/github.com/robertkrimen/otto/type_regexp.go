@@ -3,22 +3,23 @@ package otto
 import (
 	"fmt"
 	"regexp"
+	"unicode/utf8"
 
 	"github.com/robertkrimen/otto/parser"
 )
 
-type regExpObject struct {
+type _regExpObject struct {
 	regularExpression *regexp.Regexp
-	source            string
-	flags             string
 	global            bool
 	ignoreCase        bool
 	multiline         bool
+	source            string
+	flags             string
 }
 
-func (rt *runtime) newRegExpObject(pattern string, flags string) *object {
-	o := rt.newObject()
-	o.class = classRegExpName
+func (runtime *_runtime) newRegExpObject(pattern string, flags string) *_object {
+	self := runtime.newObject()
+	self.class = classRegExp
 
 	global := false
 	ignoreCase := false
@@ -31,18 +32,18 @@ func (rt *runtime) newRegExpObject(pattern string, flags string) *object {
 		switch chr {
 		case 'g':
 			if global {
-				panic(rt.panicSyntaxError("newRegExpObject: %s %s", pattern, flags))
+				panic(runtime.panicSyntaxError("newRegExpObject: %s %s", pattern, flags))
 			}
 			global = true
 		case 'm':
 			if multiline {
-				panic(rt.panicSyntaxError("newRegExpObject: %s %s", pattern, flags))
+				panic(runtime.panicSyntaxError("newRegExpObject: %s %s", pattern, flags))
 			}
 			multiline = true
 			re2flags += "m"
 		case 'i':
 			if ignoreCase {
-				panic(rt.panicSyntaxError("newRegExpObject: %s %s", pattern, flags))
+				panic(runtime.panicSyntaxError("newRegExpObject: %s %s", pattern, flags))
 			}
 			ignoreCase = true
 			re2flags += "i"
@@ -51,7 +52,7 @@ func (rt *runtime) newRegExpObject(pattern string, flags string) *object {
 
 	re2pattern, err := parser.TransformRegExp(pattern)
 	if err != nil {
-		panic(rt.panicTypeError("Invalid regular expression: %s", err.Error()))
+		panic(runtime.panicTypeError("Invalid regular expression: %s", err.Error()))
 	}
 	if len(re2flags) > 0 {
 		re2pattern = fmt.Sprintf("(?%s:%s)", re2flags, re2pattern)
@@ -59,10 +60,10 @@ func (rt *runtime) newRegExpObject(pattern string, flags string) *object {
 
 	regularExpression, err := regexp.Compile(re2pattern)
 	if err != nil {
-		panic(rt.panicSyntaxError("Invalid regular expression: %s", err.Error()[22:]))
+		panic(runtime.panicSyntaxError("Invalid regular expression: %s", err.Error()[22:]))
 	}
 
-	o.value = regExpObject{
+	self.value = _regExpObject{
 		regularExpression: regularExpression,
 		global:            global,
 		ignoreCase:        ignoreCase,
@@ -70,21 +71,21 @@ func (rt *runtime) newRegExpObject(pattern string, flags string) *object {
 		source:            pattern,
 		flags:             flags,
 	}
-	o.defineProperty("global", boolValue(global), 0, false)
-	o.defineProperty("ignoreCase", boolValue(ignoreCase), 0, false)
-	o.defineProperty("multiline", boolValue(multiline), 0, false)
-	o.defineProperty("lastIndex", intValue(0), 0o100, false)
-	o.defineProperty("source", stringValue(pattern), 0, false)
-	return o
+	self.defineProperty("global", toValue_bool(global), 0, false)
+	self.defineProperty("ignoreCase", toValue_bool(ignoreCase), 0, false)
+	self.defineProperty("multiline", toValue_bool(multiline), 0, false)
+	self.defineProperty("lastIndex", toValue_int(0), 0100, false)
+	self.defineProperty("source", toValue_string(pattern), 0, false)
+	return self
 }
 
-func (o *object) regExpValue() regExpObject {
-	value, _ := o.value.(regExpObject)
+func (self *_object) regExpValue() _regExpObject {
+	value, _ := self.value.(_regExpObject)
 	return value
 }
 
-func execRegExp(this *object, target string) (bool, []int) {
-	if this.class != classRegExpName {
+func execRegExp(this *_object, target string) (match bool, result []int) {
+	if this.class != classRegExp {
 		panic(this.runtime.panicTypeError("Calling RegExp.exec on a non-RegExp object"))
 	}
 	lastIndex := this.get("lastIndex").number().int64
@@ -93,18 +94,15 @@ func execRegExp(this *object, target string) (bool, []int) {
 	if !global {
 		index = 0
 	}
-
-	var result []int
 	if 0 > index || index > int64(len(target)) {
 	} else {
 		result = this.regExpValue().regularExpression.FindStringSubmatchIndex(target[index:])
 	}
-
 	if result == nil {
-		this.put("lastIndex", intValue(0), true)
-		return false, nil
+		this.put("lastIndex", toValue_int(0), true)
+		return // !match
 	}
-
+	match = true
 	startIndex := index
 	endIndex := int(lastIndex) + result[1]
 	// We do this shift here because the .FindStringSubmatchIndex above
@@ -115,30 +113,34 @@ func execRegExp(this *object, target string) (bool, []int) {
 		}
 	}
 	if global {
-		this.put("lastIndex", intValue(endIndex), true)
+		this.put("lastIndex", toValue_int(endIndex), true)
 	}
-
-	return true, result
+	return // match
 }
 
-func execResultToArray(rt *runtime, target string, result []int) *object {
+func execResultToArray(runtime *_runtime, target string, result []int) *_object {
 	captureCount := len(result) / 2
 	valueArray := make([]Value, captureCount)
 	for index := 0; index < captureCount; index++ {
 		offset := 2 * index
 		if result[offset] != -1 {
-			valueArray[index] = stringValue(target[result[offset]:result[offset+1]])
+			valueArray[index] = toValue_string(target[result[offset]:result[offset+1]])
 		} else {
 			valueArray[index] = Value{}
 		}
 	}
 	matchIndex := result[0]
 	if matchIndex != 0 {
-		// Find the utf16 index in the string, not the byte index.
-		matchIndex = utf16Length(target[:matchIndex])
+		matchIndex = 0
+		// Find the rune index in the string, not the byte index
+		for index := 0; index < result[0]; {
+			_, size := utf8.DecodeRuneInString(target[index:])
+			matchIndex += 1
+			index += size
+		}
 	}
-	match := rt.newArrayOf(valueArray)
-	match.defineProperty("input", stringValue(target), 0o111, false)
-	match.defineProperty("index", intValue(matchIndex), 0o111, false)
+	match := runtime.newArrayOf(valueArray)
+	match.defineProperty("input", toValue_string(target), 0111, false)
+	match.defineProperty("index", toValue_int(matchIndex), 0111, false)
 	return match
 }

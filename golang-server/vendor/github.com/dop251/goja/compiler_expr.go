@@ -234,7 +234,7 @@ type compiledOptional struct {
 func (e *defaultDeleteExpr) emitGetter(putOnStack bool) {
 	e.expr.emitGetter(false)
 	if putOnStack {
-		e.c.emitLiteralValue(valueTrue)
+		e.c.emit(loadVal(e.c.p.defineLiteralValue(valueTrue)))
 	}
 }
 
@@ -373,7 +373,7 @@ func (e *baseCompiledExpr) addSrcMap() {
 func (e *constantExpr) emitGetter(putOnStack bool) {
 	if putOnStack {
 		e.addSrcMap()
-		e.c.emitLiteralValue(e.val)
+		e.c.emit(loadVal(e.c.p.defineLiteralValue(e.val)))
 	}
 }
 
@@ -904,7 +904,7 @@ func (e *compiledSuperBracketExpr) deleteExpr() compiledExpr {
 func (c *compiler) checkConstantString(expr compiledExpr) (unistring.String, bool) {
 	if expr.constant() {
 		if val, ex := c.evalConst(expr); ex == nil {
-			if s, ok := val.(String); ok {
+			if s, ok := val.(valueString); ok {
 				return s.string(), true
 			}
 		}
@@ -971,7 +971,6 @@ func (e *compiledDotExpr) emitRef() {
 func (e *compiledDotExpr) emitSetter(valueExpr compiledExpr, putOnStack bool) {
 	e.left.emitGetter(true)
 	valueExpr.emitGetter(true)
-	e.addSrcMap()
 	if e.c.scope.strict {
 		if putOnStack {
 			e.c.emit(setPropStrict(e.name))
@@ -1261,7 +1260,7 @@ func (e *compiledAssignExpr) emitGetter(putOnStack bool) {
 
 func (e *compiledLiteral) emitGetter(putOnStack bool) {
 	if putOnStack {
-		e.c.emitLiteralValue(e.val)
+		e.c.emit(loadVal(e.c.p.defineLiteralValue(e.val)))
 	}
 }
 
@@ -1272,15 +1271,15 @@ func (e *compiledLiteral) constant() bool {
 func (e *compiledTemplateLiteral) emitGetter(putOnStack bool) {
 	if e.tag == nil {
 		if len(e.elements) == 0 {
-			e.c.emitLiteralString(stringEmpty)
+			e.c.emit(loadVal(e.c.p.defineLiteralValue(stringEmpty)))
 		} else {
 			tail := e.elements[len(e.elements)-1].Parsed
 			if len(e.elements) == 1 {
-				e.c.emitLiteralString(stringValueFromRaw(tail))
+				e.c.emit(loadVal(e.c.p.defineLiteralValue(stringValueFromRaw(tail))))
 			} else {
 				stringCount := 0
 				if head := e.elements[0].Parsed; head != "" {
-					e.c.emitLiteralString(stringValueFromRaw(head))
+					e.c.emit(loadVal(e.c.p.defineLiteralValue(stringValueFromRaw(head))))
 					stringCount++
 				}
 				e.expressions[0].emitGetter(true)
@@ -1288,7 +1287,7 @@ func (e *compiledTemplateLiteral) emitGetter(putOnStack bool) {
 				stringCount++
 				for i := 1; i < len(e.elements)-1; i++ {
 					if elt := e.elements[i].Parsed; elt != "" {
-						e.c.emitLiteralString(stringValueFromRaw(elt))
+						e.c.emit(loadVal(e.c.p.defineLiteralValue(stringValueFromRaw(elt))))
 						stringCount++
 					}
 					e.expressions[i].emitGetter(true)
@@ -1296,7 +1295,7 @@ func (e *compiledTemplateLiteral) emitGetter(putOnStack bool) {
 					stringCount++
 				}
 				if tail != "" {
-					e.c.emitLiteralString(stringValueFromRaw(tail))
+					e.c.emit(loadVal(e.c.p.defineLiteralValue(stringValueFromRaw(tail))))
 					stringCount++
 				}
 				e.c.emit(concatStrings(stringCount))
@@ -2450,7 +2449,7 @@ func (c *compiler) emitThrow(v Value) {
 			c.emit(loadDynamic(t))
 			msg := o.self.getStr("message", nil)
 			if msg != nil {
-				c.emitLiteralValue(msg)
+				c.emit(loadVal(c.p.defineLiteralValue(msg)))
 				c.emit(_new(1))
 			} else {
 				c.emit(_new(0))
@@ -2467,7 +2466,7 @@ func (c *compiler) emitConst(expr compiledExpr, putOnStack bool) {
 	v, ex := c.evalConst(expr)
 	if ex == nil {
 		if putOnStack {
-			c.emitLiteralValue(v)
+			c.emit(loadVal(c.p.defineLiteralValue(v)))
 		}
 	} else {
 		c.emitThrow(ex.val)
@@ -2633,7 +2632,7 @@ func (e *compiledLogicalOr) emitGetter(putOnStack bool) {
 				e.c.emitExpr(e.right, putOnStack)
 			} else {
 				if putOnStack {
-					e.c.emitLiteralValue(v)
+					e.c.emit(loadVal(e.c.p.defineLiteralValue(v)))
 				}
 			}
 		} else {
@@ -2674,7 +2673,7 @@ func (e *compiledCoalesce) emitGetter(putOnStack bool) {
 				e.c.emitExpr(e.right, putOnStack)
 			} else {
 				if putOnStack {
-					e.c.emitLiteralValue(v)
+					e.c.emit(loadVal(e.c.p.defineLiteralValue(v)))
 				}
 			}
 		} else {
@@ -2714,7 +2713,7 @@ func (e *compiledLogicalAnd) emitGetter(putOnStack bool) {
 	if e.left.constant() {
 		if v, ex := e.c.evalConst(e.left); ex == nil {
 			if !v.ToBoolean() {
-				e.c.emitLiteralValue(v)
+				e.c.emit(loadVal(e.c.p.defineLiteralValue(v)))
 			} else {
 				e.c.emitExpr(e.right, putOnStack)
 			}

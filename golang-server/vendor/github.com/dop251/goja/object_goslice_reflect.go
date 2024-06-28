@@ -48,6 +48,7 @@ func (o *objectGoSliceReflect) grow(size int) {
 		}
 		o.fieldsValue.SetLen(size)
 	}
+	o.updateLen()
 }
 
 func (o *objectGoSliceReflect) shrink(size int) {
@@ -58,6 +59,7 @@ func (o *objectGoSliceReflect) shrink(size int) {
 		tail.Index(i).Set(zero)
 	}
 	o.fieldsValue.SetLen(size)
+	o.updateLen()
 }
 
 func (o *objectGoSliceReflect) putLength(v uint32, throw bool) bool {

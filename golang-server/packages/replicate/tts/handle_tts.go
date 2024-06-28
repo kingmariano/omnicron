@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
-	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/config"
+	rep "github.com/kingmariano/omnicron-backendsever/golang-server/packages/replicate"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
 	"log"
 	"net/http"
@@ -47,7 +47,7 @@ func processLowTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiCon
 	if err != nil {
 		return nil, fmt.Errorf("provide audio file: %v", err)
 	}
-	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader,cfg.ReplicateAPIKey)
+	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader, cfg.ReplicateAPIKey)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func processMediumTTSInput(ctx context.Context, r *http.Request, cfg *config.Api
 	if err != nil {
 		return nil, fmt.Errorf("provide audio file: %v", err)
 	}
-	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader,cfg.ReplicateAPIKey)
+	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader, cfg.ReplicateAPIKey)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func processHighTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiCo
 	if err != nil {
 		return nil, fmt.Errorf("provide audio file: %v", err)
 	}
-	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader,cfg.ReplicateAPIKey)
+	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader, cfg.ReplicateAPIKey)
 	if err != nil {
 		return nil, err
 	}

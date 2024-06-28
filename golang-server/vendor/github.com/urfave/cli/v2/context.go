@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"flag"
-	"fmt"
 	"strings"
 )
 
@@ -47,16 +46,11 @@ func (cCtx *Context) NumFlags() int {
 
 // Set sets a context flag to a value.
 func (cCtx *Context) Set(name, value string) error {
-	if fs := cCtx.lookupFlagSet(name); fs != nil {
-		return fs.Set(name, value)
-	}
-
-	return fmt.Errorf("no such flag -%s", name)
+	return cCtx.flagSet.Set(name, value)
 }
 
 // IsSet determines if the flag was actually set
 func (cCtx *Context) IsSet(name string) bool {
-
 	if fs := cCtx.lookupFlagSet(name); fs != nil {
 		isSet := false
 		fs.Visit(func(f *flag.Flag) {
@@ -73,23 +67,7 @@ func (cCtx *Context) IsSet(name string) bool {
 			return false
 		}
 
-		if f.IsSet() {
-			return true
-		}
-
-		// now redo flagset search on aliases
-		aliases := f.Names()
-		fs.Visit(func(f *flag.Flag) {
-			for _, alias := range aliases {
-				if f.Name == alias {
-					isSet = true
-				}
-			}
-		})
-
-		if isSet {
-			return true
-		}
+		return f.IsSet()
 	}
 
 	return false
@@ -99,27 +77,7 @@ func (cCtx *Context) IsSet(name string) bool {
 func (cCtx *Context) LocalFlagNames() []string {
 	var names []string
 	cCtx.flagSet.Visit(makeFlagNameVisitor(&names))
-	// Check the flags which have been set via env or file
-	if cCtx.Command != nil && cCtx.Command.Flags != nil {
-		for _, f := range cCtx.Command.Flags {
-			if f.IsSet() {
-				names = append(names, f.Names()...)
-			}
-		}
-	}
-
-	// Sort out the duplicates since flag could be set via multiple
-	// paths
-	m := map[string]struct{}{}
-	var unames []string
-	for _, name := range names {
-		if _, ok := m[name]; !ok {
-			m[name] = struct{}{}
-			unames = append(unames, name)
-		}
-	}
-
-	return unames
+	return names
 }
 
 // FlagNames returns a slice of flag names used by the this context and all of
@@ -127,7 +85,7 @@ func (cCtx *Context) LocalFlagNames() []string {
 func (cCtx *Context) FlagNames() []string {
 	var names []string
 	for _, pCtx := range cCtx.Lineage() {
-		names = append(names, pCtx.LocalFlagNames()...)
+		pCtx.flagSet.Visit(makeFlagNameVisitor(&names))
 	}
 	return names
 }
@@ -142,16 +100,6 @@ func (cCtx *Context) Lineage() []*Context {
 	}
 
 	return lineage
-}
-
-// Count returns the num of occurrences of this flag
-func (cCtx *Context) Count(name string) int {
-	if fs := cCtx.lookupFlagSet(name); fs != nil {
-		if cf, ok := fs.Lookup(name).Value.(Countable); ok {
-			return cf.Count()
-		}
-	}
-	return 0
 }
 
 // Value returns the value of the flag corresponding to `name`
@@ -210,7 +158,7 @@ func (cCtx *Context) lookupFlagSet(name string) *flag.FlagSet {
 			return c.flagSet
 		}
 	}
-	cCtx.onInvalidFlag(name)
+
 	return nil
 }
 
@@ -221,10 +169,11 @@ func (cCtx *Context) checkRequiredFlags(flags []Flag) requiredFlagsErr {
 			var flagPresent bool
 			var flagName string
 
-			flagNames := f.Names()
-			flagName = flagNames[0]
+			for _, key := range f.Names() {
+				if len(key) > 1 {
+					flagName = key
+				}
 
-			for _, key := range flagNames {
 				if cCtx.IsSet(strings.TrimSpace(key)) {
 					flagPresent = true
 				}
@@ -241,16 +190,6 @@ func (cCtx *Context) checkRequiredFlags(flags []Flag) requiredFlagsErr {
 	}
 
 	return nil
-}
-
-func (cCtx *Context) onInvalidFlag(name string) {
-	for cCtx != nil {
-		if cCtx.App != nil && cCtx.App.InvalidFlagAccessHandler != nil {
-			cCtx.App.InvalidFlagAccessHandler(cCtx, name)
-			break
-		}
-		cCtx = cCtx.parentContext
-	}
 }
 
 func makeFlagNameVisitor(names *[]string) func(*flag.Flag) {

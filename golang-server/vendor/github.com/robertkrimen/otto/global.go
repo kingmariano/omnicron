@@ -7,12 +7,12 @@ import (
 
 var (
 	prototypeValueObject   = interface{}(nil)
-	prototypeValueFunction = nativeFunctionObject{
+	prototypeValueFunction = _nativeFunctionObject{
 		call: func(_ FunctionCall) Value {
 			return Value{}
 		},
 	}
-	prototypeValueString = stringASCII("")
+	prototypeValueString = _stringASCII("")
 	// TODO Make this just false?
 	prototypeValueBoolean = Value{
 		kind:  valueBoolean,
@@ -22,7 +22,7 @@ var (
 		kind:  valueNumber,
 		value: 0,
 	}
-	prototypeValueDate = dateObject{
+	prototypeValueDate = _dateObject{
 		epoch: 0,
 		isNaN: false,
 		time:  time.Unix(0, 0).UTC(),
@@ -31,7 +31,7 @@ var (
 			value: 0,
 		},
 	}
-	prototypeValueRegExp = regExpObject{
+	prototypeValueRegExp = _regExpObject{
 		regularExpression: nil,
 		global:            false,
 		ignoreCase:        false,
@@ -41,101 +41,104 @@ var (
 	}
 )
 
-func newContext() *runtime {
-	rt := &runtime{}
+func newContext() *_runtime {
 
-	rt.globalStash = rt.newObjectStash(nil, nil)
-	rt.globalObject = rt.globalStash.object
+	self := &_runtime{}
 
-	rt.newContext()
+	self.globalStash = self.newObjectStash(nil, nil)
+	self.globalObject = self.globalStash.object
 
-	rt.eval = rt.globalObject.property["eval"].value.(Value).value.(*object)
-	rt.globalObject.prototype = rt.global.ObjectPrototype
+	_newContext(self)
 
-	return rt
+	self.eval = self.globalObject.property["eval"].value.(Value).value.(*_object)
+	self.globalObject.prototype = self.global.ObjectPrototype
+
+	return self
 }
 
-func (rt *runtime) newBaseObject() *object {
-	return newObject(rt, "")
+func (runtime *_runtime) newBaseObject() *_object {
+	self := newObject(runtime, "")
+	return self
 }
 
-func (rt *runtime) newClassObject(class string) *object {
-	return newObject(rt, class)
+func (runtime *_runtime) newClassObject(class string) *_object {
+	return newObject(runtime, class)
 }
 
-func (rt *runtime) newPrimitiveObject(class string, value Value) *object {
-	o := rt.newClassObject(class)
-	o.value = value
-	return o
+func (runtime *_runtime) newPrimitiveObject(class string, value Value) *_object {
+	self := runtime.newClassObject(class)
+	self.value = value
+	return self
 }
 
-func (o *object) primitiveValue() Value {
-	switch value := o.value.(type) {
+func (self *_object) primitiveValue() Value {
+	switch value := self.value.(type) {
 	case Value:
 		return value
-	case stringObjecter:
-		return stringValue(value.String())
+	case _stringObject:
+		return toValue_string(value.String())
 	}
 	return Value{}
 }
 
-func (o *object) hasPrimitive() bool { //nolint:unused
-	switch o.value.(type) {
-	case Value, stringObjecter:
+func (self *_object) hasPrimitive() bool {
+	switch self.value.(type) {
+	case Value, _stringObject:
 		return true
 	}
 	return false
 }
 
-func (rt *runtime) newObject() *object {
-	o := rt.newClassObject(classObjectName)
-	o.prototype = rt.global.ObjectPrototype
-	return o
+func (runtime *_runtime) newObject() *_object {
+	self := runtime.newClassObject(classObject)
+	self.prototype = runtime.global.ObjectPrototype
+	return self
 }
 
-func (rt *runtime) newArray(length uint32) *object {
-	o := rt.newArrayObject(length)
-	o.prototype = rt.global.ArrayPrototype
-	return o
+func (runtime *_runtime) newArray(length uint32) *_object {
+	self := runtime.newArrayObject(length)
+	self.prototype = runtime.global.ArrayPrototype
+	return self
 }
 
-func (rt *runtime) newArrayOf(valueArray []Value) *object {
-	o := rt.newArray(uint32(len(valueArray)))
+func (runtime *_runtime) newArrayOf(valueArray []Value) *_object {
+	self := runtime.newArray(uint32(len(valueArray)))
 	for index, value := range valueArray {
 		if value.isEmpty() {
 			continue
 		}
-		o.defineProperty(strconv.FormatInt(int64(index), 10), value, 0o111, false)
+		self.defineProperty(strconv.FormatInt(int64(index), 10), value, 0111, false)
 	}
-	return o
+	return self
 }
 
-func (rt *runtime) newString(value Value) *object {
-	o := rt.newStringObject(value)
-	o.prototype = rt.global.StringPrototype
-	return o
+func (runtime *_runtime) newString(value Value) *_object {
+	self := runtime.newStringObject(value)
+	self.prototype = runtime.global.StringPrototype
+	return self
 }
 
-func (rt *runtime) newBoolean(value Value) *object {
-	o := rt.newBooleanObject(value)
-	o.prototype = rt.global.BooleanPrototype
-	return o
+func (runtime *_runtime) newBoolean(value Value) *_object {
+	self := runtime.newBooleanObject(value)
+	self.prototype = runtime.global.BooleanPrototype
+	return self
 }
 
-func (rt *runtime) newNumber(value Value) *object {
-	o := rt.newNumberObject(value)
-	o.prototype = rt.global.NumberPrototype
-	return o
+func (runtime *_runtime) newNumber(value Value) *_object {
+	self := runtime.newNumberObject(value)
+	self.prototype = runtime.global.NumberPrototype
+	return self
 }
 
-func (rt *runtime) newRegExp(patternValue Value, flagsValue Value) *object {
+func (runtime *_runtime) newRegExp(patternValue Value, flagsValue Value) *_object {
+
 	pattern := ""
 	flags := ""
-	if obj := patternValue.object(); obj != nil && obj.class == classRegExpName {
+	if object := patternValue._object(); object != nil && object.class == classRegExp {
 		if flagsValue.IsDefined() {
-			panic(rt.panicTypeError("Cannot supply flags when constructing one RegExp from another"))
+			panic(runtime.panicTypeError("Cannot supply flags when constructing one RegExp from another"))
 		}
-		regExp := obj.regExpValue()
+		regExp := object.regExpValue()
 		pattern = regExp.source
 		flags = regExp.flags
 	} else {
@@ -147,71 +150,72 @@ func (rt *runtime) newRegExp(patternValue Value, flagsValue Value) *object {
 		}
 	}
 
-	return rt.newRegExpDirect(pattern, flags)
+	return runtime._newRegExp(pattern, flags)
 }
 
-func (rt *runtime) newRegExpDirect(pattern string, flags string) *object {
-	o := rt.newRegExpObject(pattern, flags)
-	o.prototype = rt.global.RegExpPrototype
-	return o
+func (runtime *_runtime) _newRegExp(pattern string, flags string) *_object {
+	self := runtime.newRegExpObject(pattern, flags)
+	self.prototype = runtime.global.RegExpPrototype
+	return self
 }
 
-// TODO Should (probably) be one argument, right? This is redundant.
-func (rt *runtime) newDate(epoch float64) *object {
-	o := rt.newDateObject(epoch)
-	o.prototype = rt.global.DatePrototype
-	return o
+// TODO Should (probably) be one argument, right? This is redundant
+func (runtime *_runtime) newDate(epoch float64) *_object {
+	self := runtime.newDateObject(epoch)
+	self.prototype = runtime.global.DatePrototype
+	return self
 }
 
-func (rt *runtime) newError(name string, message Value, stackFramesToPop int) *object {
+func (runtime *_runtime) newError(name string, message Value, stackFramesToPop int) *_object {
+	var self *_object
 	switch name {
 	case "EvalError":
-		return rt.newEvalError(message)
+		return runtime.newEvalError(message)
 	case "TypeError":
-		return rt.newTypeError(message)
+		return runtime.newTypeError(message)
 	case "RangeError":
-		return rt.newRangeError(message)
+		return runtime.newRangeError(message)
 	case "ReferenceError":
-		return rt.newReferenceError(message)
+		return runtime.newReferenceError(message)
 	case "SyntaxError":
-		return rt.newSyntaxError(message)
+		return runtime.newSyntaxError(message)
 	case "URIError":
-		return rt.newURIError(message)
+		return runtime.newURIError(message)
 	}
 
-	obj := rt.newErrorObject(name, message, stackFramesToPop)
-	obj.prototype = rt.global.ErrorPrototype
+	self = runtime.newErrorObject(name, message, stackFramesToPop)
+	self.prototype = runtime.global.ErrorPrototype
 	if name != "" {
-		obj.defineProperty("name", stringValue(name), 0o111, false)
+		self.defineProperty("name", toValue_string(name), 0111, false)
 	}
-	return obj
+	return self
 }
 
-func (rt *runtime) newNativeFunction(name, file string, line int, fn nativeFunction) *object {
-	o := rt.newNativeFunctionObject(name, file, line, fn, 0)
-	o.prototype = rt.global.FunctionPrototype
-	prototype := rt.newObject()
-	o.defineProperty("prototype", objectValue(prototype), 0o100, false)
-	prototype.defineProperty("constructor", objectValue(o), 0o100, false)
-	return o
+func (runtime *_runtime) newNativeFunction(name, file string, line int, _nativeFunction _nativeFunction) *_object {
+	self := runtime.newNativeFunctionObject(name, file, line, _nativeFunction, 0)
+	self.prototype = runtime.global.FunctionPrototype
+	prototype := runtime.newObject()
+	self.defineProperty("prototype", toValue_object(prototype), 0100, false)
+	prototype.defineProperty("constructor", toValue_object(self), 0100, false)
+	return self
 }
 
-func (rt *runtime) newNodeFunction(node *nodeFunctionLiteral, scopeEnvironment stasher) *object {
+func (runtime *_runtime) newNodeFunction(node *_nodeFunctionLiteral, scopeEnvironment _stash) *_object {
 	// TODO Implement 13.2 fully
-	o := rt.newNodeFunctionObject(node, scopeEnvironment)
-	o.prototype = rt.global.FunctionPrototype
-	prototype := rt.newObject()
-	o.defineProperty("prototype", objectValue(prototype), 0o100, false)
-	prototype.defineProperty("constructor", objectValue(o), 0o101, false)
-	return o
+	self := runtime.newNodeFunctionObject(node, scopeEnvironment)
+	self.prototype = runtime.global.FunctionPrototype
+	prototype := runtime.newObject()
+	self.defineProperty("prototype", toValue_object(prototype), 0100, false)
+	prototype.defineProperty("constructor", toValue_object(self), 0101, false)
+	return self
 }
 
 // FIXME Only in one place...
-func (rt *runtime) newBoundFunction(target *object, this Value, argumentList []Value) *object {
-	o := rt.newBoundFunctionObject(target, this, argumentList)
-	o.prototype = rt.global.FunctionPrototype
-	prototype := rt.newObject()
-	o.defineProperty("prototype", objectValue(prototype), 0o100, false)
-	prototype.defineProperty("constructor", objectValue(o), 0o100, false)
-	return o
+func (runtime *_runtime) newBoundFunction(target *_object, this Value, argumentList []Value) *_object {
+	self := runtime.newBoundFunctionObject(target, this, argumentList)
+	self.prototype = runtime.global.FunctionPrototype
+	prototype := runtime.newObject()
+	self.defineProperty("prototype", toValue_object(prototype), 0100, false)
+	prototype.defineProperty("constructor", toValue_object(self), 0100, false)
+	return self
 }

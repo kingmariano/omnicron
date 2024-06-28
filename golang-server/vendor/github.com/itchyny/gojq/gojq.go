@@ -1,5 +1,5 @@
-// Package gojq provides the parser and the interpreter of gojq.
-// Please refer to [Usage as a library] for introduction.
+// Package gojq provides the parser and interpreter of gojq.
 //
-// [Usage as a library]: https://github.com/itchyny/gojq#usage-as-a-library
+// Please refer to https://github.com/itchyny/gojq#usage-as-a-library for
+// introduction of the usage as a library.
 package gojq

@@ -1,43 +1,44 @@
 /*
 Package parser implements a parser for JavaScript.
 
-	import (
-	    "github.com/robertkrimen/otto/parser"
-	)
+    import (
+        "github.com/robertkrimen/otto/parser"
+    )
 
 Parse and return an AST
 
-	filename := "" // A filename is optional
-	src := `
-	    // Sample xyzzy example
-	    (function(){
-	        if (3.14159 > 0) {
-	            console.log("Hello, World.");
-	            return;
-	        }
+    filename := "" // A filename is optional
+    src := `
+        // Sample xyzzy example
+        (function(){
+            if (3.14159 > 0) {
+                console.log("Hello, World.");
+                return;
+            }
 
-	        var xyzzy = NaN;
-	        console.log("Nothing happens.");
-	        return xyzzy;
-	    })();
-	`
+            var xyzzy = NaN;
+            console.log("Nothing happens.");
+            return xyzzy;
+        })();
+    `
 
-	// Parse some JavaScript, yielding a *ast.Program and/or an ErrorList
-	program, err := parser.ParseFile(nil, filename, src, 0)
+    // Parse some JavaScript, yielding a *ast.Program and/or an ErrorList
+    program, err := parser.ParseFile(nil, filename, src, 0)
 
-# Warning
+Warning
 
 The parser and AST interfaces are still works-in-progress (particularly where
 node types are concerned) and may change in the future.
+
 */
 package parser
 
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
+	"errors"
 	"io"
-	"os"
+	"io/ioutil"
 
 	"github.com/robertkrimen/otto/ast"
 	"github.com/robertkrimen/otto/file"
@@ -49,43 +50,48 @@ import (
 type Mode uint
 
 const (
-	// IgnoreRegExpErrors ignores RegExp compatibility errors (allow backtracking).
-	IgnoreRegExpErrors Mode = 1 << iota
-
-	// StoreComments stores the comments from source to the comments map.
-	StoreComments
+	IgnoreRegExpErrors Mode = 1 << iota // Ignore RegExp compatibility errors (allow backtracking)
+	StoreComments                       // Store the comments from source to the comments map
 )
 
-type parser struct {
-	comments *ast.Comments
-	file     *file.File
-	scope    *scope
-	literal  string
-	str      string
-	errors   ErrorList
-	recover  struct {
+type _parser struct {
+	str    string
+	length int
+	base   int
+
+	chr       rune // The current character
+	chrOffset int  // The offset of current character
+	offset    int  // The offset after current character (may be greater than 1)
+
+	idx     file.Idx    // The index of token
+	token   token.Token // The token
+	literal string      // The literal of the token, if any
+
+	scope             *_scope
+	insertSemicolon   bool // If we see a newline, then insert an implicit semicolon
+	implicitSemicolon bool // An implicit semicolon exists
+
+	errors ErrorList
+
+	recover struct {
+		// Scratch when trying to seek to the next statement, etc.
 		idx   file.Idx
 		count int
 	}
-	idx               file.Idx
-	token             token.Token
-	offset            int
-	chrOffset         int
-	mode              Mode
-	base              int
-	length            int
-	chr               rune
-	insertSemicolon   bool
-	implicitSemicolon bool // Scratch when trying to seek to the next statement, etc.
+
+	mode Mode
+
+	file *file.File
+
+	comments *ast.Comments
 }
 
-// Parser is implemented by types which can parse JavaScript Code.
 type Parser interface {
 	Scan() (tkn token.Token, literal string, idx file.Idx)
 }
 
-func newParser(filename, src string, base int, sm *sourcemap.Consumer) *parser {
-	return &parser{
+func _newParser(filename, src string, base int, sm *sourcemap.Consumer) *_parser {
+	return &_parser{
 		chr:      ' ', // This is set so we can start scanning by skipping whitespace
 		str:      src,
 		length:   len(src),
@@ -95,12 +101,11 @@ func newParser(filename, src string, base int, sm *sourcemap.Consumer) *parser {
 	}
 }
 
-// NewParser returns a new Parser.
+// Returns a new Parser.
 func NewParser(filename, src string) Parser {
-	return newParser(filename, src, 1, nil)
+	return _newParser(filename, src, 1, nil)
 }
 
-// ReadSource reads code from src if not nil, otherwise reads from filename.
 func ReadSource(filename string, src interface{}) ([]byte, error) {
 	if src != nil {
 		switch src := src.(type) {
@@ -118,17 +123,15 @@ func ReadSource(filename string, src interface{}) ([]byte, error) {
 				return nil, err
 			}
 			return bfr.Bytes(), nil
-		default:
-			return nil, fmt.Errorf("invalid src type %T", src)
 		}
+		return nil, errors.New("invalid source")
 	}
-	return os.ReadFile(filename) //nolint:gosec
+	return ioutil.ReadFile(filename)
 }
 
-// ReadSourceMap reads the source map from src if not nil, otherwise is a noop.
 func ReadSourceMap(filename string, src interface{}) (*sourcemap.Consumer, error) {
 	if src == nil {
-		return nil, nil //nolint:nilnil
+		return nil, nil
 	}
 
 	switch src := src.(type) {
@@ -137,7 +140,9 @@ func ReadSourceMap(filename string, src interface{}) (*sourcemap.Consumer, error
 	case []byte:
 		return sourcemap.Parse(filename, src)
 	case *bytes.Buffer:
-		return sourcemap.Parse(filename, src.Bytes())
+		if src != nil {
+			return sourcemap.Parse(filename, src.Bytes())
+		}
 	case io.Reader:
 		var bfr bytes.Buffer
 		if _, err := io.Copy(&bfr, src); err != nil {
@@ -146,12 +151,11 @@ func ReadSourceMap(filename string, src interface{}) (*sourcemap.Consumer, error
 		return sourcemap.Parse(filename, bfr.Bytes())
 	case *sourcemap.Consumer:
 		return src, nil
-	default:
-		return nil, fmt.Errorf("invalid sourcemap type %T", src)
 	}
+
+	return nil, errors.New("invalid sourcemap type")
 }
 
-// ParseFileWithSourceMap parses the sourcemap returning the resulting Program.
 func ParseFileWithSourceMap(fileSet *file.FileSet, filename string, javascriptSource, sourcemapSource interface{}, mode Mode) (*ast.Program, error) {
 	src, err := ReadSource(filename, javascriptSource)
 	if err != nil {
@@ -164,7 +168,7 @@ func ParseFileWithSourceMap(fileSet *file.FileSet, filename string, javascriptSo
 		if bytes.HasPrefix(lastLine, []byte("//# sourceMappingURL=data:application/json")) {
 			bits := bytes.SplitN(lastLine, []byte(","), 2)
 			if len(bits) == 2 {
-				if d, errDecode := base64.StdEncoding.DecodeString(string(bits[1])); errDecode == nil {
+				if d, err := base64.StdEncoding.DecodeString(string(bits[1])); err == nil {
 					sourcemapSource = d
 				}
 			}
@@ -181,10 +185,10 @@ func ParseFileWithSourceMap(fileSet *file.FileSet, filename string, javascriptSo
 		base = fileSet.AddFile(filename, string(src))
 	}
 
-	p := newParser(filename, string(src), base, sm)
-	p.mode = mode
-	program, err := p.parse()
-	program.Comments = p.comments.CommentMap
+	parser := _newParser(filename, string(src), base, sm)
+	parser.mode = mode
+	program, err := parser.parse()
+	program.Comments = parser.comments.CommentMap
 
 	return program, err
 }
@@ -199,8 +203,9 @@ func ParseFileWithSourceMap(fileSet *file.FileSet, filename string, javascriptSo
 //
 // src may be a string, a byte slice, a bytes.Buffer, or an io.Reader, but it MUST always be in UTF-8.
 //
-//	// Parse some JavaScript, yielding a *ast.Program and/or an ErrorList
-//	program, err := parser.ParseFile(nil, "", `if (abc > 1) {}`, 0)
+//      // Parse some JavaScript, yielding a *ast.Program and/or an ErrorList
+//      program, err := parser.ParseFile(nil, "", `if (abc > 1) {}`, 0)
+//
 func ParseFile(fileSet *file.FileSet, filename string, src interface{}, mode Mode) (*ast.Program, error) {
 	return ParseFileWithSourceMap(fileSet, filename, src, nil, mode)
 }
@@ -209,11 +214,13 @@ func ParseFile(fileSet *file.FileSet, filename string, src interface{}, mode Mod
 // corresponding ast.FunctionLiteral node.
 //
 // The parameter list, if any, should be a comma-separated list of identifiers.
+//
 func ParseFunction(parameterList, body string) (*ast.FunctionLiteral, error) {
+
 	src := "(function(" + parameterList + ") {\n" + body + "\n})"
 
-	p := newParser("", src, 1, nil)
-	program, err := p.parse()
+	parser := _newParser("", src, 1, nil)
+	program, err := parser.parse()
 	if err != nil {
 		return nil, err
 	}
@@ -224,75 +231,75 @@ func ParseFunction(parameterList, body string) (*ast.FunctionLiteral, error) {
 // Scan reads a single token from the source at the current offset, increments the offset and
 // returns the token.Token token, a string literal representing the value of the token (if applicable)
 // and it's current file.Idx index.
-func (p *parser) Scan() (token.Token, string, file.Idx) {
-	return p.scan()
+func (self *_parser) Scan() (tkn token.Token, literal string, idx file.Idx) {
+	return self.scan()
 }
 
-func (p *parser) slice(idx0, idx1 file.Idx) string {
-	from := int(idx0) - p.base
-	to := int(idx1) - p.base
-	if from >= 0 && to <= len(p.str) {
-		return p.str[from:to]
+func (self *_parser) slice(idx0, idx1 file.Idx) string {
+	from := int(idx0) - self.base
+	to := int(idx1) - self.base
+	if from >= 0 && to <= len(self.str) {
+		return self.str[from:to]
 	}
 
 	return ""
 }
 
-func (p *parser) parse() (*ast.Program, error) {
-	p.next()
-	program := p.parseProgram()
+func (self *_parser) parse() (*ast.Program, error) {
+	self.next()
+	program := self.parseProgram()
 	if false {
-		p.errors.Sort()
+		self.errors.Sort()
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(program, p.comments.FetchAll(), ast.TRAILING)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(program, self.comments.FetchAll(), ast.TRAILING)
 	}
 
-	return program, p.errors.Err()
+	return program, self.errors.Err()
 }
 
-func (p *parser) next() {
-	p.token, p.literal, p.idx = p.scan()
+func (self *_parser) next() {
+	self.token, self.literal, self.idx = self.scan()
 }
 
-func (p *parser) optionalSemicolon() {
-	if p.token == token.SEMICOLON {
-		p.next()
+func (self *_parser) optionalSemicolon() {
+	if self.token == token.SEMICOLON {
+		self.next()
 		return
 	}
 
-	if p.implicitSemicolon {
-		p.implicitSemicolon = false
+	if self.implicitSemicolon {
+		self.implicitSemicolon = false
 		return
 	}
 
-	if p.token != token.EOF && p.token != token.RIGHT_BRACE {
-		p.expect(token.SEMICOLON)
+	if self.token != token.EOF && self.token != token.RIGHT_BRACE {
+		self.expect(token.SEMICOLON)
 	}
 }
 
-func (p *parser) semicolon() {
-	if p.token != token.RIGHT_PARENTHESIS && p.token != token.RIGHT_BRACE {
-		if p.implicitSemicolon {
-			p.implicitSemicolon = false
+func (self *_parser) semicolon() {
+	if self.token != token.RIGHT_PARENTHESIS && self.token != token.RIGHT_BRACE {
+		if self.implicitSemicolon {
+			self.implicitSemicolon = false
 			return
 		}
 
-		p.expect(token.SEMICOLON)
+		self.expect(token.SEMICOLON)
 	}
 }
 
-func (p *parser) idxOf(offset int) file.Idx {
-	return file.Idx(p.base + offset)
+func (self *_parser) idxOf(offset int) file.Idx {
+	return file.Idx(self.base + offset)
 }
 
-func (p *parser) expect(value token.Token) file.Idx {
-	idx := p.idx
-	if p.token != value {
-		p.errorUnexpectedToken(p.token)
+func (self *_parser) expect(value token.Token) file.Idx {
+	idx := self.idx
+	if self.token != value {
+		self.errorUnexpectedToken(self.token)
 	}
-	p.next()
+	self.next()
 	return idx
 }
 
@@ -302,17 +309,17 @@ func lineCount(str string) (int, int) {
 	for index, chr := range str {
 		switch chr {
 		case '\r':
-			line++
+			line += 1
 			last = index
 			pair = true
 			continue
 		case '\n':
 			if !pair {
-				line++
+				line += 1
 			}
 			last = index
 		case '\u2028', '\u2029':
-			line++
+			line += 1
 			last = index + 2
 		}
 		pair = false
@@ -320,11 +327,11 @@ func lineCount(str string) (int, int) {
 	return line, last
 }
 
-func (p *parser) position(idx file.Idx) file.Position {
+func (self *_parser) position(idx file.Idx) file.Position {
 	position := file.Position{}
-	offset := int(idx) - p.base
-	str := p.str[:offset]
-	position.Filename = p.file.Name()
+	offset := int(idx) - self.base
+	str := self.str[:offset]
+	position.Filename = self.file.Name()
 	line, last := lineCount(str)
 	position.Line = 1 + line
 	if last >= 0 {

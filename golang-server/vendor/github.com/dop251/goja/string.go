@@ -14,60 +14,51 @@ const (
 )
 
 var (
-	stringTrue        String = asciiString("true")
-	stringFalse       String = asciiString("false")
-	stringNull        String = asciiString("null")
-	stringUndefined   String = asciiString("undefined")
-	stringObjectC     String = asciiString("object")
-	stringFunction    String = asciiString("function")
-	stringBoolean     String = asciiString("boolean")
-	stringString      String = asciiString("string")
-	stringSymbol      String = asciiString("symbol")
-	stringNumber      String = asciiString("number")
-	stringNaN         String = asciiString("NaN")
-	stringInfinity           = asciiString("Infinity")
-	stringNegInfinity        = asciiString("-Infinity")
-	stringBound_      String = asciiString("bound ")
-	stringEmpty       String = asciiString("")
+	stringTrue        valueString = asciiString("true")
+	stringFalse       valueString = asciiString("false")
+	stringNull        valueString = asciiString("null")
+	stringUndefined   valueString = asciiString("undefined")
+	stringObjectC     valueString = asciiString("object")
+	stringFunction    valueString = asciiString("function")
+	stringBoolean     valueString = asciiString("boolean")
+	stringString      valueString = asciiString("string")
+	stringSymbol      valueString = asciiString("symbol")
+	stringNumber      valueString = asciiString("number")
+	stringNaN         valueString = asciiString("NaN")
+	stringInfinity                = asciiString("Infinity")
+	stringNegInfinity             = asciiString("-Infinity")
+	stringBound_      valueString = asciiString("bound ")
+	stringEmpty       valueString = asciiString("")
 
-	stringError          String = asciiString("Error")
-	stringAggregateError String = asciiString("AggregateError")
-	stringTypeError      String = asciiString("TypeError")
-	stringReferenceError String = asciiString("ReferenceError")
-	stringSyntaxError    String = asciiString("SyntaxError")
-	stringRangeError     String = asciiString("RangeError")
-	stringEvalError      String = asciiString("EvalError")
-	stringURIError       String = asciiString("URIError")
-	stringGoError        String = asciiString("GoError")
+	stringError          valueString = asciiString("Error")
+	stringAggregateError valueString = asciiString("AggregateError")
+	stringTypeError      valueString = asciiString("TypeError")
+	stringReferenceError valueString = asciiString("ReferenceError")
+	stringSyntaxError    valueString = asciiString("SyntaxError")
+	stringRangeError     valueString = asciiString("RangeError")
+	stringEvalError      valueString = asciiString("EvalError")
+	stringURIError       valueString = asciiString("URIError")
+	stringGoError        valueString = asciiString("GoError")
 
-	stringObjectNull      String = asciiString("[object Null]")
-	stringObjectUndefined String = asciiString("[object Undefined]")
-	stringInvalidDate     String = asciiString("Invalid Date")
+	stringObjectNull      valueString = asciiString("[object Null]")
+	stringObjectUndefined valueString = asciiString("[object Undefined]")
+	stringInvalidDate     valueString = asciiString("Invalid Date")
 )
 
-type utf16Reader interface {
-	readChar() (c uint16, err error)
-}
-
-// String represents an ECMAScript string Value. Its internal representation depends on the contents of the
-// string, but in any case it is capable of holding any UTF-16 string, either valid or invalid.
-// Instances of this type, as any other primitive values, are goroutine-safe and can be passed between runtimes.
-// Strings can be created using Runtime.ToValue(goString) or StringFromUTF16.
-type String interface {
+type valueString interface {
 	Value
-	CharAt(int) uint16
-	Length() int
-	Concat(String) String
-	Substring(start, end int) String
-	CompareTo(String) int
-	Reader() io.RuneReader
-	utf16Reader() utf16Reader
-	utf16RuneReader() io.RuneReader
+	charAt(int) rune
+	length() int
+	concat(valueString) valueString
+	substring(start, end int) valueString
+	compareTo(valueString) int
+	reader() io.RuneReader
+	utf16Reader() io.RuneReader
 	utf16Runes() []rune
-	index(String, int) int
-	lastIndex(String, int) int
-	toLower() String
-	toUpper() String
+	index(valueString, int) int
+	lastIndex(valueString, int) int
+	toLower() valueString
+	toUpper() valueString
 	toTrimmedUTF8() string
 }
 
@@ -76,12 +67,12 @@ type stringIterObject struct {
 	reader io.RuneReader
 }
 
-func isUTF16FirstSurrogate(c uint16) bool {
-	return c >= 0xD800 && c <= 0xDBFF
+func isUTF16FirstSurrogate(r rune) bool {
+	return r >= 0xD800 && r <= 0xDBFF
 }
 
-func isUTF16SecondSurrogate(c uint16) bool {
-	return c >= 0xDC00 && c <= 0xDFFF
+func isUTF16SecondSurrogate(r rune) bool {
+	return r >= 0xDC00 && r <= 0xDFFF
 }
 
 func (si *stringIterObject) next() Value {
@@ -96,7 +87,7 @@ func (si *stringIterObject) next() Value {
 	return si.val.runtime.createIterResultObject(stringFromRune(r), false)
 }
 
-func stringFromRune(r rune) String {
+func stringFromRune(r rune) valueString {
 	if r < utf8.RuneSelf {
 		var sb strings.Builder
 		sb.WriteByte(byte(r))
@@ -107,7 +98,7 @@ func stringFromRune(r rune) String {
 	return sb.String()
 }
 
-func (r *Runtime) createStringIterator(s String) Value {
+func (r *Runtime) createStringIterator(s valueString) Value {
 	o := &Object{runtime: r}
 
 	si := &stringIterObject{
@@ -125,19 +116,19 @@ func (r *Runtime) createStringIterator(s String) Value {
 
 type stringObject struct {
 	baseObject
-	value      String
+	value      valueString
 	length     int
 	lengthProp valueProperty
 }
 
-func newStringValue(s string) String {
+func newStringValue(s string) valueString {
 	if u := unistring.Scan(s); u != nil {
 		return unicodeString(u)
 	}
 	return asciiString(s)
 }
 
-func stringValueFromRaw(raw unistring.String) String {
+func stringValueFromRaw(raw unistring.String) valueString {
 	if b := raw.AsUtf16(); b != nil {
 		return unicodeString(b)
 	}
@@ -151,7 +142,7 @@ func (s *stringObject) init() {
 
 func (s *stringObject) setLength() {
 	if s.value != nil {
-		s.length = s.value.Length()
+		s.length = s.value.length()
 	}
 	s.lengthProp.value = intToValue(int64(s.length))
 	s._put("length", &s.lengthProp)
@@ -201,7 +192,7 @@ func (s *stringObject) getOwnPropIdx(idx valueInt) Value {
 }
 
 func (s *stringObject) _getIdx(idx int) Value {
-	return s.value.Substring(idx, idx+1)
+	return s.value.substring(idx, idx+1)
 }
 
 func (s *stringObject) setOwnStr(name unistring.String, val Value, throw bool) bool {
@@ -251,7 +242,7 @@ func (s *stringObject) defineOwnPropertyIdx(idx valueInt, descr PropertyDescript
 }
 
 type stringPropIter struct {
-	str         String // separate, because obj can be the singleton
+	str         valueString // separate, because obj can be the singleton
 	obj         *stringObject
 	idx, length int
 }
@@ -316,7 +307,7 @@ func (s *stringObject) hasOwnPropertyIdx(idx valueInt) bool {
 	return s.baseObject.hasOwnPropertyStr(idx.string())
 }
 
-func devirtualizeString(s String) (asciiString, unicodeString) {
+func devirtualizeString(s valueString) (asciiString, unicodeString) {
 	switch s := s.(type) {
 	case asciiString:
 		return s, nil
@@ -335,29 +326,4 @@ func devirtualizeString(s String) (asciiString, unicodeString) {
 
 func unknownStringTypeErr(v Value) interface{} {
 	return newTypeError("Internal bug: unknown string type: %T", v)
-}
-
-// StringFromUTF16 creates a string value from an array of UTF-16 code units. The result is a copy, so the initial
-// slice can be modified after calling this function (but it must not be modified while the function is running).
-// No validation of any kind is performed.
-func StringFromUTF16(chars []uint16) String {
-	isAscii := true
-	for _, c := range chars {
-		if c >= utf8.RuneSelf {
-			isAscii = false
-			break
-		}
-	}
-	if isAscii {
-		var sb strings.Builder
-		sb.Grow(len(chars))
-		for _, c := range chars {
-			sb.WriteByte(byte(c))
-		}
-		return asciiString(sb.String())
-	}
-	buf := make([]uint16, len(chars)+1)
-	buf[0] = unistring.BOM
-	copy(buf[1:], chars)
-	return unicodeString(buf)
 }

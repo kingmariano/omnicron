@@ -4,40 +4,41 @@ import (
 	"github.com/robertkrimen/otto/ast"
 )
 
-type scope struct {
-	outer           *scope
-	declarationList []ast.Declaration
-	labels          []string
+type _scope struct {
+	outer           *_scope
 	allowIn         bool
 	inIteration     bool
 	inSwitch        bool
 	inFunction      bool
+	declarationList []ast.Declaration
+
+	labels []string
 }
 
-func (p *parser) openScope() {
-	p.scope = &scope{
-		outer:   p.scope,
+func (self *_parser) openScope() {
+	self.scope = &_scope{
+		outer:   self.scope,
 		allowIn: true,
 	}
 }
 
-func (p *parser) closeScope() {
-	p.scope = p.scope.outer
+func (self *_parser) closeScope() {
+	self.scope = self.scope.outer
 }
 
-func (p *scope) declare(declaration ast.Declaration) {
-	p.declarationList = append(p.declarationList, declaration)
+func (self *_scope) declare(declaration ast.Declaration) {
+	self.declarationList = append(self.declarationList, declaration)
 }
 
-func (p *scope) hasLabel(name string) bool {
-	for _, label := range p.labels {
+func (self *_scope) hasLabel(name string) bool {
+	for _, label := range self.labels {
 		if label == name {
 			return true
 		}
 	}
-	if p.outer != nil && !p.inFunction {
+	if self.outer != nil && !self.inFunction {
 		// Crossing a function boundary to look for a label is verboten
-		return p.outer.hasLabel(name)
+		return self.outer.hasLabel(name)
 	}
 	return false
 }

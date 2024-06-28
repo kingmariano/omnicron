@@ -1,16 +1,16 @@
-//go:build !gojq_debug
-// +build !gojq_debug
+//go:build !debug
+// +build !debug
 
 package gojq
 
 type codeinfo struct{}
 
-func (*compiler) appendCodeInfo(any) {}
+func (c *compiler) appendCodeInfo(interface{}) {}
 
-func (*compiler) deleteCodeInfo(string) {}
+func (c *compiler) deleteCodeInfo(string) {}
 
-func (*env) debugCodes() {}
+func (env *env) debugCodes() {}
 
-func (*env) debugState(int, bool) {}
+func (env *env) debugState(int, bool) {}
 
-func (*env) debugForks(int, string) {}
+func (env *env) debugForks(int, string) {}

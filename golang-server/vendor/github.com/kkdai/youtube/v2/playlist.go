@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -69,9 +68,8 @@ func (p *Playlist) parsePlaylistInfo(ctx context.Context, client *Client, body [
 	}
 
 	defer func() {
-		stack := debug.Stack()
 		if r := recover(); r != nil {
-			err = fmt.Errorf("JSON parsing error: %v\n%s", r, stack)
+			err = fmt.Errorf("JSON parsing error: %v", r)
 		}
 	}()
 
@@ -82,70 +80,27 @@ func (p *Playlist) parsePlaylistInfo(ctx context.Context, client *Client, body [
 		return ErrPlaylistStatus{Reason: message}
 	}
 
-	// Metadata can be located in multiple places depending on client type
-	var metadata *sjson.Json
-	if node, ok := j.CheckGet("metadata"); ok {
-		metadata = node
-	} else if node, ok := j.CheckGet("header"); ok {
-		metadata = node
-	} else {
-		return fmt.Errorf("no playlist header / metadata found")
-	}
-
-	metadata = metadata.Get("playlistHeaderRenderer")
-
-	p.Title = sjsonGetText(metadata, "title")
-	p.Description = sjsonGetText(metadata, "description", "descriptionText")
+	p.Title = j.GetPath("metadata", "playlistMetadataRenderer", "title").MustString()
+	p.Description = j.GetPath("metadata", "playlistMetadataRenderer", "description").MustString()
 	p.Author = j.GetPath("sidebar", "playlistSidebarRenderer", "items").GetIndex(1).
 		GetPath("playlistSidebarSecondaryInfoRenderer", "videoOwner", "videoOwnerRenderer", "title", "runs").
 		GetIndex(0).Get("text").MustString()
-
-	if len(p.Author) == 0 {
-		p.Author = sjsonGetText(metadata, "owner", "ownerText")
-	}
-
-	contents, ok := j.CheckGet("contents")
-	if !ok {
-		return fmt.Errorf("contents not found in json body")
-	}
-
-	// contents can have different keys with same child structure
-	firstPart := getFirstKeyJSON(contents).GetPath("tabs").GetIndex(0).
-		GetPath("tabRenderer", "content", "sectionListRenderer", "contents").GetIndex(0)
-
-	// This extra nested item is only set with the web client
-	if n := firstPart.GetPath("itemSectionRenderer", "contents").GetIndex(0); isValidJSON(n) {
-		firstPart = n
-	}
-
-	vJSON, err := firstPart.GetPath("playlistVideoListRenderer", "contents").MarshalJSON()
-	if err != nil {
-		return err
-	}
-
-	if len(vJSON) <= 4 {
-		return fmt.Errorf("no video data found in JSON")
-	}
+	vJSON, err := j.GetPath("contents", "twoColumnBrowseResultsRenderer", "tabs").GetIndex(0).
+		GetPath("tabRenderer", "content", "sectionListRenderer", "contents").GetIndex(0).
+		GetPath("itemSectionRenderer", "contents").GetIndex(0).
+		GetPath("playlistVideoListRenderer", "contents").MarshalJSON()
 
 	entries, continuation, err := extractPlaylistEntries(vJSON)
 	if err != nil {
 		return err
 	}
 
-	if len(continuation) == 0 {
-		continuation = getContinuation(firstPart.Get("playlistVideoListRenderer"))
-	}
-
-	if len(entries) == 0 {
-		return fmt.Errorf("no videos found in playlist")
-	}
-
 	p.Videos = entries
 
 	for continuation != "" {
-		data := prepareInnertubePlaylistData(continuation, true, *client.client)
+		data := prepareInnertubePlaylistData(continuation, true, webClient)
 
-		body, err := client.httpPostBodyBytes(ctx, "https://www.youtube.com/youtubei/v1/browse?key="+client.client.key, data)
+		body, err := client.httpPostBodyBytes(ctx, "https://www.youtube.com/youtubei/v1/browse?key="+webClient.key, data)
 		if err != nil {
 			return err
 		}
@@ -155,14 +110,9 @@ func (p *Playlist) parsePlaylistInfo(ctx context.Context, client *Client, body [
 			return err
 		}
 
-		next := j.GetPath("onResponseReceivedActions").GetIndex(0).
-			GetPath("appendContinuationItemsAction", "continuationItems")
+		vJSON, err := j.GetPath("onResponseReceivedActions").GetIndex(0).
+			GetPath("appendContinuationItemsAction", "continuationItems").MarshalJSON()
 
-		if !isValidJSON(next) {
-			next = j.GetPath("continuationContents", "playlistVideoListContinuation", "contents")
-		}
-
-		vJSON, err := next.MarshalJSON()
 		if err != nil {
 			return err
 		}
@@ -172,13 +122,7 @@ func (p *Playlist) parsePlaylistInfo(ctx context.Context, client *Client, body [
 			return err
 		}
 
-		if len(token) > 0 {
-			continuation = token
-		} else {
-			continuation = getContinuation(j.GetPath("continuationContents", "playlistVideoListContinuation"))
-		}
-
-		p.Videos = append(p.Videos, entries...)
+		p.Videos, continuation = append(p.Videos, entries...), token
 	}
 
 	return err

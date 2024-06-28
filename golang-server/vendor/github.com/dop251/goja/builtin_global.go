@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"unicode/utf8"
 )
 
@@ -62,8 +61,8 @@ func (r *Runtime) builtin_isFinite(call FunctionCall) Value {
 	return valueTrue
 }
 
-func (r *Runtime) _encode(uriString String, unescaped *[256]bool) String {
-	reader := uriString.Reader()
+func (r *Runtime) _encode(uriString valueString, unescaped *[256]bool) valueString {
+	reader := uriString.reader()
 	utf8Buf := make([]byte, utf8.UTFMax)
 	needed := false
 	l := 0
@@ -71,7 +70,7 @@ func (r *Runtime) _encode(uriString String, unescaped *[256]bool) String {
 		rn, _, err := reader.ReadRune()
 		if err != nil {
 			if err != io.EOF {
-				panic(r.newError(r.getURIError(), "Malformed URI"))
+				panic(r.newError(r.global.URIError, "Malformed URI"))
 			}
 			break
 		}
@@ -93,7 +92,7 @@ func (r *Runtime) _encode(uriString String, unescaped *[256]bool) String {
 
 	buf := make([]byte, l)
 	i := 0
-	reader = uriString.Reader()
+	reader = uriString.reader()
 	for {
 		rn, _, err := reader.ReadRune()
 		if err == io.EOF {
@@ -121,14 +120,14 @@ func (r *Runtime) _encode(uriString String, unescaped *[256]bool) String {
 	return asciiString(buf)
 }
 
-func (r *Runtime) _decode(sv String, reservedSet *[256]bool) String {
+func (r *Runtime) _decode(sv valueString, reservedSet *[256]bool) valueString {
 	s := sv.String()
 	hexCount := 0
 	for i := 0; i < len(s); {
 		switch s[i] {
 		case '%':
 			if i+2 >= len(s) || !ishex(s[i+1]) || !ishex(s[i+2]) {
-				panic(r.newError(r.getURIError(), "Malformed URI"))
+				panic(r.newError(r.global.URIError, "Malformed URI"))
 			}
 			c := unhex(s[i+1])<<4 | unhex(s[i+2])
 			if !reservedSet[c] {
@@ -184,7 +183,7 @@ func (r *Runtime) _decode(sv String, reservedSet *[256]bool) String {
 		rn, size := utf8.DecodeRune(t)
 		if rn == utf8.RuneError {
 			if size != 3 || t[0] != 0xef || t[1] != 0xbf || t[2] != 0xbd {
-				panic(r.newError(r.getURIError(), "Malformed URI"))
+				panic(r.newError(r.global.URIError, "Malformed URI"))
 			}
 		}
 		us = append(us, rn)
@@ -240,9 +239,9 @@ func (r *Runtime) builtin_encodeURIComponent(call FunctionCall) Value {
 func (r *Runtime) builtin_escape(call FunctionCall) Value {
 	s := call.Argument(0).toString()
 	var sb strings.Builder
-	l := s.Length()
+	l := s.length()
 	for i := 0; i < l; i++ {
-		r := s.CharAt(i)
+		r := uint16(s.charAt(i))
 		if r >= 'A' && r <= 'Z' || r >= 'a' && r <= 'z' || r >= '0' && r <= '9' ||
 			r == '@' || r == '*' || r == '_' || r == '+' || r == '-' || r == '.' || r == '/' {
 			sb.WriteByte(byte(r))
@@ -263,7 +262,7 @@ func (r *Runtime) builtin_escape(call FunctionCall) Value {
 
 func (r *Runtime) builtin_unescape(call FunctionCall) Value {
 	s := call.Argument(0).toString()
-	l := s.Length()
+	l := s.length()
 	var asciiBuf []byte
 	var unicodeBuf []uint16
 	_, u := devirtualizeString(s)
@@ -275,31 +274,31 @@ func (r *Runtime) builtin_unescape(call FunctionCall) Value {
 		asciiBuf = make([]byte, 0, l)
 	}
 	for i := 0; i < l; {
-		r := s.CharAt(i)
+		r := s.charAt(i)
 		if r == '%' {
-			if i <= l-6 && s.CharAt(i+1) == 'u' {
-				c0 := s.CharAt(i + 2)
-				c1 := s.CharAt(i + 3)
-				c2 := s.CharAt(i + 4)
-				c3 := s.CharAt(i + 5)
+			if i <= l-6 && s.charAt(i+1) == 'u' {
+				c0 := s.charAt(i + 2)
+				c1 := s.charAt(i + 3)
+				c2 := s.charAt(i + 4)
+				c3 := s.charAt(i + 5)
 				if c0 <= 0xff && ishex(byte(c0)) &&
 					c1 <= 0xff && ishex(byte(c1)) &&
 					c2 <= 0xff && ishex(byte(c2)) &&
 					c3 <= 0xff && ishex(byte(c3)) {
-					r = uint16(unhex(byte(c0)))<<12 |
-						uint16(unhex(byte(c1)))<<8 |
-						uint16(unhex(byte(c2)))<<4 |
-						uint16(unhex(byte(c3)))
+					r = rune(unhex(byte(c0)))<<12 |
+						rune(unhex(byte(c1)))<<8 |
+						rune(unhex(byte(c2)))<<4 |
+						rune(unhex(byte(c3)))
 					i += 5
 					goto out
 				}
 			}
 			if i <= l-3 {
-				c0 := s.CharAt(i + 1)
-				c1 := s.CharAt(i + 2)
+				c0 := s.charAt(i + 1)
+				c1 := s.charAt(i + 2)
 				if c0 <= 0xff && ishex(byte(c0)) &&
 					c1 <= 0xff && ishex(byte(c1)) {
-					r = uint16(unhex(byte(c0))<<4 | unhex(byte(c1)))
+					r = rune(unhex(byte(c0))<<4 | unhex(byte(c1)))
 					i += 2
 				}
 			}
@@ -315,7 +314,7 @@ func (r *Runtime) builtin_unescape(call FunctionCall) Value {
 			unicode = true
 		}
 		if unicode {
-			unicodeBuf = append(unicodeBuf, r)
+			unicodeBuf = append(unicodeBuf, uint16(r))
 		} else {
 			asciiBuf = append(asciiBuf, byte(r))
 		}
@@ -328,84 +327,28 @@ func (r *Runtime) builtin_unescape(call FunctionCall) Value {
 	return asciiString(asciiBuf)
 }
 
-func createGlobalObjectTemplate() *objectTemplate {
-	t := newObjectTemplate()
-	t.protoFactory = func(r *Runtime) *Object {
-		return r.global.ObjectPrototype
-	}
+func (r *Runtime) initGlobalObject() {
+	o := r.globalObject.self
+	o._putProp("globalThis", r.globalObject, true, false, true)
+	o._putProp("NaN", _NaN, false, false, false)
+	o._putProp("undefined", _undefined, false, false, false)
+	o._putProp("Infinity", _positiveInf, false, false, false)
 
-	t.putStr("Object", func(r *Runtime) Value { return valueProp(r.getObject(), true, false, true) })
-	t.putStr("Function", func(r *Runtime) Value { return valueProp(r.getFunction(), true, false, true) })
-	t.putStr("Array", func(r *Runtime) Value { return valueProp(r.getArray(), true, false, true) })
-	t.putStr("String", func(r *Runtime) Value { return valueProp(r.getString(), true, false, true) })
-	t.putStr("Number", func(r *Runtime) Value { return valueProp(r.getNumber(), true, false, true) })
-	t.putStr("RegExp", func(r *Runtime) Value { return valueProp(r.getRegExp(), true, false, true) })
-	t.putStr("Date", func(r *Runtime) Value { return valueProp(r.getDate(), true, false, true) })
-	t.putStr("Boolean", func(r *Runtime) Value { return valueProp(r.getBoolean(), true, false, true) })
-	t.putStr("Proxy", func(r *Runtime) Value { return valueProp(r.getProxy(), true, false, true) })
-	t.putStr("Reflect", func(r *Runtime) Value { return valueProp(r.getReflect(), true, false, true) })
-	t.putStr("Error", func(r *Runtime) Value { return valueProp(r.getError(), true, false, true) })
-	t.putStr("AggregateError", func(r *Runtime) Value { return valueProp(r.getAggregateError(), true, false, true) })
-	t.putStr("TypeError", func(r *Runtime) Value { return valueProp(r.getTypeError(), true, false, true) })
-	t.putStr("ReferenceError", func(r *Runtime) Value { return valueProp(r.getReferenceError(), true, false, true) })
-	t.putStr("SyntaxError", func(r *Runtime) Value { return valueProp(r.getSyntaxError(), true, false, true) })
-	t.putStr("RangeError", func(r *Runtime) Value { return valueProp(r.getRangeError(), true, false, true) })
-	t.putStr("EvalError", func(r *Runtime) Value { return valueProp(r.getEvalError(), true, false, true) })
-	t.putStr("URIError", func(r *Runtime) Value { return valueProp(r.getURIError(), true, false, true) })
-	t.putStr("GoError", func(r *Runtime) Value { return valueProp(r.getGoError(), true, false, true) })
+	o._putProp("isNaN", r.newNativeFunc(r.builtin_isNaN, nil, "isNaN", nil, 1), true, false, true)
+	o._putProp("parseInt", r.newNativeFunc(r.builtin_parseInt, nil, "parseInt", nil, 2), true, false, true)
+	o._putProp("parseFloat", r.newNativeFunc(r.builtin_parseFloat, nil, "parseFloat", nil, 1), true, false, true)
+	o._putProp("isFinite", r.newNativeFunc(r.builtin_isFinite, nil, "isFinite", nil, 1), true, false, true)
+	o._putProp("decodeURI", r.newNativeFunc(r.builtin_decodeURI, nil, "decodeURI", nil, 1), true, false, true)
+	o._putProp("decodeURIComponent", r.newNativeFunc(r.builtin_decodeURIComponent, nil, "decodeURIComponent", nil, 1), true, false, true)
+	o._putProp("encodeURI", r.newNativeFunc(r.builtin_encodeURI, nil, "encodeURI", nil, 1), true, false, true)
+	o._putProp("encodeURIComponent", r.newNativeFunc(r.builtin_encodeURIComponent, nil, "encodeURIComponent", nil, 1), true, false, true)
+	o._putProp("escape", r.newNativeFunc(r.builtin_escape, nil, "escape", nil, 1), true, false, true)
+	o._putProp("unescape", r.newNativeFunc(r.builtin_unescape, nil, "unescape", nil, 1), true, false, true)
 
-	t.putStr("eval", func(r *Runtime) Value { return valueProp(r.getEval(), true, false, true) })
-
-	t.putStr("Math", func(r *Runtime) Value { return valueProp(r.getMath(), true, false, true) })
-	t.putStr("JSON", func(r *Runtime) Value { return valueProp(r.getJSON(), true, false, true) })
-	addTypedArrays(t)
-	t.putStr("Symbol", func(r *Runtime) Value { return valueProp(r.getSymbol(), true, false, true) })
-	t.putStr("WeakSet", func(r *Runtime) Value { return valueProp(r.getWeakSet(), true, false, true) })
-	t.putStr("WeakMap", func(r *Runtime) Value { return valueProp(r.getWeakMap(), true, false, true) })
-	t.putStr("Map", func(r *Runtime) Value { return valueProp(r.getMap(), true, false, true) })
-	t.putStr("Set", func(r *Runtime) Value { return valueProp(r.getSet(), true, false, true) })
-	t.putStr("Promise", func(r *Runtime) Value { return valueProp(r.getPromise(), true, false, true) })
-
-	t.putStr("globalThis", func(r *Runtime) Value { return valueProp(r.globalObject, true, false, true) })
-	t.putStr("NaN", func(r *Runtime) Value { return valueProp(_NaN, false, false, false) })
-	t.putStr("undefined", func(r *Runtime) Value { return valueProp(_undefined, false, false, false) })
-	t.putStr("Infinity", func(r *Runtime) Value { return valueProp(_positiveInf, false, false, false) })
-
-	t.putStr("isNaN", func(r *Runtime) Value { return r.methodProp(r.builtin_isNaN, "isNaN", 1) })
-	t.putStr("parseInt", func(r *Runtime) Value { return valueProp(r.getParseInt(), true, false, true) })
-	t.putStr("parseFloat", func(r *Runtime) Value { return valueProp(r.getParseFloat(), true, false, true) })
-	t.putStr("isFinite", func(r *Runtime) Value { return r.methodProp(r.builtin_isFinite, "isFinite", 1) })
-	t.putStr("decodeURI", func(r *Runtime) Value { return r.methodProp(r.builtin_decodeURI, "decodeURI", 1) })
-	t.putStr("decodeURIComponent", func(r *Runtime) Value { return r.methodProp(r.builtin_decodeURIComponent, "decodeURIComponent", 1) })
-	t.putStr("encodeURI", func(r *Runtime) Value { return r.methodProp(r.builtin_encodeURI, "encodeURI", 1) })
-	t.putStr("encodeURIComponent", func(r *Runtime) Value { return r.methodProp(r.builtin_encodeURIComponent, "encodeURIComponent", 1) })
-	t.putStr("escape", func(r *Runtime) Value { return r.methodProp(r.builtin_escape, "escape", 1) })
-	t.putStr("unescape", func(r *Runtime) Value { return r.methodProp(r.builtin_unescape, "unescape", 1) })
+	o._putSym(SymToStringTag, valueProp(asciiString(classGlobal), false, false, true))
 
 	// TODO: Annex B
 
-	t.putSym(SymToStringTag, func(r *Runtime) Value { return valueProp(asciiString(classGlobal), false, false, true) })
-
-	return t
-}
-
-var globalObjectTemplate *objectTemplate
-var globalObjectTemplateOnce sync.Once
-
-func getGlobalObjectTemplate() *objectTemplate {
-	globalObjectTemplateOnce.Do(func() {
-		globalObjectTemplate = createGlobalObjectTemplate()
-	})
-	return globalObjectTemplate
-}
-
-func (r *Runtime) getEval() *Object {
-	ret := r.global.Eval
-	if ret == nil {
-		ret = r.newNativeFunc(r.builtin_eval, "eval", 1)
-		r.global.Eval = ret
-	}
-	return ret
 }
 
 func digitVal(d byte) int {

@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
-	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/config"
+	rep "github.com/kingmariano/omnicron-backendsever/golang-server/packages/replicate"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
 	"log"
 	"net/http"
@@ -89,7 +89,7 @@ func processHighSTTInput(ctx context.Context, r *http.Request, cfg *config.ApiCo
 	if audioFile != nil {
 		defer audioFile.Close()
 	}
-    utils.SetStringValue(r.FormValue("url"), &HighSTTParams.URL)
+	utils.SetStringValue(r.FormValue("url"), &HighSTTParams.URL)
 	utils.SetStringValue(r.FormValue("task"), &HighSTTParams.Task)
 	utils.SetIntValue(r.FormValue("batch_size"), &HighSTTParams.BatchSize)
 	utils.SetStringValue(r.FormValue("timestamp"), &HighSTTParams.Timestamp)
@@ -98,13 +98,13 @@ func processHighSTTInput(ctx context.Context, r *http.Request, cfg *config.ApiCo
 		"batch_size": HighSTTParams.BatchSize,
 		"timestamp":  HighSTTParams.Timestamp,
 	}
-    if HighSTTParams.AudioFile != nil && HighSTTParams.URL != nil{
+	if HighSTTParams.AudioFile != nil && HighSTTParams.URL != nil {
 		return nil, errors.New("audio file and url can't be present at the same time")
-	} else if HighSTTParams.AudioFile == nil && HighSTTParams.URL == nil{
+	} else if HighSTTParams.AudioFile == nil && HighSTTParams.URL == nil {
 		return nil, errors.New("either audio file or url must be present at the")
-	}else if HighSTTParams.AudioFile != nil {
+	} else if HighSTTParams.AudioFile != nil {
 		input["audio"] = HighSTTParams.AudioFile
-	}else if HighSTTParams.URL != nil{
+	} else if HighSTTParams.URL != nil {
 		input["url"] = *HighSTTParams.URL
 	}
 	return input, nil

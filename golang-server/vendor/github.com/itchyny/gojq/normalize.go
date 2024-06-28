@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-func normalizeNumber(v json.Number) any {
-	if i, err := v.Int64(); err == nil && math.MinInt <= i && i <= math.MaxInt {
+func normalizeNumber(v json.Number) interface{} {
+	if i, err := v.Int64(); err == nil && minInt <= i && i <= maxInt {
 		return int(i)
 	}
 	if strings.ContainsAny(v.String(), ".eE") {
@@ -25,22 +25,22 @@ func normalizeNumber(v json.Number) any {
 	return math.Inf(1)
 }
 
-func normalizeNumbers(v any) any {
+func normalizeNumbers(v interface{}) interface{} {
 	switch v := v.(type) {
 	case json.Number:
 		return normalizeNumber(v)
 	case *big.Int:
 		if v.IsInt64() {
-			if i := v.Int64(); math.MinInt <= i && i <= math.MaxInt {
+			if i := v.Int64(); minInt <= i && i <= maxInt {
 				return int(i)
 			}
 		}
 		return v
 	case int64:
-		if math.MinInt <= v && v <= math.MaxInt {
-			return int(v)
+		if v > maxInt || v < minInt {
+			return new(big.Int).SetInt64(v)
 		}
-		return big.NewInt(v)
+		return int(v)
 	case int32:
 		return int(v)
 	case int16:
@@ -48,36 +48,68 @@ func normalizeNumbers(v any) any {
 	case int8:
 		return int(v)
 	case uint:
-		if v <= math.MaxInt {
-			return int(v)
+		if v > maxInt {
+			return new(big.Int).SetUint64(uint64(v))
 		}
-		return new(big.Int).SetUint64(uint64(v))
+		return int(v)
 	case uint64:
-		if v <= math.MaxInt {
-			return int(v)
+		if v > maxInt {
+			return new(big.Int).SetUint64(v)
 		}
-		return new(big.Int).SetUint64(v)
+		return int(v)
 	case uint32:
-		if uint64(v) <= math.MaxInt {
-			return int(v)
+		if uint64(v) > maxInt {
+			return new(big.Int).SetUint64(uint64(v))
 		}
-		return new(big.Int).SetUint64(uint64(v))
+		return int(v)
 	case uint16:
 		return int(v)
 	case uint8:
 		return int(v)
 	case float32:
 		return float64(v)
-	case []any:
-		for i, x := range v {
-			v[i] = normalizeNumbers(x)
-		}
-		return v
-	case map[string]any:
+	case map[string]interface{}:
 		for k, x := range v {
 			v[k] = normalizeNumbers(x)
 		}
 		return v
+	case []interface{}:
+		for i, x := range v {
+			v[i] = normalizeNumbers(x)
+		}
+		return v
+	default:
+		return v
+	}
+}
+
+// It's ok to delete destructively because this function is used right after
+// updatePaths, where it shallow-copies maps or slices on updates.
+func deleteEmpty(v interface{}) interface{} {
+	switch v := v.(type) {
+	case struct{}:
+		return nil
+	case map[string]interface{}:
+		for k, w := range v {
+			if w == struct{}{} {
+				delete(v, k)
+			} else {
+				v[k] = deleteEmpty(w)
+			}
+		}
+		return v
+	case []interface{}:
+		var j int
+		for _, w := range v {
+			if w != struct{}{} {
+				v[j] = deleteEmpty(w)
+				j++
+			}
+		}
+		for i := j; i < len(v); i++ {
+			v[i] = nil
+		}
+		return v[:j]
 	default:
 		return v
 	}

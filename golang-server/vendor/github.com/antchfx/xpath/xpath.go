@@ -74,7 +74,6 @@ type NodeNavigator interface {
 type NodeIterator struct {
 	node  NodeNavigator
 	query query
-	table map[uint64]bool
 }
 
 // Current returns current node which matched.
@@ -84,22 +83,14 @@ func (t *NodeIterator) Current() NodeNavigator {
 
 // MoveNext moves Navigator to the next match node.
 func (t *NodeIterator) MoveNext() bool {
-	for {
-		n := t.query.Select(t)
-		if n == nil {
-			return false
-		}
+	n := t.query.Select(t)
+	if n != nil {
 		if !t.node.MoveTo(n) {
 			t.node = n.Copy()
 		}
-		// https://github.com/antchfx/xpath/issues/94
-		id := getHashCode(n.Copy())
-		if _, ok := t.table[id]; ok {
-			continue
-		}
-		t.table[id] = true
 		return true
 	}
+	return false
 }
 
 // Select selects a node set using the specified XPath expression.
@@ -130,14 +121,14 @@ func (expr *Expr) Evaluate(root NodeNavigator) interface{} {
 	val := expr.q.Evaluate(iteratorFunc(func() NodeNavigator { return root }))
 	switch val.(type) {
 	case query:
-		return &NodeIterator{query: expr.q.Clone(), node: root, table: make(map[uint64]bool)}
+		return &NodeIterator{query: expr.q.Clone(), node: root}
 	}
 	return val
 }
 
 // Select selects a node set using the specified XPath expression.
 func (expr *Expr) Select(root NodeNavigator) *NodeIterator {
-	return &NodeIterator{query: expr.q.Clone(), node: root, table: make(map[uint64]bool)}
+	return &NodeIterator{query: expr.q.Clone(), node: root}
 }
 
 // String returns XPath expression string.
@@ -150,7 +141,7 @@ func Compile(expr string) (*Expr, error) {
 	if expr == "" {
 		return nil, errors.New("expr expression is nil")
 	}
-	qy, err := build(expr, nil)
+	qy, err := build(expr)
 	if err != nil {
 		return nil, err
 	}
@@ -167,19 +158,4 @@ func MustCompile(expr string) *Expr {
 		return &Expr{s: expr, q: nopQuery{}}
 	}
 	return exp
-}
-
-// CompileWithNS compiles an XPath expression string, using given namespaces map.
-func CompileWithNS(expr string, namespaces map[string]string) (*Expr, error) {
-	if expr == "" {
-		return nil, errors.New("expr expression is nil")
-	}
-	qy, err := build(expr, namespaces)
-	if err != nil {
-		return nil, err
-	}
-	if qy == nil {
-		return nil, fmt.Errorf(fmt.Sprintf("undeclared variable in XPath expression: %s", expr))
-	}
-	return &Expr{s: expr, q: qy}, nil
 }

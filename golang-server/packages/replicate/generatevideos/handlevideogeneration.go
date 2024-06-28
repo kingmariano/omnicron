@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
-	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/config"
+	rep "github.com/kingmariano/omnicron-backendsever/golang-server/packages/replicate"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
 	"net/http"
 )
@@ -50,8 +50,8 @@ func processHighVideoInput(ctx context.Context, r *http.Request, cfg *config.Api
 	// Handle initial video file
 	videoFile, videoFileHeader, err := r.FormFile("video")
 	if err == nil {
-	    repFile, err := rep.RequestFileToReplicateFile(ctx, videoFileHeader, cfg.ReplicateAPIKey)
-		if err != nil{
+		repFile, err := rep.RequestFileToReplicateFile(ctx, videoFileHeader, cfg.ReplicateAPIKey)
+		if err != nil {
 			return nil, err
 		}
 		HighVideoGenerationParams.InitVideoFile = repFile

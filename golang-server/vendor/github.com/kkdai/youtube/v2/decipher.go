@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -36,7 +37,7 @@ func (c *Client) decipherURL(ctx context.Context, videoID string, cipher string)
 	}
 	query.Add(params.Get("sp"), string(bs))
 
-	query, err = c.decryptNParam(config, query)
+	query, err = c.decryptNParam(ctx, config, query)
 	if err != nil {
 		return "", err
 	}
@@ -63,7 +64,7 @@ func (c *Client) unThrottle(ctx context.Context, videoID string, urlString strin
 		writeArtifact("video-"+videoID+".url", []byte(uri.String()))
 	}
 
-	query, err := c.decryptNParam(config, uri.Query())
+	query, err := c.decryptNParam(ctx, config, uri.Query())
 	if err != nil {
 		return "", err
 	}
@@ -72,21 +73,20 @@ func (c *Client) unThrottle(ctx context.Context, videoID string, urlString strin
 	return uri.String(), nil
 }
 
-func (c *Client) decryptNParam(config playerConfig, query url.Values) (url.Values, error) {
+func (c *Client) decryptNParam(ctx context.Context, config playerConfig, query url.Values) (url.Values, error) {
 	// decrypt n-parameter
 	nSig := query.Get("v")
-	log := Logger.With("n", nSig)
-
 	if nSig != "" {
 		nDecoded, err := config.decodeNsig(nSig)
 		if err != nil {
 			return nil, fmt.Errorf("unable to decode nSig: %w", err)
 		}
 		query.Set("v", nDecoded)
-		log = log.With("decoded", nDecoded)
 	}
 
-	log.Debug("nParam")
+	if c.Debug {
+		log.Printf("[nParam] n: %s; nDecoded: %s\nQuery: %v\n", nSig, query.Get("v"), query)
+	}
 
 	return query, nil
 }
@@ -282,4 +282,13 @@ func (config playerConfig) parseDecipherOps() (operations []DecipherOperation, e
 		}
 	}
 	return ops, nil
+}
+
+func (config playerConfig) getSignatureTimestamp() (string, error) {
+	result := signatureRegexp.FindSubmatch(config)
+	if result == nil {
+		return "", ErrSignatureTimestampNotFound
+	}
+
+	return string(result[1]), nil
 }

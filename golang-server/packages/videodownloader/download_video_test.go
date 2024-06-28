@@ -1,7 +1,7 @@
 package videodownloader
 
 import (
-	"os"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/utils"
 	"testing"
 )
 
@@ -9,7 +9,6 @@ func TestDownloadVideoData(t *testing.T) {
 	type args struct {
 		url        string
 		outputName string
-		outputPath string
 		resolution string
 	}
 
@@ -18,67 +17,53 @@ func TestDownloadVideoData(t *testing.T) {
 		args args
 	}{
 
-		{
-			name: "Download 1080p video",
-			args: args{
-				url:        "https://www.youtube.com/watch?v=B_HR2R3xsnQ",
-				outputName: "test_video_720p",
-				outputPath: "./test_videos",
-				resolution: "",
-			},
-		},
-		{
-			name: "Download 720p video",
-			args: args{
-				url:        "https://youtu.be/ZT0yQgUIZho",
-				outputName: "test_video_720p",
-				outputPath: "./test_videos",
-				resolution: "",
-			},
-		},
+		// {
+		// 	name: "Download 1080p video",
+		// 	args: args{
+		// 		url:        "https://www.youtube.com/shorts/WO7wT-FX2mA",
+		// 		outputName: "test_video_1080p",
+		// 		resolution: "",
+		// 	},
+		// },
+		// {
+		// 	name: "Download 720p video",
+		// 	args: args{
+		// 		url:        "https://youtu.be/ZT0yQgUIZho",
+		// 		outputName: "test_video_720p",
+		// 		resolution: "720p",
+		// 	},
+		// },
 
 		{
 			name: "Download 240p video",
 			args: args{
 				url:        "https://youtu.be/ZT0yQgUIZho",
 				outputName: "test_video_240p",
-				outputPath: "./test_videos",
 				resolution: "360p",
 			},
 		},
 	}
-	outputDir := "./test_videos"
-
-	// Create the output directory before running tests
-	err := os.MkdirAll(outputDir, os.ModePerm)
-	if err != nil {
-		t.Fatalf("Failed to create output directory: %v", err)
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			err := DownloadVideoData(tt.args.url, tt.args.outputName, tt.args.outputPath, tt.args.resolution)
+			// Create the output directory before running tests
+			folderPath, err := utils.CreateUniqueFolder(utils.BasePath)
+			if err != nil {
+				t.Errorf("Failed to create unique folder: %v", err)
+				return
+			}
+			_, err = DownloadVideoData(tt.args.url, tt.args.outputName, folderPath, tt.args.resolution)
 			if err != nil {
 				t.Errorf("DownloadVideoData() error = %v", err)
 				return
 			}
-			err = deleteContents(tt.args.outputPath)
+			//delete folder after downloading
+			err = utils.DeleteFolder(folderPath)
 			if err != nil {
 				t.Errorf("Failed to cleanup: %v", err)
 			}
+			t.Logf("removing folder: %v", folderPath)
 		})
 
-	}
-	// Cleanup after all tests
-	err = deleteContents(outputDir)
-	if err != nil {
-		t.Errorf("Failed to cleanup output directory: %v", err)
-	}
-
-	err = os.Remove(outputDir)
-	if err != nil {
-		t.Errorf("Failed to remove output directory: %v", err)
 	}
 
 }

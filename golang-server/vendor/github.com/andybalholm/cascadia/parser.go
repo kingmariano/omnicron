@@ -97,12 +97,10 @@ func nameChar(c byte) bool {
 
 // parseIdentifier parses an identifier.
 func (p *parser) parseIdentifier() (result string, err error) {
-	const prefix = '-'
-	var numPrefix int
-
-	for len(p.s) > p.i && p.s[p.i] == prefix {
+	startingDash := false
+	if len(p.s) > p.i && p.s[p.i] == '-' {
+		startingDash = true
 		p.i++
-		numPrefix++
 	}
 
 	if len(p.s) <= p.i {
@@ -114,8 +112,8 @@ func (p *parser) parseIdentifier() (result string, err error) {
 	}
 
 	result, err = p.parseName()
-	if numPrefix > 0 && err == nil {
-		result = strings.Repeat(string(prefix), numPrefix) + result
+	if startingDash && err == nil {
+		result = "-" + result
 	}
 	return
 }

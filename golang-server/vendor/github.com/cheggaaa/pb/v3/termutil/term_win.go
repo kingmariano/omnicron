@@ -1,4 +1,3 @@
-//go:build windows
 // +build windows
 
 package termutil
@@ -112,7 +111,7 @@ func termWidthTPut() (width int, err error) {
 	return strconv.Atoi(string(res))
 }
 
-func GetCursorPos() (pos coordinates, err error) {
+func getCursorPos() (pos coordinates, err error) {
 	var info consoleScreenBufferInfo
 	_, _, e := syscall.Syscall(procGetConsoleScreenBufferInfo.Addr(), 2, uintptr(syscall.Stdout), uintptr(unsafe.Pointer(&info)), 0)
 	if e != 0 {
@@ -121,7 +120,7 @@ func GetCursorPos() (pos coordinates, err error) {
 	return info.dwCursorPosition, nil
 }
 
-func SetCursorPos(pos coordinates) error {
+func setCursorPos(pos coordinates) error {
 	_, _, e := syscall.Syscall(setConsoleCursorPosition.Addr(), 2, uintptr(syscall.Stdout), uintptr(uint32(uint16(pos.Y))<<16|uint32(uint16(pos.X))), 0)
 	if e != 0 {
 		return error(e)
@@ -138,8 +137,9 @@ func lockEcho() (err error) {
 	}
 
 	newState := oldState
+	const ENABLE_ECHO_INPUT = 0x0004
 	const ENABLE_LINE_INPUT = 0x0002
-	newState = newState & (^ENABLE_LINE_INPUT)
+	newState = newState & (^(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT))
 	if _, _, e := syscall.Syscall(setConsoleMode.Addr(), 2, uintptr(syscall.Stdout), uintptr(newState), 0); e != 0 {
 		err = fmt.Errorf("Can't set terminal settings: %v", e)
 		return

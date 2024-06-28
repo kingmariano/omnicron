@@ -34,7 +34,7 @@ func LoadEnv(path string) (string, string, string, string, string, string, error
 		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, "", "", errors.New("unable to get port")
 	}
 	youtubeDeveloperKey := os.Getenv("YOUTUBE_DEVELOPER_KEY")
-	if youtubeDeveloperKey == ""{
+	if youtubeDeveloperKey == "" {
 		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, "", errors.New("unable to getyoutube developer")
 	}
 	return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, nil

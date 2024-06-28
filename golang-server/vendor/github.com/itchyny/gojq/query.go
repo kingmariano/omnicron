@@ -2,22 +2,10 @@ package gojq
 
 import (
 	"context"
+	"encoding/json"
+	"strconv"
 	"strings"
 )
-
-// Parse a query string, and returns the query struct.
-//
-// If parsing failed, it returns an error of type [*ParseError], which has
-// the byte offset and the invalid token. The byte offset is the scanned bytes
-// when the error occurred. The token is empty if the error occurred after
-// scanning the entire query string.
-func Parse(src string) (*Query, error) {
-	l := newLexer(src)
-	if yyParse(l) > 0 {
-		return nil, l.err
-	}
-	return l.result, nil
-}
 
 // Query represents the abstract syntax tree of a jq query.
 type Query struct {
@@ -33,14 +21,13 @@ type Query struct {
 
 // Run the query.
 //
-// It is safe to call this method in goroutines, to reuse a parsed [*Query].
-// But for arguments, do not give values sharing same data between goroutines.
-func (e *Query) Run(v any) Iter {
+// It is safe to call this method of a *Query in multiple goroutines.
+func (e *Query) Run(v interface{}) Iter {
 	return e.RunWithContext(context.Background(), v)
 }
 
 // RunWithContext runs the query with context.
-func (e *Query) RunWithContext(ctx context.Context, v any) Iter {
+func (e *Query) RunWithContext(ctx context.Context, v interface{}) Iter {
 	code, err := Compile(e)
 	if err != nil {
 		return NewIter(err)
@@ -63,8 +50,13 @@ func (e *Query) writeTo(s *strings.Builder) {
 	for _, im := range e.Imports {
 		im.writeTo(s)
 	}
-	for _, fd := range e.FuncDefs {
+	for i, fd := range e.FuncDefs {
+		if i > 0 {
+			s.WriteByte(' ')
+		}
 		fd.writeTo(s)
+	}
+	if len(e.FuncDefs) > 0 {
 		s.WriteByte(' ')
 	}
 	if e.Func != "" {
@@ -101,18 +93,11 @@ func (e *Query) minify() {
 	}
 }
 
-func (e *Query) toIndexKey() any {
-	if e.Term == nil {
+func (e *Query) toIndices() []interface{} {
+	if e.FuncDefs != nil || e.Right != nil || e.Term == nil {
 		return nil
 	}
-	return e.Term.toIndexKey()
-}
-
-func (e *Query) toIndices(xs []any) []any {
-	if e.Term == nil {
-		return nil
-	}
-	return e.Term.toIndices(xs)
+	return e.Term.toIndices()
 }
 
 // Import ...
@@ -132,12 +117,12 @@ func (e *Import) String() string {
 func (e *Import) writeTo(s *strings.Builder) {
 	if e.ImportPath != "" {
 		s.WriteString("import ")
-		jsonEncodeString(s, e.ImportPath)
+		s.WriteString(strconv.Quote(e.ImportPath))
 		s.WriteString(" as ")
 		s.WriteString(e.ImportAlias)
 	} else {
 		s.WriteString("include ")
-		jsonEncodeString(s, e.IncludePath)
+		s.WriteString(strconv.Quote(e.IncludePath))
 	}
 	if e.Meta != nil {
 		s.WriteByte(' ')
@@ -323,48 +308,25 @@ func (e *Term) toFunc() string {
 	}
 }
 
-func (e *Term) toIndexKey() any {
-	switch e.Type {
-	case TermTypeNumber:
-		return toNumber(e.Number)
-	case TermTypeUnary:
-		return e.Unary.toNumber()
-	case TermTypeString:
-		if e.Str.Queries == nil {
-			return e.Str.Str
-		}
-		return nil
-	default:
-		return nil
-	}
-}
-
-func (e *Term) toIndices(xs []any) []any {
-	switch e.Type {
-	case TermTypeIndex:
-		if xs = e.Index.toIndices(xs); xs == nil {
+func (e *Term) toIndices() []interface{} {
+	if e.Index != nil {
+		xs := e.Index.toIndices()
+		if xs == nil {
 			return nil
 		}
-	case TermTypeQuery:
-		if xs = e.Query.toIndices(xs); xs == nil {
-			return nil
+		for _, s := range e.SuffixList {
+			x := s.toIndices()
+			if x == nil {
+				return nil
+			}
+			xs = append(xs, x...)
 		}
-	default:
+		return xs
+	} else if e.Query != nil && len(e.SuffixList) == 0 {
+		return e.Query.toIndices()
+	} else {
 		return nil
 	}
-	for _, s := range e.SuffixList {
-		if xs = s.toIndices(xs); xs == nil {
-			return nil
-		}
-	}
-	return xs
-}
-
-func (e *Term) toNumber() any {
-	if e.Type == TermTypeNumber {
-		return toNumber(e.Number)
-	}
-	return nil
 }
 
 // Unary ...
@@ -386,14 +348,6 @@ func (e *Unary) writeTo(s *strings.Builder) {
 
 func (e *Unary) minify() {
 	e.Term.minify()
-}
-
-func (e *Unary) toNumber() any {
-	v := e.Term.toNumber()
-	if v != nil && e.Op == OpSub {
-		v = funcOpNegate(v)
-	}
-	return v
 }
 
 // Pattern ...
@@ -439,6 +393,7 @@ type PatternObject struct {
 	KeyString *String
 	KeyQuery  *Query
 	Val       *Pattern
+	KeyOnly   string
 }
 
 func (e *PatternObject) String() string {
@@ -460,6 +415,9 @@ func (e *PatternObject) writeTo(s *strings.Builder) {
 	if e.Val != nil {
 		s.WriteString(": ")
 		e.Val.writeTo(s)
+	}
+	if e.KeyOnly != "" {
+		s.WriteString(e.KeyOnly)
 	}
 }
 
@@ -492,22 +450,24 @@ func (e *Index) writeTo(s *strings.Builder) {
 func (e *Index) writeSuffixTo(s *strings.Builder) {
 	if e.Name != "" {
 		s.WriteString(e.Name)
-	} else if e.Str != nil {
-		e.Str.writeTo(s)
 	} else {
-		s.WriteByte('[')
-		if e.IsSlice {
-			if e.Start != nil {
+		if e.Str != nil {
+			e.Str.writeTo(s)
+		} else {
+			s.WriteByte('[')
+			if e.IsSlice {
+				if e.Start != nil {
+					e.Start.writeTo(s)
+				}
+				s.WriteByte(':')
+				if e.End != nil {
+					e.End.writeTo(s)
+				}
+			} else {
 				e.Start.writeTo(s)
 			}
-			s.WriteByte(':')
-			if e.End != nil {
-				e.End.writeTo(s)
-			}
-		} else {
-			e.Start.writeTo(s)
+			s.WriteByte(']')
 		}
-		s.WriteByte(']')
 	}
 }
 
@@ -523,38 +483,11 @@ func (e *Index) minify() {
 	}
 }
 
-func (e *Index) toIndexKey() any {
-	if e.Name != "" {
-		return e.Name
-	} else if e.Str != nil {
-		if e.Str.Queries == nil {
-			return e.Str.Str
-		}
-	} else if !e.IsSlice {
-		return e.Start.toIndexKey()
-	} else {
-		var start, end any
-		ok := true
-		if e.Start != nil {
-			start = e.Start.toIndexKey()
-			ok = start != nil
-		}
-		if e.End != nil && ok {
-			end = e.End.toIndexKey()
-			ok = end != nil
-		}
-		if ok {
-			return map[string]any{"start": start, "end": end}
-		}
+func (e *Index) toIndices() []interface{} {
+	if e.Name == "" {
+		return nil
 	}
-	return nil
-}
-
-func (e *Index) toIndices(xs []any) []any {
-	if k := e.toIndexKey(); k != nil {
-		return append(xs, k)
-	}
-	return nil
+	return []interface{}{e.Name}
 }
 
 // Func ...
@@ -610,7 +543,7 @@ func (e *String) String() string {
 
 func (e *String) writeTo(s *strings.Builder) {
 	if e.Queries == nil {
-		jsonEncodeString(s, e.Str)
+		s.WriteString(strconv.Quote(e.Str))
 		return
 	}
 	s.WriteByte('"')
@@ -666,10 +599,12 @@ func (e *Object) minify() {
 
 // ObjectKeyVal ...
 type ObjectKeyVal struct {
-	Key       string
-	KeyString *String
-	KeyQuery  *Query
-	Val       *Query
+	Key           string
+	KeyString     *String
+	KeyQuery      *Query
+	Val           *ObjectVal
+	KeyOnly       string
+	KeyOnlyString *String
 }
 
 func (e *ObjectKeyVal) String() string {
@@ -692,6 +627,11 @@ func (e *ObjectKeyVal) writeTo(s *strings.Builder) {
 		s.WriteString(": ")
 		e.Val.writeTo(s)
 	}
+	if e.KeyOnly != "" {
+		s.WriteString(e.KeyOnly)
+	} else if e.KeyOnlyString != nil {
+		e.KeyOnlyString.writeTo(s)
+	}
 }
 
 func (e *ObjectKeyVal) minify() {
@@ -702,6 +642,35 @@ func (e *ObjectKeyVal) minify() {
 	}
 	if e.Val != nil {
 		e.Val.minify()
+	}
+	if e.KeyOnlyString != nil {
+		e.KeyOnlyString.minify()
+	}
+}
+
+// ObjectVal ...
+type ObjectVal struct {
+	Queries []*Query
+}
+
+func (e *ObjectVal) String() string {
+	var s strings.Builder
+	e.writeTo(&s)
+	return s.String()
+}
+
+func (e *ObjectVal) writeTo(s *strings.Builder) {
+	for i, e := range e.Queries {
+		if i > 0 {
+			s.WriteString(" | ")
+		}
+		e.writeTo(s)
+	}
+}
+
+func (e *ObjectVal) minify() {
+	for _, e := range e.Queries {
+		e.minify()
 	}
 }
 
@@ -768,21 +737,21 @@ func (e *Suffix) minify() {
 	}
 }
 
-func (e *Suffix) toTerm() *Term {
+func (e *Suffix) toTerm() (*Term, bool) {
 	if e.Index != nil {
-		return &Term{Type: TermTypeIndex, Index: e.Index}
+		return &Term{Type: TermTypeIndex, Index: e.Index}, true
 	} else if e.Iter {
-		return &Term{Type: TermTypeIdentity, SuffixList: []*Suffix{{Iter: true}}}
+		return &Term{Type: TermTypeIdentity, SuffixList: []*Suffix{{Iter: true}}}, true
 	} else {
-		return nil
+		return nil, false
 	}
 }
 
-func (e *Suffix) toIndices(xs []any) []any {
+func (e *Suffix) toIndices() []interface{} {
 	if e.Index == nil {
 		return nil
 	}
-	return e.Index.toIndices(xs)
+	return e.Index.toIndices()
 }
 
 // Bind ...
@@ -912,7 +881,7 @@ func (e *Try) minify() {
 
 // Reduce ...
 type Reduce struct {
-	Query   *Query
+	Term    *Term
 	Pattern *Pattern
 	Start   *Query
 	Update  *Query
@@ -926,7 +895,7 @@ func (e *Reduce) String() string {
 
 func (e *Reduce) writeTo(s *strings.Builder) {
 	s.WriteString("reduce ")
-	e.Query.writeTo(s)
+	e.Term.writeTo(s)
 	s.WriteString(" as ")
 	e.Pattern.writeTo(s)
 	s.WriteString(" (")
@@ -937,14 +906,14 @@ func (e *Reduce) writeTo(s *strings.Builder) {
 }
 
 func (e *Reduce) minify() {
-	e.Query.minify()
+	e.Term.minify()
 	e.Start.minify()
 	e.Update.minify()
 }
 
 // Foreach ...
 type Foreach struct {
-	Query   *Query
+	Term    *Term
 	Pattern *Pattern
 	Start   *Query
 	Update  *Query
@@ -959,7 +928,7 @@ func (e *Foreach) String() string {
 
 func (e *Foreach) writeTo(s *strings.Builder) {
 	s.WriteString("foreach ")
-	e.Query.writeTo(s)
+	e.Term.writeTo(s)
 	s.WriteString(" as ")
 	e.Pattern.writeTo(s)
 	s.WriteString(" (")
@@ -974,7 +943,7 @@ func (e *Foreach) writeTo(s *strings.Builder) {
 }
 
 func (e *Foreach) minify() {
-	e.Query.minify()
+	e.Term.minify()
 	e.Start.minify()
 	e.Update.minify()
 	if e.Extract != nil {
@@ -1036,17 +1005,17 @@ func (e *ConstTerm) writeTo(s *strings.Builder) {
 	} else if e.False {
 		s.WriteString("false")
 	} else {
-		jsonEncodeString(s, e.Str)
+		s.WriteString(strconv.Quote(e.Str))
 	}
 }
 
-func (e *ConstTerm) toValue() any {
+func (e *ConstTerm) toValue() interface{} {
 	if e.Object != nil {
 		return e.Object.ToValue()
 	} else if e.Array != nil {
 		return e.Array.toValue()
 	} else if e.Number != "" {
-		return toNumber(e.Number)
+		return normalizeNumber(json.Number(e.Number))
 	} else if e.Null {
 		return nil
 	} else if e.True {
@@ -1056,14 +1025,6 @@ func (e *ConstTerm) toValue() any {
 	} else {
 		return e.Str
 	}
-}
-
-func (e *ConstTerm) toString() (string, bool) {
-	if e.Object != nil || e.Array != nil ||
-		e.Number != "" || e.Null || e.True || e.False {
-		return "", false
-	}
-	return e.Str, true
 }
 
 // ConstObject ...
@@ -1092,12 +1053,12 @@ func (e *ConstObject) writeTo(s *strings.Builder) {
 	s.WriteString(" }")
 }
 
-// ToValue converts the object to map[string]any.
-func (e *ConstObject) ToValue() map[string]any {
+// ToValue converts the object to map[string]interface{}.
+func (e *ConstObject) ToValue() map[string]interface{} {
 	if e == nil {
 		return nil
 	}
-	v := make(map[string]any, len(e.KeyVals))
+	v := make(map[string]interface{}, len(e.KeyVals))
 	for _, e := range e.KeyVals {
 		key := e.Key
 		if key == "" {
@@ -1125,7 +1086,7 @@ func (e *ConstObjectKeyVal) writeTo(s *strings.Builder) {
 	if e.Key != "" {
 		s.WriteString(e.Key)
 	} else {
-		jsonEncodeString(s, e.KeyString)
+		s.WriteString(e.KeyString)
 	}
 	s.WriteString(": ")
 	e.Val.writeTo(s)
@@ -1153,8 +1114,8 @@ func (e *ConstArray) writeTo(s *strings.Builder) {
 	s.WriteByte(']')
 }
 
-func (e *ConstArray) toValue() []any {
-	v := make([]any, len(e.Elems))
+func (e *ConstArray) toValue() []interface{} {
+	v := make([]interface{}, len(e.Elems))
 	for i, e := range e.Elems {
 		v[i] = e.toValue()
 	}

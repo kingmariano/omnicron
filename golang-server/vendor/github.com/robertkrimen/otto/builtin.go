@@ -2,7 +2,6 @@ package otto
 
 import (
 	"encoding/hex"
-	"errors"
 	"math"
 	"net/url"
 	"regexp"
@@ -12,34 +11,34 @@ import (
 	"unicode/utf8"
 )
 
-// Global.
-func builtinGlobalEval(call FunctionCall) Value {
+// Global
+func builtinGlobal_eval(call FunctionCall) Value {
 	src := call.Argument(0)
 	if !src.IsString() {
 		return src
 	}
-	rt := call.runtime
-	program := rt.cmplParseOrThrow(src.string(), nil)
+	runtime := call.runtime
+	program := runtime.cmpl_parseOrThrow(src.string(), nil)
 	if !call.eval {
 		// Not a direct call to eval, so we enter the global ExecutionContext
-		rt.enterGlobalScope()
-		defer rt.leaveScope()
+		runtime.enterGlobalScope()
+		defer runtime.leaveScope()
 	}
-	returnValue := rt.cmplEvaluateNodeProgram(program, true)
+	returnValue := runtime.cmpl_evaluate_nodeProgram(program, true)
 	if returnValue.isEmpty() {
 		return Value{}
 	}
 	return returnValue
 }
 
-func builtinGlobalIsNaN(call FunctionCall) Value {
+func builtinGlobal_isNaN(call FunctionCall) Value {
 	value := call.Argument(0).float64()
-	return boolValue(math.IsNaN(value))
+	return toValue_bool(math.IsNaN(value))
 }
 
-func builtinGlobalIsFinite(call FunctionCall) Value {
+func builtinGlobal_isFinite(call FunctionCall) Value {
 	value := call.Argument(0).float64()
-	return boolValue(!math.IsNaN(value) && !math.IsInf(value, 0))
+	return toValue_bool(!math.IsNaN(value) && !math.IsInf(value, 0))
 }
 
 func digitValue(chr rune) int {
@@ -54,8 +53,8 @@ func digitValue(chr rune) int {
 	return 36 // Larger than any legal digit value
 }
 
-func builtinGlobalParseInt(call FunctionCall) Value {
-	input := strings.Trim(call.Argument(0).string(), builtinStringTrimWhitespace)
+func builtinGlobal_parseInt(call FunctionCall) Value {
+	input := strings.Trim(call.Argument(0).string(), builtinString_trim_whitespace)
 	if len(input) == 0 {
 		return NaNValue()
 	}
@@ -107,7 +106,7 @@ func builtinGlobalParseInt(call FunctionCall) Value {
 
 	value, err := strconv.ParseInt(input, radix, 64)
 	if err != nil {
-		if errors.Is(err, strconv.ErrRange) {
+		if err.(*strconv.NumError).Err == strconv.ErrRange {
 			base := float64(base)
 			// Could just be a very large number (e.g. 0x8000000000000000)
 			var value float64
@@ -121,7 +120,7 @@ func builtinGlobalParseInt(call FunctionCall) Value {
 			if negative {
 				value *= -1
 			}
-			return float64Value(value)
+			return toValue_float64(value)
 		}
 		return NaNValue()
 	}
@@ -129,29 +128,27 @@ func builtinGlobalParseInt(call FunctionCall) Value {
 		value *= -1
 	}
 
-	return int64Value(value)
+	return toValue_int64(value)
 }
 
-var (
-	parseFloatMatchBadSpecial = regexp.MustCompile(`[\+\-]?(?:[Ii]nf$|infinity)`)
-	parseFloatMatchValid      = regexp.MustCompile(`[0-9eE\+\-\.]|Infinity`)
-)
+var parseFloat_matchBadSpecial = regexp.MustCompile(`[\+\-]?(?:[Ii]nf$|infinity)`)
+var parseFloat_matchValid = regexp.MustCompile(`[0-9eE\+\-\.]|Infinity`)
 
-func builtinGlobalParseFloat(call FunctionCall) Value {
+func builtinGlobal_parseFloat(call FunctionCall) Value {
 	// Caveat emptor: This implementation does NOT match the specification
-	input := strings.Trim(call.Argument(0).string(), builtinStringTrimWhitespace)
+	input := strings.Trim(call.Argument(0).string(), builtinString_trim_whitespace)
 
-	if parseFloatMatchBadSpecial.MatchString(input) {
+	if parseFloat_matchBadSpecial.MatchString(input) {
 		return NaNValue()
 	}
 	value, err := strconv.ParseFloat(input, 64)
 	if err != nil {
 		for end := len(input); end > 0; end-- {
-			val := input[0:end]
-			if !parseFloatMatchValid.MatchString(val) {
+			input := input[0:end]
+			if !parseFloat_matchValid.MatchString(input) {
 				return NaNValue()
 			}
-			value, err = strconv.ParseFloat(val, 64)
+			value, err = strconv.ParseFloat(input, 64)
 			if err == nil {
 				break
 			}
@@ -160,12 +157,12 @@ func builtinGlobalParseFloat(call FunctionCall) Value {
 			return NaNValue()
 		}
 	}
-	return float64Value(value)
+	return toValue_float64(value)
 }
 
 // encodeURI/decodeURI
 
-func encodeDecodeURI(call FunctionCall, escape *regexp.Regexp) Value {
+func _builtinGlobal_encodeURI(call FunctionCall, escape *regexp.Regexp) Value {
 	value := call.Argument(0)
 	var input []uint16
 	switch vl := value.value.(type) {
@@ -175,7 +172,7 @@ func encodeDecodeURI(call FunctionCall, escape *regexp.Regexp) Value {
 		input = utf16.Encode([]rune(value.string()))
 	}
 	if len(input) == 0 {
-		return stringValue("")
+		return toValue_string("")
 	}
 	output := []byte{}
 	length := len(input)
@@ -187,7 +184,7 @@ func encodeDecodeURI(call FunctionCall, escape *regexp.Regexp) Value {
 			panic(call.runtime.panicURIError("URI malformed"))
 		}
 		if value >= 0xD800 && value <= 0xDBFF {
-			index++
+			index += 1
 			if index >= length {
 				panic(call.runtime.panicURIError("URI malformed"))
 			}
@@ -198,41 +195,43 @@ func encodeDecodeURI(call FunctionCall, escape *regexp.Regexp) Value {
 			}
 			decode = []rune{((rune(value) - 0xD800) * 0x400) + (rune(value1) - 0xDC00) + 0x10000}
 		}
-		index++
+		index += 1
 		size := utf8.EncodeRune(encode, decode[0])
-		output = append(output, encode[0:size]...)
+		encode := encode[0:size]
+		output = append(output, encode...)
 	}
-
-	bytes := escape.ReplaceAllFunc(output, func(target []byte) []byte {
-		// Probably a better way of doing this
-		if target[0] == ' ' {
-			return []byte("%20")
-		}
-		return []byte(url.QueryEscape(string(target)))
-	})
-	return stringValue(string(bytes))
+	{
+		value := escape.ReplaceAllFunc(output, func(target []byte) []byte {
+			// Probably a better way of doing this
+			if target[0] == ' ' {
+				return []byte("%20")
+			}
+			return []byte(url.QueryEscape(string(target)))
+		})
+		return toValue_string(string(value))
+	}
 }
 
-var encodeURIRegexp = regexp.MustCompile(`([^~!@#$&*()=:/,;?+'])`)
+var encodeURI_Regexp = regexp.MustCompile(`([^~!@#$&*()=:/,;?+'])`)
 
-func builtinGlobalEncodeURI(call FunctionCall) Value {
-	return encodeDecodeURI(call, encodeURIRegexp)
+func builtinGlobal_encodeURI(call FunctionCall) Value {
+	return _builtinGlobal_encodeURI(call, encodeURI_Regexp)
 }
 
-var encodeURIComponentRegexp = regexp.MustCompile(`([^~!*()'])`)
+var encodeURIComponent_Regexp = regexp.MustCompile(`([^~!*()'])`)
 
-func builtinGlobalEncodeURIComponent(call FunctionCall) Value {
-	return encodeDecodeURI(call, encodeURIComponentRegexp)
+func builtinGlobal_encodeURIComponent(call FunctionCall) Value {
+	return _builtinGlobal_encodeURI(call, encodeURIComponent_Regexp)
 }
 
-// 3B/2F/3F/3A/40/26/3D/2B/24/2C/23.
-var decodeURIGuard = regexp.MustCompile(`(?i)(?:%)(3B|2F|3F|3A|40|26|3D|2B|24|2C|23)`)
+// 3B/2F/3F/3A/40/26/3D/2B/24/2C/23
+var decodeURI_guard = regexp.MustCompile(`(?i)(?:%)(3B|2F|3F|3A|40|26|3D|2B|24|2C|23)`)
 
-func decodeURI(input string, reserve bool) (string, bool) {
+func _decodeURI(input string, reserve bool) (string, bool) {
 	if reserve {
-		input = decodeURIGuard.ReplaceAllString(input, "%25$1")
+		input = decodeURI_guard.ReplaceAllString(input, "%25$1")
 	}
-	input = strings.ReplaceAll(input, "+", "%2B") // Ugly hack to make QueryUnescape work with our use case
+	input = strings.Replace(input, "+", "%2B", -1) // Ugly hack to make QueryUnescape work with our use case
 	output, err := url.QueryUnescape(input)
 	if err != nil || !utf8.ValidString(output) {
 		return "", true
@@ -240,25 +239,25 @@ func decodeURI(input string, reserve bool) (string, bool) {
 	return output, false
 }
 
-func builtinGlobalDecodeURI(call FunctionCall) Value {
-	output, err := decodeURI(call.Argument(0).string(), true)
+func builtinGlobal_decodeURI(call FunctionCall) Value {
+	output, err := _decodeURI(call.Argument(0).string(), true)
 	if err {
 		panic(call.runtime.panicURIError("URI malformed"))
 	}
-	return stringValue(output)
+	return toValue_string(output)
 }
 
-func builtinGlobalDecodeURIComponent(call FunctionCall) Value {
-	output, err := decodeURI(call.Argument(0).string(), false)
+func builtinGlobal_decodeURIComponent(call FunctionCall) Value {
+	output, err := _decodeURI(call.Argument(0).string(), false)
 	if err {
 		panic(call.runtime.panicURIError("URI malformed"))
 	}
-	return stringValue(output)
+	return toValue_string(output)
 }
 
 // escape/unescape
 
-func builtinShouldEscape(chr byte) bool {
+func builtin_shouldEscape(chr byte) bool {
 	if 'A' <= chr && chr <= 'Z' || 'a' <= chr && chr <= 'z' || '0' <= chr && chr <= '9' {
 		return false
 	}
@@ -267,11 +266,11 @@ func builtinShouldEscape(chr byte) bool {
 
 const escapeBase16 = "0123456789ABCDEF"
 
-func builtinEscape(input string) string {
+func builtin_escape(input string) string {
 	output := make([]byte, 0, len(input))
 	length := len(input)
 	for index := 0; index < length; {
-		if builtinShouldEscape(input[index]) {
+		if builtin_shouldEscape(input[index]) {
 			chr, width := utf8.DecodeRuneInString(input[index:])
 			chr16 := utf16.Encode([]rune{chr})[0]
 			if 256 > chr16 {
@@ -288,15 +287,16 @@ func builtinEscape(input string) string {
 				)
 			}
 			index += width
+
 		} else {
 			output = append(output, input[index])
-			index++
+			index += 1
 		}
 	}
 	return string(output)
 }
 
-func builtinUnescape(input string) string {
+func builtin_unescape(input string) string {
 	output := make([]rune, 0, len(input))
 	length := len(input)
 	for index := 0; index < length; {
@@ -323,15 +323,15 @@ func builtinUnescape(input string) string {
 			}
 		}
 		output = append(output, rune(input[index]))
-		index++
+		index += 1
 	}
 	return string(output)
 }
 
-func builtinGlobalEscape(call FunctionCall) Value {
-	return stringValue(builtinEscape(call.Argument(0).string()))
+func builtinGlobal_escape(call FunctionCall) Value {
+	return toValue_string(builtin_escape(call.Argument(0).string()))
 }
 
-func builtinGlobalUnescape(call FunctionCall) Value {
-	return stringValue(builtinUnescape(call.Argument(0).string()))
+func builtinGlobal_unescape(call FunctionCall) Value {
+	return toValue_string(builtin_unescape(call.Argument(0).string()))
 }

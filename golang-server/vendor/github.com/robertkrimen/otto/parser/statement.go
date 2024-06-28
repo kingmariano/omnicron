@@ -5,233 +5,234 @@ import (
 	"github.com/robertkrimen/otto/token"
 )
 
-func (p *parser) parseBlockStatement() *ast.BlockStatement {
+func (self *_parser) parseBlockStatement() *ast.BlockStatement {
 	node := &ast.BlockStatement{}
 
 	// Find comments before the leading brace
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, p.comments.FetchAll(), ast.LEADING)
-		p.comments.Unset()
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, self.comments.FetchAll(), ast.LEADING)
+		self.comments.Unset()
 	}
 
-	node.LeftBrace = p.expect(token.LEFT_BRACE)
-	node.List = p.parseStatementList()
+	node.LeftBrace = self.expect(token.LEFT_BRACE)
+	node.List = self.parseStatementList()
 
-	if p.mode&StoreComments != 0 {
-		p.comments.Unset()
-		p.comments.CommentMap.AddComments(node, p.comments.FetchAll(), ast.FINAL)
-		p.comments.AfterBlock()
+	if self.mode&StoreComments != 0 {
+		self.comments.Unset()
+		self.comments.CommentMap.AddComments(node, self.comments.FetchAll(), ast.FINAL)
+		self.comments.AfterBlock()
 	}
 
-	node.RightBrace = p.expect(token.RIGHT_BRACE)
+	node.RightBrace = self.expect(token.RIGHT_BRACE)
 
 	// Find comments after the trailing brace
-	if p.mode&StoreComments != 0 {
-		p.comments.ResetLineBreak()
-		p.comments.CommentMap.AddComments(node, p.comments.Fetch(), ast.TRAILING)
+	if self.mode&StoreComments != 0 {
+		self.comments.ResetLineBreak()
+		self.comments.CommentMap.AddComments(node, self.comments.Fetch(), ast.TRAILING)
 	}
 
 	return node
 }
 
-func (p *parser) parseEmptyStatement() ast.Statement {
-	idx := p.expect(token.SEMICOLON)
+func (self *_parser) parseEmptyStatement() ast.Statement {
+	idx := self.expect(token.SEMICOLON)
 	return &ast.EmptyStatement{Semicolon: idx}
 }
 
-func (p *parser) parseStatementList() (list []ast.Statement) { //nolint:nonamedreturns
-	for p.token != token.RIGHT_BRACE && p.token != token.EOF {
-		statement := p.parseStatement()
+func (self *_parser) parseStatementList() (list []ast.Statement) {
+	for self.token != token.RIGHT_BRACE && self.token != token.EOF {
+		statement := self.parseStatement()
 		list = append(list, statement)
 	}
 
-	return list
+	return
 }
 
-func (p *parser) parseStatement() ast.Statement {
-	if p.token == token.EOF {
-		p.errorUnexpectedToken(p.token)
-		return &ast.BadStatement{From: p.idx, To: p.idx + 1}
+func (self *_parser) parseStatement() ast.Statement {
+
+	if self.token == token.EOF {
+		self.errorUnexpectedToken(self.token)
+		return &ast.BadStatement{From: self.idx, To: self.idx + 1}
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.ResetLineBreak()
+	if self.mode&StoreComments != 0 {
+		self.comments.ResetLineBreak()
 	}
 
-	switch p.token {
+	switch self.token {
 	case token.SEMICOLON:
-		return p.parseEmptyStatement()
+		return self.parseEmptyStatement()
 	case token.LEFT_BRACE:
-		return p.parseBlockStatement()
+		return self.parseBlockStatement()
 	case token.IF:
-		return p.parseIfStatement()
+		return self.parseIfStatement()
 	case token.DO:
-		statement := p.parseDoWhileStatement()
-		p.comments.PostProcessNode(statement)
+		statement := self.parseDoWhileStatement()
+		self.comments.PostProcessNode(statement)
 		return statement
 	case token.WHILE:
-		return p.parseWhileStatement()
+		return self.parseWhileStatement()
 	case token.FOR:
-		return p.parseForOrForInStatement()
+		return self.parseForOrForInStatement()
 	case token.BREAK:
-		return p.parseBreakStatement()
+		return self.parseBreakStatement()
 	case token.CONTINUE:
-		return p.parseContinueStatement()
+		return self.parseContinueStatement()
 	case token.DEBUGGER:
-		return p.parseDebuggerStatement()
+		return self.parseDebuggerStatement()
 	case token.WITH:
-		return p.parseWithStatement()
+		return self.parseWithStatement()
 	case token.VAR:
-		return p.parseVariableStatement()
+		return self.parseVariableStatement()
 	case token.FUNCTION:
-		return p.parseFunctionStatement()
+		return self.parseFunctionStatement()
 	case token.SWITCH:
-		return p.parseSwitchStatement()
+		return self.parseSwitchStatement()
 	case token.RETURN:
-		return p.parseReturnStatement()
+		return self.parseReturnStatement()
 	case token.THROW:
-		return p.parseThrowStatement()
+		return self.parseThrowStatement()
 	case token.TRY:
-		return p.parseTryStatement()
+		return self.parseTryStatement()
 	}
 
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
 
-	expression := p.parseExpression()
+	expression := self.parseExpression()
 
-	if identifier, isIdentifier := expression.(*ast.Identifier); isIdentifier && p.token == token.COLON {
+	if identifier, isIdentifier := expression.(*ast.Identifier); isIdentifier && self.token == token.COLON {
 		// LabelledStatement
-		colon := p.idx
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+		colon := self.idx
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next() // :
+		self.next() // :
 
 		label := identifier.Name
-		for _, value := range p.scope.labels {
+		for _, value := range self.scope.labels {
 			if label == value {
-				p.error(identifier.Idx0(), "Label '%s' already exists", label)
+				self.error(identifier.Idx0(), "Label '%s' already exists", label)
 			}
 		}
 		var labelComments []*ast.Comment
-		if p.mode&StoreComments != 0 {
-			labelComments = p.comments.FetchAll()
+		if self.mode&StoreComments != 0 {
+			labelComments = self.comments.FetchAll()
 		}
-		p.scope.labels = append(p.scope.labels, label) // Push the label
-		statement := p.parseStatement()
-		p.scope.labels = p.scope.labels[:len(p.scope.labels)-1] // Pop the label
+		self.scope.labels = append(self.scope.labels, label) // Push the label
+		statement := self.parseStatement()
+		self.scope.labels = self.scope.labels[:len(self.scope.labels)-1] // Pop the label
 		exp := &ast.LabelledStatement{
 			Label:     identifier,
 			Colon:     colon,
 			Statement: statement,
 		}
-		if p.mode&StoreComments != 0 {
-			p.comments.CommentMap.AddComments(exp, labelComments, ast.LEADING)
+		if self.mode&StoreComments != 0 {
+			self.comments.CommentMap.AddComments(exp, labelComments, ast.LEADING)
 		}
 
 		return exp
 	}
 
-	p.optionalSemicolon()
+	self.optionalSemicolon()
 
 	statement := &ast.ExpressionStatement{
 		Expression: expression,
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(statement, comments, ast.LEADING)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(statement, comments, ast.LEADING)
 	}
 	return statement
 }
 
-func (p *parser) parseTryStatement() ast.Statement {
+func (self *_parser) parseTryStatement() ast.Statement {
 	var tryComments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		tryComments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		tryComments = self.comments.FetchAll()
 	}
 	node := &ast.TryStatement{
-		Try:  p.expect(token.TRY),
-		Body: p.parseBlockStatement(),
+		Try:  self.expect(token.TRY),
+		Body: self.parseBlockStatement(),
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, tryComments, ast.LEADING)
-		p.comments.CommentMap.AddComments(node.Body, p.comments.FetchAll(), ast.TRAILING)
-	}
-
-	if p.token == token.CATCH {
-		catch := p.idx
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
-		}
-		p.next()
-		p.expect(token.LEFT_PARENTHESIS)
-		if p.token != token.IDENTIFIER {
-			p.expect(token.IDENTIFIER)
-			p.nextStatement()
-			return &ast.BadStatement{From: catch, To: p.idx}
-		}
-
-		identifier := p.parseIdentifier()
-		p.expect(token.RIGHT_PARENTHESIS)
-		node.Catch = &ast.CatchStatement{
-			Catch:     catch,
-			Parameter: identifier,
-			Body:      p.parseBlockStatement(),
-		}
-
-		if p.mode&StoreComments != 0 {
-			p.comments.CommentMap.AddComments(node.Catch.Body, p.comments.FetchAll(), ast.TRAILING)
-		}
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, tryComments, ast.LEADING)
+		self.comments.CommentMap.AddComments(node.Body, self.comments.FetchAll(), ast.TRAILING)
 	}
 
-	if p.token == token.FINALLY {
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	if self.token == token.CATCH {
+		catch := self.idx
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
-		if p.mode&StoreComments != 0 {
-			tryComments = p.comments.FetchAll()
+		self.next()
+		self.expect(token.LEFT_PARENTHESIS)
+		if self.token != token.IDENTIFIER {
+			self.expect(token.IDENTIFIER)
+			self.nextStatement()
+			return &ast.BadStatement{From: catch, To: self.idx}
+		} else {
+			identifier := self.parseIdentifier()
+			self.expect(token.RIGHT_PARENTHESIS)
+			node.Catch = &ast.CatchStatement{
+				Catch:     catch,
+				Parameter: identifier,
+				Body:      self.parseBlockStatement(),
+			}
+
+			if self.mode&StoreComments != 0 {
+				self.comments.CommentMap.AddComments(node.Catch.Body, self.comments.FetchAll(), ast.TRAILING)
+			}
+		}
+	}
+
+	if self.token == token.FINALLY {
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
+		}
+		self.next()
+		if self.mode&StoreComments != 0 {
+			tryComments = self.comments.FetchAll()
 		}
 
-		node.Finally = p.parseBlockStatement()
+		node.Finally = self.parseBlockStatement()
 
-		if p.mode&StoreComments != 0 {
-			p.comments.CommentMap.AddComments(node.Finally, tryComments, ast.LEADING)
+		if self.mode&StoreComments != 0 {
+			self.comments.CommentMap.AddComments(node.Finally, tryComments, ast.LEADING)
 		}
 	}
 
 	if node.Catch == nil && node.Finally == nil {
-		p.error(node.Try, "Missing catch or finally after try")
+		self.error(node.Try, "Missing catch or finally after try")
 		return &ast.BadStatement{From: node.Try, To: node.Body.Idx1()}
 	}
 
 	return node
 }
 
-func (p *parser) parseFunctionParameterList() *ast.ParameterList {
-	opening := p.expect(token.LEFT_PARENTHESIS)
-	if p.mode&StoreComments != 0 {
-		p.comments.Unset()
+func (self *_parser) parseFunctionParameterList() *ast.ParameterList {
+	opening := self.expect(token.LEFT_PARENTHESIS)
+	if self.mode&StoreComments != 0 {
+		self.comments.Unset()
 	}
 	var list []*ast.Identifier
-	for p.token != token.RIGHT_PARENTHESIS && p.token != token.EOF {
-		if p.token != token.IDENTIFIER {
-			p.expect(token.IDENTIFIER)
+	for self.token != token.RIGHT_PARENTHESIS && self.token != token.EOF {
+		if self.token != token.IDENTIFIER {
+			self.expect(token.IDENTIFIER)
 		} else {
-			identifier := p.parseIdentifier()
+			identifier := self.parseIdentifier()
 			list = append(list, identifier)
 		}
-		if p.token != token.RIGHT_PARENTHESIS {
-			if p.mode&StoreComments != 0 {
-				p.comments.Unset()
+		if self.token != token.RIGHT_PARENTHESIS {
+			if self.mode&StoreComments != 0 {
+				self.comments.Unset()
 			}
-			p.expect(token.COMMA)
+			self.expect(token.COMMA)
 		}
 	}
-	closing := p.expect(token.RIGHT_PARENTHESIS)
+	closing := self.expect(token.RIGHT_PARENTHESIS)
 
 	return &ast.ParameterList{
 		Opening: opening,
@@ -240,272 +241,287 @@ func (p *parser) parseFunctionParameterList() *ast.ParameterList {
 	}
 }
 
-func (p *parser) parseFunctionStatement() *ast.FunctionStatement {
+func (self *_parser) parseParameterList() (list []string) {
+	for self.token != token.EOF {
+		if self.token != token.IDENTIFIER {
+			self.expect(token.IDENTIFIER)
+		}
+		list = append(list, self.literal)
+		self.next()
+		if self.token != token.EOF {
+			self.expect(token.COMMA)
+		}
+	}
+	return
+}
+
+func (self *_parser) parseFunctionStatement() *ast.FunctionStatement {
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
 	function := &ast.FunctionStatement{
-		Function: p.parseFunction(true),
+		Function: self.parseFunction(true),
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(function, comments, ast.LEADING)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(function, comments, ast.LEADING)
 	}
 
 	return function
 }
 
-func (p *parser) parseFunction(declaration bool) *ast.FunctionLiteral {
+func (self *_parser) parseFunction(declaration bool) *ast.FunctionLiteral {
+
 	node := &ast.FunctionLiteral{
-		Function: p.expect(token.FUNCTION),
+		Function: self.expect(token.FUNCTION),
 	}
 
 	var name *ast.Identifier
-	if p.token == token.IDENTIFIER {
-		name = p.parseIdentifier()
+	if self.token == token.IDENTIFIER {
+		name = self.parseIdentifier()
 		if declaration {
-			p.scope.declare(&ast.FunctionDeclaration{
+			self.scope.declare(&ast.FunctionDeclaration{
 				Function: node,
 			})
 		}
 	} else if declaration {
 		// Use expect error handling
-		p.expect(token.IDENTIFIER)
+		self.expect(token.IDENTIFIER)
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.Unset()
+	if self.mode&StoreComments != 0 {
+		self.comments.Unset()
 	}
 	node.Name = name
-	node.ParameterList = p.parseFunctionParameterList()
-	p.parseFunctionBlock(node)
-	node.Source = p.slice(node.Idx0(), node.Idx1())
+	node.ParameterList = self.parseFunctionParameterList()
+	self.parseFunctionBlock(node)
+	node.Source = self.slice(node.Idx0(), node.Idx1())
 
 	return node
 }
 
-func (p *parser) parseFunctionBlock(node *ast.FunctionLiteral) {
-	p.openScope()
-	inFunction := p.scope.inFunction
-	p.scope.inFunction = true
-	defer func() {
-		p.scope.inFunction = inFunction
-		p.closeScope()
-	}()
-	node.Body = p.parseBlockStatement()
-	node.DeclarationList = p.scope.declarationList
+func (self *_parser) parseFunctionBlock(node *ast.FunctionLiteral) {
+	{
+		self.openScope()
+		inFunction := self.scope.inFunction
+		self.scope.inFunction = true
+		defer func() {
+			self.scope.inFunction = inFunction
+			self.closeScope()
+		}()
+		node.Body = self.parseBlockStatement()
+		node.DeclarationList = self.scope.declarationList
+	}
 }
 
-func (p *parser) parseDebuggerStatement() ast.Statement {
-	idx := p.expect(token.DEBUGGER)
+func (self *_parser) parseDebuggerStatement() ast.Statement {
+	idx := self.expect(token.DEBUGGER)
 
 	node := &ast.DebuggerStatement{
 		Debugger: idx,
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, p.comments.FetchAll(), ast.TRAILING)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, self.comments.FetchAll(), ast.TRAILING)
 	}
 
-	p.semicolon()
+	self.semicolon()
 	return node
 }
 
-func (p *parser) parseReturnStatement() ast.Statement {
-	idx := p.expect(token.RETURN)
+func (self *_parser) parseReturnStatement() ast.Statement {
+	idx := self.expect(token.RETURN)
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
 
-	if !p.scope.inFunction {
-		p.error(idx, "Illegal return statement")
-		p.nextStatement()
-		return &ast.BadStatement{From: idx, To: p.idx}
+	if !self.scope.inFunction {
+		self.error(idx, "Illegal return statement")
+		self.nextStatement()
+		return &ast.BadStatement{From: idx, To: self.idx}
 	}
 
 	node := &ast.ReturnStatement{
 		Return: idx,
 	}
 
-	if !p.implicitSemicolon && p.token != token.SEMICOLON && p.token != token.RIGHT_BRACE && p.token != token.EOF {
-		node.Argument = p.parseExpression()
+	if !self.implicitSemicolon && self.token != token.SEMICOLON && self.token != token.RIGHT_BRACE && self.token != token.EOF {
+		node.Argument = self.parseExpression()
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, comments, ast.LEADING)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, comments, ast.LEADING)
 	}
 
-	p.semicolon()
+	self.semicolon()
 
 	return node
 }
 
-func (p *parser) parseThrowStatement() ast.Statement {
+func (self *_parser) parseThrowStatement() ast.Statement {
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
-	idx := p.expect(token.THROW)
+	idx := self.expect(token.THROW)
 
-	if p.implicitSemicolon {
-		if p.chr == -1 { // Hackish
-			p.error(idx, "Unexpected end of input")
+	if self.implicitSemicolon {
+		if self.chr == -1 { // Hackish
+			self.error(idx, "Unexpected end of input")
 		} else {
-			p.error(idx, "Illegal newline after throw")
+			self.error(idx, "Illegal newline after throw")
 		}
-		p.nextStatement()
-		return &ast.BadStatement{From: idx, To: p.idx}
+		self.nextStatement()
+		return &ast.BadStatement{From: idx, To: self.idx}
 	}
 
 	node := &ast.ThrowStatement{
-		Throw:    idx,
-		Argument: p.parseExpression(),
+		Throw:    self.idx,
+		Argument: self.parseExpression(),
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, comments, ast.LEADING)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, comments, ast.LEADING)
 	}
 
-	p.semicolon()
+	self.semicolon()
 
 	return node
 }
 
-func (p *parser) parseSwitchStatement() ast.Statement {
+func (self *_parser) parseSwitchStatement() ast.Statement {
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
-	idx := p.expect(token.SWITCH)
-	if p.mode&StoreComments != 0 {
-		comments = append(comments, p.comments.FetchAll()...)
+	self.expect(token.SWITCH)
+	if self.mode&StoreComments != 0 {
+		comments = append(comments, self.comments.FetchAll()...)
 	}
-	p.expect(token.LEFT_PARENTHESIS)
+	self.expect(token.LEFT_PARENTHESIS)
 	node := &ast.SwitchStatement{
-		Switch:       idx,
-		Discriminant: p.parseExpression(),
+		Discriminant: self.parseExpression(),
 		Default:      -1,
 	}
-	p.expect(token.RIGHT_PARENTHESIS)
-	if p.mode&StoreComments != 0 {
-		comments = append(comments, p.comments.FetchAll()...)
+	self.expect(token.RIGHT_PARENTHESIS)
+	if self.mode&StoreComments != 0 {
+		comments = append(comments, self.comments.FetchAll()...)
 	}
 
-	p.expect(token.LEFT_BRACE)
+	self.expect(token.LEFT_BRACE)
 
-	inSwitch := p.scope.inSwitch
-	p.scope.inSwitch = true
+	inSwitch := self.scope.inSwitch
+	self.scope.inSwitch = true
 	defer func() {
-		p.scope.inSwitch = inSwitch
+		self.scope.inSwitch = inSwitch
 	}()
 
-	for index := 0; p.token != token.EOF; index++ {
-		if p.token == token.RIGHT_BRACE {
-			node.RightBrace = p.idx
-			p.next()
+	for index := 0; self.token != token.EOF; index++ {
+		if self.token == token.RIGHT_BRACE {
+			self.next()
 			break
 		}
 
-		clause := p.parseCaseStatement()
+		clause := self.parseCaseStatement()
 		if clause.Test == nil {
 			if node.Default != -1 {
-				p.error(clause.Case, "Already saw a default in switch")
+				self.error(clause.Case, "Already saw a default in switch")
 			}
 			node.Default = index
 		}
 		node.Body = append(node.Body, clause)
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, comments, ast.LEADING)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, comments, ast.LEADING)
 	}
 
 	return node
 }
 
-func (p *parser) parseWithStatement() ast.Statement {
+func (self *_parser) parseWithStatement() ast.Statement {
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
-	idx := p.expect(token.WITH)
+	self.expect(token.WITH)
 	var withComments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		withComments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		withComments = self.comments.FetchAll()
 	}
 
-	p.expect(token.LEFT_PARENTHESIS)
+	self.expect(token.LEFT_PARENTHESIS)
 
 	node := &ast.WithStatement{
-		With:   idx,
-		Object: p.parseExpression(),
+		Object: self.parseExpression(),
 	}
-	p.expect(token.RIGHT_PARENTHESIS)
+	self.expect(token.RIGHT_PARENTHESIS)
 
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, comments, ast.LEADING)
-		p.comments.CommentMap.AddComments(node, withComments, ast.WITH)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, comments, ast.LEADING)
+		self.comments.CommentMap.AddComments(node, withComments, ast.WITH)
 	}
 
-	node.Body = p.parseStatement()
+	node.Body = self.parseStatement()
 
 	return node
 }
 
-func (p *parser) parseCaseStatement() *ast.CaseStatement {
+func (self *_parser) parseCaseStatement() *ast.CaseStatement {
 	node := &ast.CaseStatement{
-		Case: p.idx,
+		Case: self.idx,
 	}
 
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
-		p.comments.Unset()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
+		self.comments.Unset()
 	}
 
-	if p.token == token.DEFAULT {
-		p.next()
+	if self.token == token.DEFAULT {
+		self.next()
 	} else {
-		p.expect(token.CASE)
-		node.Test = p.parseExpression()
+		self.expect(token.CASE)
+		node.Test = self.parseExpression()
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.Unset()
+	if self.mode&StoreComments != 0 {
+		self.comments.Unset()
 	}
-	p.expect(token.COLON)
+	self.expect(token.COLON)
 
 	for {
-		if p.token == token.EOF ||
-			p.token == token.RIGHT_BRACE ||
-			p.token == token.CASE ||
-			p.token == token.DEFAULT {
+		if self.token == token.EOF ||
+			self.token == token.RIGHT_BRACE ||
+			self.token == token.CASE ||
+			self.token == token.DEFAULT {
 			break
 		}
-		consequent := p.parseStatement()
+		consequent := self.parseStatement()
 		node.Consequent = append(node.Consequent, consequent)
 	}
 
 	// Link the comments to the case statement
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, comments, ast.LEADING)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, comments, ast.LEADING)
 	}
 
 	return node
 }
 
-func (p *parser) parseIterationStatement() ast.Statement {
-	inIteration := p.scope.inIteration
-	p.scope.inIteration = true
+func (self *_parser) parseIterationStatement() ast.Statement {
+	inIteration := self.scope.inIteration
+	self.scope.inIteration = true
 	defer func() {
-		p.scope.inIteration = inIteration
+		self.scope.inIteration = inIteration
 	}()
-	return p.parseStatement()
+	return self.parseStatement()
 }
 
-func (p *parser) parseForIn(into ast.Expression) *ast.ForInStatement {
+func (self *_parser) parseForIn(into ast.Expression) *ast.ForInStatement {
+
 	// Already have consumed "<into> in"
 
-	source := p.parseExpression()
-	p.expect(token.RIGHT_PARENTHESIS)
-	body := p.parseIterationStatement()
+	source := self.parseExpression()
+	self.expect(token.RIGHT_PARENTHESIS)
+	body := self.parseIterationStatement()
 
 	forin := &ast.ForInStatement{
 		Into:   into,
@@ -516,24 +532,25 @@ func (p *parser) parseForIn(into ast.Expression) *ast.ForInStatement {
 	return forin
 }
 
-func (p *parser) parseFor(initializer ast.Expression) *ast.ForStatement {
+func (self *_parser) parseFor(initializer ast.Expression) *ast.ForStatement {
+
 	// Already have consumed "<initializer> ;"
 
 	var test, update ast.Expression
 
-	if p.token != token.SEMICOLON {
-		test = p.parseExpression()
+	if self.token != token.SEMICOLON {
+		test = self.parseExpression()
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.Unset()
+	if self.mode&StoreComments != 0 {
+		self.comments.Unset()
 	}
-	p.expect(token.SEMICOLON)
+	self.expect(token.SEMICOLON)
 
-	if p.token != token.RIGHT_PARENTHESIS {
-		update = p.parseExpression()
+	if self.token != token.RIGHT_PARENTHESIS {
+		update = self.parseExpression()
 	}
-	p.expect(token.RIGHT_PARENTHESIS)
-	body := p.parseIterationStatement()
+	self.expect(token.RIGHT_PARENTHESIS)
+	body := self.parseIterationStatement()
 
 	forstatement := &ast.ForStatement{
 		Initializer: initializer,
@@ -545,54 +562,55 @@ func (p *parser) parseFor(initializer ast.Expression) *ast.ForStatement {
 	return forstatement
 }
 
-func (p *parser) parseForOrForInStatement() ast.Statement {
+func (self *_parser) parseForOrForInStatement() ast.Statement {
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
-	idx := p.expect(token.FOR)
+	idx := self.expect(token.FOR)
 	var forComments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		forComments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		forComments = self.comments.FetchAll()
 	}
-	p.expect(token.LEFT_PARENTHESIS)
+	self.expect(token.LEFT_PARENTHESIS)
 
 	var left []ast.Expression
 
 	forIn := false
-	if p.token != token.SEMICOLON {
-		allowIn := p.scope.allowIn
-		p.scope.allowIn = false
-		if p.token == token.VAR {
-			tokenIdx := p.idx
+	if self.token != token.SEMICOLON {
+
+		allowIn := self.scope.allowIn
+		self.scope.allowIn = false
+		if self.token == token.VAR {
+			var_ := self.idx
 			var varComments []*ast.Comment
-			if p.mode&StoreComments != 0 {
-				varComments = p.comments.FetchAll()
-				p.comments.Unset()
+			if self.mode&StoreComments != 0 {
+				varComments = self.comments.FetchAll()
+				self.comments.Unset()
 			}
-			p.next()
-			list := p.parseVariableDeclarationList(tokenIdx)
-			if len(list) == 1 && p.token == token.IN {
-				if p.mode&StoreComments != 0 {
-					p.comments.Unset()
+			self.next()
+			list := self.parseVariableDeclarationList(var_)
+			if len(list) == 1 && self.token == token.IN {
+				if self.mode&StoreComments != 0 {
+					self.comments.Unset()
 				}
-				p.next() // in
+				self.next() // in
 				forIn = true
 				left = []ast.Expression{list[0]} // There is only one declaration
 			} else {
 				left = list
 			}
-			if p.mode&StoreComments != 0 {
-				p.comments.CommentMap.AddComments(left[0], varComments, ast.LEADING)
+			if self.mode&StoreComments != 0 {
+				self.comments.CommentMap.AddComments(left[0], varComments, ast.LEADING)
 			}
 		} else {
-			left = append(left, p.parseExpression())
-			if p.token == token.IN {
-				p.next()
+			left = append(left, self.parseExpression())
+			if self.token == token.IN {
+				self.next()
 				forIn = true
 			}
 		}
-		p.scope.allowIn = allowIn
+		self.scope.allowIn = allowIn
 	}
 
 	if forIn {
@@ -600,212 +618,206 @@ func (p *parser) parseForOrForInStatement() ast.Statement {
 		case *ast.Identifier, *ast.DotExpression, *ast.BracketExpression, *ast.VariableExpression:
 			// These are all acceptable
 		default:
-			p.error(idx, "Invalid left-hand side in for-in")
-			p.nextStatement()
-			return &ast.BadStatement{From: idx, To: p.idx}
+			self.error(idx, "Invalid left-hand side in for-in")
+			self.nextStatement()
+			return &ast.BadStatement{From: idx, To: self.idx}
 		}
 
-		forin := p.parseForIn(left[0])
-		forin.For = idx
-		if p.mode&StoreComments != 0 {
-			p.comments.CommentMap.AddComments(forin, comments, ast.LEADING)
-			p.comments.CommentMap.AddComments(forin, forComments, ast.FOR)
+		forin := self.parseForIn(left[0])
+		if self.mode&StoreComments != 0 {
+			self.comments.CommentMap.AddComments(forin, comments, ast.LEADING)
+			self.comments.CommentMap.AddComments(forin, forComments, ast.FOR)
 		}
 		return forin
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.Unset()
+	if self.mode&StoreComments != 0 {
+		self.comments.Unset()
 	}
-	p.expect(token.SEMICOLON)
+	self.expect(token.SEMICOLON)
 	initializer := &ast.SequenceExpression{Sequence: left}
-	forstatement := p.parseFor(initializer)
-	forstatement.For = idx
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(forstatement, comments, ast.LEADING)
-		p.comments.CommentMap.AddComments(forstatement, forComments, ast.FOR)
+	forstatement := self.parseFor(initializer)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(forstatement, comments, ast.LEADING)
+		self.comments.CommentMap.AddComments(forstatement, forComments, ast.FOR)
 	}
 	return forstatement
 }
 
-func (p *parser) parseVariableStatement() *ast.VariableStatement {
+func (self *_parser) parseVariableStatement() *ast.VariableStatement {
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
-	idx := p.expect(token.VAR)
+	idx := self.expect(token.VAR)
 
-	list := p.parseVariableDeclarationList(idx)
+	list := self.parseVariableDeclarationList(idx)
 
 	statement := &ast.VariableStatement{
 		Var:  idx,
 		List: list,
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(statement, comments, ast.LEADING)
-		p.comments.Unset()
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(statement, comments, ast.LEADING)
+		self.comments.Unset()
 	}
-	p.semicolon()
+	self.semicolon()
 
 	return statement
 }
 
-func (p *parser) parseDoWhileStatement() ast.Statement {
-	inIteration := p.scope.inIteration
-	p.scope.inIteration = true
+func (self *_parser) parseDoWhileStatement() ast.Statement {
+	inIteration := self.scope.inIteration
+	self.scope.inIteration = true
 	defer func() {
-		p.scope.inIteration = inIteration
+		self.scope.inIteration = inIteration
 	}()
 
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
-	idx := p.expect(token.DO)
+	self.expect(token.DO)
 	var doComments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		doComments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		doComments = self.comments.FetchAll()
 	}
 
-	node := &ast.DoWhileStatement{Do: idx}
-	if p.token == token.LEFT_BRACE {
-		node.Body = p.parseBlockStatement()
+	node := &ast.DoWhileStatement{}
+	if self.token == token.LEFT_BRACE {
+		node.Body = self.parseBlockStatement()
 	} else {
-		node.Body = p.parseStatement()
+		node.Body = self.parseStatement()
 	}
 
-	p.expect(token.WHILE)
+	self.expect(token.WHILE)
 	var whileComments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		whileComments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		whileComments = self.comments.FetchAll()
 	}
-	p.expect(token.LEFT_PARENTHESIS)
-	node.Test = p.parseExpression()
-	node.RightParenthesis = p.expect(token.RIGHT_PARENTHESIS)
+	self.expect(token.LEFT_PARENTHESIS)
+	node.Test = self.parseExpression()
+	self.expect(token.RIGHT_PARENTHESIS)
 
-	p.implicitSemicolon = true
-	p.optionalSemicolon()
-
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, comments, ast.LEADING)
-		p.comments.CommentMap.AddComments(node, doComments, ast.DO)
-		p.comments.CommentMap.AddComments(node, whileComments, ast.WHILE)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, comments, ast.LEADING)
+		self.comments.CommentMap.AddComments(node, doComments, ast.DO)
+		self.comments.CommentMap.AddComments(node, whileComments, ast.WHILE)
 	}
 
 	return node
 }
 
-func (p *parser) parseWhileStatement() ast.Statement {
+func (self *_parser) parseWhileStatement() ast.Statement {
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
-	idx := p.expect(token.WHILE)
+	self.expect(token.WHILE)
 
 	var whileComments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		whileComments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		whileComments = self.comments.FetchAll()
 	}
 
-	p.expect(token.LEFT_PARENTHESIS)
+	self.expect(token.LEFT_PARENTHESIS)
 	node := &ast.WhileStatement{
-		While: idx,
-		Test:  p.parseExpression(),
+		Test: self.parseExpression(),
 	}
-	p.expect(token.RIGHT_PARENTHESIS)
-	node.Body = p.parseIterationStatement()
+	self.expect(token.RIGHT_PARENTHESIS)
+	node.Body = self.parseIterationStatement()
 
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, comments, ast.LEADING)
-		p.comments.CommentMap.AddComments(node, whileComments, ast.WHILE)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, comments, ast.LEADING)
+		self.comments.CommentMap.AddComments(node, whileComments, ast.WHILE)
 	}
 
 	return node
 }
 
-func (p *parser) parseIfStatement() ast.Statement {
+func (self *_parser) parseIfStatement() ast.Statement {
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
-	pos := p.expect(token.IF)
+	self.expect(token.IF)
 	var ifComments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		ifComments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		ifComments = self.comments.FetchAll()
 	}
 
-	p.expect(token.LEFT_PARENTHESIS)
+	self.expect(token.LEFT_PARENTHESIS)
 	node := &ast.IfStatement{
-		If:   pos,
-		Test: p.parseExpression(),
+		If:   self.idx,
+		Test: self.parseExpression(),
 	}
-	p.expect(token.RIGHT_PARENTHESIS)
-	if p.token == token.LEFT_BRACE {
-		node.Consequent = p.parseBlockStatement()
+	self.expect(token.RIGHT_PARENTHESIS)
+	if self.token == token.LEFT_BRACE {
+		node.Consequent = self.parseBlockStatement()
 	} else {
-		node.Consequent = p.parseStatement()
+		node.Consequent = self.parseStatement()
 	}
 
-	if p.token == token.ELSE {
-		p.next()
-		node.Alternate = p.parseStatement()
+	if self.token == token.ELSE {
+		self.next()
+		node.Alternate = self.parseStatement()
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.CommentMap.AddComments(node, comments, ast.LEADING)
-		p.comments.CommentMap.AddComments(node, ifComments, ast.IF)
+	if self.mode&StoreComments != 0 {
+		self.comments.CommentMap.AddComments(node, comments, ast.LEADING)
+		self.comments.CommentMap.AddComments(node, ifComments, ast.IF)
 	}
 
 	return node
 }
 
-func (p *parser) parseSourceElement() ast.Statement {
-	statement := p.parseStatement()
+func (self *_parser) parseSourceElement() ast.Statement {
+	statement := self.parseStatement()
 	return statement
 }
 
-func (p *parser) parseSourceElements() []ast.Statement {
+func (self *_parser) parseSourceElements() []ast.Statement {
 	body := []ast.Statement(nil)
 
 	for {
-		if p.token != token.STRING {
+		if self.token != token.STRING {
 			break
 		}
-		body = append(body, p.parseSourceElement())
+		body = append(body, self.parseSourceElement())
 	}
 
-	for p.token != token.EOF {
-		body = append(body, p.parseSourceElement())
+	for self.token != token.EOF {
+		body = append(body, self.parseSourceElement())
 	}
 
 	return body
 }
 
-func (p *parser) parseProgram() *ast.Program {
-	p.openScope()
-	defer p.closeScope()
+func (self *_parser) parseProgram() *ast.Program {
+	self.openScope()
+	defer self.closeScope()
 	return &ast.Program{
-		Body:            p.parseSourceElements(),
-		DeclarationList: p.scope.declarationList,
-		File:            p.file,
+		Body:            self.parseSourceElements(),
+		DeclarationList: self.scope.declarationList,
+		File:            self.file,
 	}
 }
 
-func (p *parser) parseBreakStatement() ast.Statement {
+func (self *_parser) parseBreakStatement() ast.Statement {
 	var comments []*ast.Comment
-	if p.mode&StoreComments != 0 {
-		comments = p.comments.FetchAll()
+	if self.mode&StoreComments != 0 {
+		comments = self.comments.FetchAll()
 	}
-	idx := p.expect(token.BREAK)
-	semicolon := p.implicitSemicolon
-	if p.token == token.SEMICOLON {
+	idx := self.expect(token.BREAK)
+	semicolon := self.implicitSemicolon
+	if self.token == token.SEMICOLON {
 		semicolon = true
-		p.next()
+		self.next()
 	}
 
-	if semicolon || p.token == token.RIGHT_BRACE {
-		p.implicitSemicolon = false
-		if !p.scope.inIteration && !p.scope.inSwitch {
+	if semicolon || self.token == token.RIGHT_BRACE {
+		self.implicitSemicolon = false
+		if !self.scope.inIteration && !self.scope.inSwitch {
 			goto illegal
 		}
 		breakStatement := &ast.BranchStatement{
@@ -813,52 +825,52 @@ func (p *parser) parseBreakStatement() ast.Statement {
 			Token: token.BREAK,
 		}
 
-		if p.mode&StoreComments != 0 {
-			p.comments.CommentMap.AddComments(breakStatement, comments, ast.LEADING)
-			p.comments.CommentMap.AddComments(breakStatement, p.comments.FetchAll(), ast.TRAILING)
+		if self.mode&StoreComments != 0 {
+			self.comments.CommentMap.AddComments(breakStatement, comments, ast.LEADING)
+			self.comments.CommentMap.AddComments(breakStatement, self.comments.FetchAll(), ast.TRAILING)
 		}
 
 		return breakStatement
 	}
 
-	if p.token == token.IDENTIFIER {
-		identifier := p.parseIdentifier()
-		if !p.scope.hasLabel(identifier.Name) {
-			p.error(idx, "Undefined label '%s'", identifier.Name)
+	if self.token == token.IDENTIFIER {
+		identifier := self.parseIdentifier()
+		if !self.scope.hasLabel(identifier.Name) {
+			self.error(idx, "Undefined label '%s'", identifier.Name)
 			return &ast.BadStatement{From: idx, To: identifier.Idx1()}
 		}
-		p.semicolon()
+		self.semicolon()
 		breakStatement := &ast.BranchStatement{
 			Idx:   idx,
 			Token: token.BREAK,
 			Label: identifier,
 		}
-		if p.mode&StoreComments != 0 {
-			p.comments.CommentMap.AddComments(breakStatement, comments, ast.LEADING)
+		if self.mode&StoreComments != 0 {
+			self.comments.CommentMap.AddComments(breakStatement, comments, ast.LEADING)
 		}
 
 		return breakStatement
 	}
 
-	p.expect(token.IDENTIFIER)
+	self.expect(token.IDENTIFIER)
 
 illegal:
-	p.error(idx, "Illegal break statement")
-	p.nextStatement()
-	return &ast.BadStatement{From: idx, To: p.idx}
+	self.error(idx, "Illegal break statement")
+	self.nextStatement()
+	return &ast.BadStatement{From: idx, To: self.idx}
 }
 
-func (p *parser) parseContinueStatement() ast.Statement {
-	idx := p.expect(token.CONTINUE)
-	semicolon := p.implicitSemicolon
-	if p.token == token.SEMICOLON {
+func (self *_parser) parseContinueStatement() ast.Statement {
+	idx := self.expect(token.CONTINUE)
+	semicolon := self.implicitSemicolon
+	if self.token == token.SEMICOLON {
 		semicolon = true
-		p.next()
+		self.next()
 	}
 
-	if semicolon || p.token == token.RIGHT_BRACE {
-		p.implicitSemicolon = false
-		if !p.scope.inIteration {
+	if semicolon || self.token == token.RIGHT_BRACE {
+		self.implicitSemicolon = false
+		if !self.scope.inIteration {
 			goto illegal
 		}
 		return &ast.BranchStatement{
@@ -867,16 +879,16 @@ func (p *parser) parseContinueStatement() ast.Statement {
 		}
 	}
 
-	if p.token == token.IDENTIFIER {
-		identifier := p.parseIdentifier()
-		if !p.scope.hasLabel(identifier.Name) {
-			p.error(idx, "Undefined label '%s'", identifier.Name)
+	if self.token == token.IDENTIFIER {
+		identifier := self.parseIdentifier()
+		if !self.scope.hasLabel(identifier.Name) {
+			self.error(idx, "Undefined label '%s'", identifier.Name)
 			return &ast.BadStatement{From: idx, To: identifier.Idx1()}
 		}
-		if !p.scope.inIteration {
+		if !self.scope.inIteration {
 			goto illegal
 		}
-		p.semicolon()
+		self.semicolon()
 		return &ast.BranchStatement{
 			Idx:   idx,
 			Token: token.CONTINUE,
@@ -884,18 +896,18 @@ func (p *parser) parseContinueStatement() ast.Statement {
 		}
 	}
 
-	p.expect(token.IDENTIFIER)
+	self.expect(token.IDENTIFIER)
 
 illegal:
-	p.error(idx, "Illegal continue statement")
-	p.nextStatement()
-	return &ast.BadStatement{From: idx, To: p.idx}
+	self.error(idx, "Illegal continue statement")
+	self.nextStatement()
+	return &ast.BadStatement{From: idx, To: self.idx}
 }
 
-// Find the next statement after an error (recover).
-func (p *parser) nextStatement() {
+// Find the next statement after an error (recover)
+func (self *_parser) nextStatement() {
 	for {
-		switch p.token {
+		switch self.token {
 		case token.BREAK, token.CONTINUE,
 			token.FOR, token.IF, token.RETURN, token.SWITCH,
 			token.VAR, token.DO, token.TRY, token.WITH,
@@ -904,13 +916,13 @@ func (p *parser) nextStatement() {
 			// sync or if it has not reached 10 next calls without
 			// progress. Otherwise consume at least one token to
 			// avoid an endless parser loop
-			if p.idx == p.recover.idx && p.recover.count < 10 {
-				p.recover.count++
+			if self.idx == self.recover.idx && self.recover.count < 10 {
+				self.recover.count++
 				return
 			}
-			if p.idx > p.recover.idx {
-				p.recover.idx = p.idx
-				p.recover.count = 0
+			if self.idx > self.recover.idx {
+				self.recover.idx = self.idx
+				self.recover.count = 0
 				return
 			}
 			// Reaching here indicates a parser bug, likely an
@@ -921,6 +933,6 @@ func (p *parser) nextStatement() {
 		case token.EOF:
 			return
 		}
-		p.next()
+		self.next()
 	}
 }

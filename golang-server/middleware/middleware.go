@@ -2,9 +2,9 @@ package middleware
 
 import (
 	"fmt"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/internal/auth"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/config"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/internal/auth"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/utils"
 	"net/http"
 )
 

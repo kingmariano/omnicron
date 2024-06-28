@@ -11,17 +11,40 @@ type Generic interface {
 	String() string
 }
 
-type stringGeneric struct {
-	value string
+// GenericFlag is a flag with type Generic
+type GenericFlag struct {
+	Name        string
+	Aliases     []string
+	Usage       string
+	EnvVars     []string
+	FilePath    string
+	Required    bool
+	Hidden      bool
+	TakesFile   bool
+	Value       Generic
+	DefaultText string
+	HasBeenSet  bool
 }
 
-func (s *stringGeneric) Set(value string) error {
-	s.value = value
-	return nil
+// IsSet returns whether or not the flag has been set through env or file
+func (f *GenericFlag) IsSet() bool {
+	return f.HasBeenSet
 }
 
-func (s *stringGeneric) String() string {
-	return s.value
+// String returns a readable representation of this value
+// (for usage defaults)
+func (f *GenericFlag) String() string {
+	return FlagStringer(f)
+}
+
+// Names returns the names of the flag
+func (f *GenericFlag) Names() []string {
+	return flagNames(f.Name, f.Aliases)
+}
+
+// IsRequired returns whether or not the flag is required
+func (f *GenericFlag) IsRequired() bool {
+	return f.Required
 }
 
 // TakesValue returns true of the flag takes a value, otherwise false
@@ -34,11 +57,6 @@ func (f *GenericFlag) GetUsage() string {
 	return f.Usage
 }
 
-// GetCategory returns the category for the flag
-func (f *GenericFlag) GetCategory() string {
-	return f.Category
-}
-
 // GetValue returns the flags value as string representation and an empty
 // string if the flag takes no value at all.
 func (f *GenericFlag) GetValue() string {
@@ -48,21 +66,17 @@ func (f *GenericFlag) GetValue() string {
 	return ""
 }
 
+// IsVisible returns true if the flag is not hidden, otherwise false
+func (f *GenericFlag) IsVisible() bool {
+	return !f.Hidden
+}
+
 // GetDefaultText returns the default text for this flag
 func (f *GenericFlag) GetDefaultText() string {
 	if f.DefaultText != "" {
 		return f.DefaultText
 	}
-	val := f.Value
-	if f.defaultValueSet {
-		val = f.defaultValue
-	}
-
-	if val != nil {
-		return val.String()
-	}
-
-	return ""
+	return f.GetValue()
 }
 
 // GetEnvVars returns the env vars for this flag
@@ -72,17 +86,11 @@ func (f *GenericFlag) GetEnvVars() []string {
 
 // Apply takes the flagset and calls Set on the generic flag with the value
 // provided by the user for parsing by the flag
-func (f *GenericFlag) Apply(set *flag.FlagSet) error {
-	// set default value so that environment wont be able to overwrite it
-	if f.Value != nil {
-		f.defaultValue = &stringGeneric{value: f.Value.String()}
-		f.defaultValueSet = true
-	}
-
-	if val, source, found := flagFromEnvOrFile(f.EnvVars, f.FilePath); found {
+func (f GenericFlag) Apply(set *flag.FlagSet) error {
+	if val, ok := flagFromEnvOrFile(f.EnvVars, f.FilePath); ok {
 		if val != "" {
 			if err := f.Value.Set(val); err != nil {
-				return fmt.Errorf("could not parse %q from %s as value for flag %s: %s", val, source, f.Name, err)
+				return fmt.Errorf("could not parse %q as value for flag %s: %s", val, f.Name, err)
 			}
 
 			f.HasBeenSet = true
@@ -90,10 +98,6 @@ func (f *GenericFlag) Apply(set *flag.FlagSet) error {
 	}
 
 	for _, name := range f.Names() {
-		if f.Destination != nil {
-			set.Var(f.Destination, name, f.Usage)
-			continue
-		}
 		set.Var(f.Value, name, f.Usage)
 	}
 
@@ -103,15 +107,6 @@ func (f *GenericFlag) Apply(set *flag.FlagSet) error {
 // Get returns the flag’s value in the given Context.
 func (f *GenericFlag) Get(ctx *Context) interface{} {
 	return ctx.Generic(f.Name)
-}
-
-// RunAction executes flag action if set
-func (f *GenericFlag) RunAction(c *Context) error {
-	if f.Action != nil {
-		return f.Action(c, c.Generic(f.Name))
-	}
-
-	return nil
 }
 
 // Generic looks up the value of a local GenericFlag, returns
@@ -124,8 +119,13 @@ func (cCtx *Context) Generic(name string) interface{} {
 }
 
 func lookupGeneric(name string, set *flag.FlagSet) interface{} {
-	if f := set.Lookup(name); f != nil {
-		return f.Value
+	f := set.Lookup(name)
+	if f != nil {
+		parsed, err := f.Value, error(nil)
+		if err != nil {
+			return nil
+		}
+		return parsed
 	}
 	return nil
 }

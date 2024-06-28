@@ -2,87 +2,87 @@ package otto
 
 // property
 
-type propertyMode int
+type _propertyMode int
 
 const (
-	modeWriteMask     propertyMode = 0o700
-	modeEnumerateMask propertyMode = 0o070
-	modeConfigureMask propertyMode = 0o007
-	modeOnMask        propertyMode = 0o111
-	modeSetMask       propertyMode = 0o222 // If value is 2, then mode is neither "On" nor "Off"
+	modeWriteMask     _propertyMode = 0700
+	modeEnumerateMask               = 0070
+	modeConfigureMask               = 0007
+	modeOnMask                      = 0111
+	modeSetMask                     = 0222 // If value is 2, then mode is neither "On" nor "Off"
 )
 
-type propertyGetSet [2]*object
+type _propertyGetSet [2]*_object
 
-var nilGetSetObject = object{}
+var _nilGetSetObject _object = _object{}
 
-type property struct {
+type _property struct {
 	value interface{}
-	mode  propertyMode
+	mode  _propertyMode
 }
 
-func (p property) writable() bool {
-	return p.mode&modeWriteMask == modeWriteMask&modeOnMask
+func (self _property) writable() bool {
+	return self.mode&modeWriteMask == modeWriteMask&modeOnMask
 }
 
-func (p *property) writeOn() {
-	p.mode = (p.mode & ^modeWriteMask) | (modeWriteMask & modeOnMask)
+func (self *_property) writeOn() {
+	self.mode = (self.mode & ^modeWriteMask) | (modeWriteMask & modeOnMask)
 }
 
-func (p *property) writeOff() {
-	p.mode &= ^modeWriteMask
+func (self *_property) writeOff() {
+	self.mode &= ^modeWriteMask
 }
 
-func (p *property) writeClear() {
-	p.mode = (p.mode & ^modeWriteMask) | (modeWriteMask & modeSetMask)
+func (self *_property) writeClear() {
+	self.mode = (self.mode & ^modeWriteMask) | (modeWriteMask & modeSetMask)
 }
 
-func (p property) writeSet() bool {
-	return p.mode&modeWriteMask&modeSetMask == 0
+func (self _property) writeSet() bool {
+	return 0 == self.mode&modeWriteMask&modeSetMask
 }
 
-func (p property) enumerable() bool {
-	return p.mode&modeEnumerateMask == modeEnumerateMask&modeOnMask
+func (self _property) enumerable() bool {
+	return self.mode&modeEnumerateMask == modeEnumerateMask&modeOnMask
 }
 
-func (p *property) enumerateOn() {
-	p.mode = (p.mode & ^modeEnumerateMask) | (modeEnumerateMask & modeOnMask)
+func (self *_property) enumerateOn() {
+	self.mode = (self.mode & ^modeEnumerateMask) | (modeEnumerateMask & modeOnMask)
 }
 
-func (p *property) enumerateOff() {
-	p.mode &= ^modeEnumerateMask
+func (self *_property) enumerateOff() {
+	self.mode &= ^modeEnumerateMask
 }
 
-func (p property) enumerateSet() bool {
-	return p.mode&modeEnumerateMask&modeSetMask == 0
+func (self _property) enumerateSet() bool {
+	return 0 == self.mode&modeEnumerateMask&modeSetMask
 }
 
-func (p property) configurable() bool {
-	return p.mode&modeConfigureMask == modeConfigureMask&modeOnMask
+func (self _property) configurable() bool {
+	return self.mode&modeConfigureMask == modeConfigureMask&modeOnMask
 }
 
-func (p *property) configureOn() {
-	p.mode = (p.mode & ^modeConfigureMask) | (modeConfigureMask & modeOnMask)
+func (self *_property) configureOn() {
+	self.mode = (self.mode & ^modeConfigureMask) | (modeConfigureMask & modeOnMask)
 }
 
-func (p *property) configureOff() {
-	p.mode &= ^modeConfigureMask
+func (self *_property) configureOff() {
+	self.mode &= ^modeConfigureMask
 }
 
-func (p property) configureSet() bool { //nolint:unused
-	return p.mode&modeConfigureMask&modeSetMask == 0
+func (self _property) configureSet() bool {
+	return 0 == self.mode&modeConfigureMask&modeSetMask
 }
 
-func (p property) copy() *property { //nolint:unused
-	cpy := p
-	return &cpy
+func (self _property) copy() *_property {
+	property := self
+	return &property
 }
 
-func (p property) get(this *object) Value {
-	switch value := p.value.(type) {
+func (self _property) get(this *_object) Value {
+	switch value := self.value.(type) {
 	case Value:
 		return value
-	case propertyGetSet:
+	case _propertyGetSet:
 		if value[0] != nil {
 			return value[0].call(toValue(this), nil, false, nativeFrame)
 		}
@@ -90,129 +90,130 @@ func (p property) get(this *object) Value {
 	return Value{}
 }
 
-func (p property) isAccessorDescriptor() bool {
-	setGet, test := p.value.(propertyGetSet)
+func (self _property) isAccessorDescriptor() bool {
+	setGet, test := self.value.(_propertyGetSet)
 	return test && (setGet[0] != nil || setGet[1] != nil)
 }
 
-func (p property) isDataDescriptor() bool {
-	if p.writeSet() { // Either "On" or "Off"
+func (self _property) isDataDescriptor() bool {
+	if self.writeSet() { // Either "On" or "Off"
 		return true
 	}
-	value, valid := p.value.(Value)
+	value, valid := self.value.(Value)
 	return valid && !value.isEmpty()
 }
 
-func (p property) isGenericDescriptor() bool {
-	return !(p.isDataDescriptor() || p.isAccessorDescriptor())
+func (self _property) isGenericDescriptor() bool {
+	return !(self.isDataDescriptor() || self.isAccessorDescriptor())
 }
 
-func (p property) isEmpty() bool {
-	return p.mode == 0o222 && p.isGenericDescriptor()
+func (self _property) isEmpty() bool {
+	return self.mode == 0222 && self.isGenericDescriptor()
 }
 
 // _enumerableValue, _enumerableTrue, _enumerableFalse?
 // .enumerableValue() .enumerableExists()
 
-func toPropertyDescriptor(rt *runtime, value Value) property {
-	objectDescriptor := value.object()
+func toPropertyDescriptor(rt *_runtime, value Value) (descriptor _property) {
+	objectDescriptor := value._object()
 	if objectDescriptor == nil {
-		panic(rt.panicTypeError("toPropertyDescriptor on nil"))
+		panic(rt.panicTypeError())
 	}
 
-	var descriptor property
-	descriptor.mode = modeSetMask // Initially nothing is set
-	if objectDescriptor.hasProperty("enumerable") {
-		if objectDescriptor.get("enumerable").bool() {
-			descriptor.enumerateOn()
-		} else {
-			descriptor.enumerateOff()
+	{
+		descriptor.mode = modeSetMask // Initially nothing is set
+		if objectDescriptor.hasProperty("enumerable") {
+			if objectDescriptor.get("enumerable").bool() {
+				descriptor.enumerateOn()
+			} else {
+				descriptor.enumerateOff()
+			}
+		}
+
+		if objectDescriptor.hasProperty("configurable") {
+			if objectDescriptor.get("configurable").bool() {
+				descriptor.configureOn()
+			} else {
+				descriptor.configureOff()
+			}
+		}
+
+		if objectDescriptor.hasProperty("writable") {
+			if objectDescriptor.get("writable").bool() {
+				descriptor.writeOn()
+			} else {
+				descriptor.writeOff()
+			}
 		}
 	}
 
-	if objectDescriptor.hasProperty("configurable") {
-		if objectDescriptor.get("configurable").bool() {
-			descriptor.configureOn()
-		} else {
-			descriptor.configureOff()
-		}
-	}
-
-	if objectDescriptor.hasProperty("writable") {
-		if objectDescriptor.get("writable").bool() {
-			descriptor.writeOn()
-		} else {
-			descriptor.writeOff()
-		}
-	}
-
-	var getter, setter *object
+	var getter, setter *_object
 	getterSetter := false
 
 	if objectDescriptor.hasProperty("get") {
-		val := objectDescriptor.get("get")
-		if val.IsDefined() {
-			if !val.isCallable() {
-				panic(rt.panicTypeError("toPropertyDescriptor get not callable"))
+		value := objectDescriptor.get("get")
+		if value.IsDefined() {
+			if !value.isCallable() {
+				panic(rt.panicTypeError())
 			}
-			getter = val.object()
+			getter = value._object()
 			getterSetter = true
 		} else {
-			getter = &nilGetSetObject
+			getter = &_nilGetSetObject
 			getterSetter = true
 		}
 	}
 
 	if objectDescriptor.hasProperty("set") {
-		val := objectDescriptor.get("set")
-		if val.IsDefined() {
-			if !val.isCallable() {
-				panic(rt.panicTypeError("toPropertyDescriptor set not callable"))
+		value := objectDescriptor.get("set")
+		if value.IsDefined() {
+			if !value.isCallable() {
+				panic(rt.panicTypeError())
 			}
-			setter = val.object()
+			setter = value._object()
 			getterSetter = true
 		} else {
-			setter = &nilGetSetObject
+			setter = &_nilGetSetObject
 			getterSetter = true
 		}
 	}
 
 	if getterSetter {
 		if descriptor.writeSet() {
-			panic(rt.panicTypeError("toPropertyDescriptor descriptor writeSet"))
+			panic(rt.panicTypeError())
 		}
-		descriptor.value = propertyGetSet{getter, setter}
+		descriptor.value = _propertyGetSet{getter, setter}
 	}
 
 	if objectDescriptor.hasProperty("value") {
 		if getterSetter {
-			panic(rt.panicTypeError("toPropertyDescriptor value getterSetter"))
+			panic(rt.panicTypeError())
 		}
 		descriptor.value = objectDescriptor.get("value")
 	}
 
-	return descriptor
+	return
 }
 
-func (rt *runtime) fromPropertyDescriptor(descriptor property) *object {
-	obj := rt.newObject()
+func (self *_runtime) fromPropertyDescriptor(descriptor _property) *_object {
+	object := self.newObject()
 	if descriptor.isDataDescriptor() {
-		obj.defineProperty("value", descriptor.value.(Value), 0o111, false)
-		obj.defineProperty("writable", boolValue(descriptor.writable()), 0o111, false)
+		object.defineProperty("value", descriptor.value.(Value), 0111, false)
+		object.defineProperty("writable", toValue_bool(descriptor.writable()), 0111, false)
 	} else if descriptor.isAccessorDescriptor() {
-		getSet := descriptor.value.(propertyGetSet)
+		getSet := descriptor.value.(_propertyGetSet)
 		get := Value{}
 		if getSet[0] != nil {
-			get = objectValue(getSet[0])
+			get = toValue_object(getSet[0])
 		}
 		set := Value{}
 		if getSet[1] != nil {
-			set = objectValue(getSet[1])
+			set = toValue_object(getSet[1])
 		}
-		obj.defineProperty("get", get, 0o111, false)
-		obj.defineProperty("set", set, 0o111, false)
+		object.defineProperty("get", get, 0111, false)
+		object.defineProperty("set", set, 0111, false)
 	}
-	obj.defineProperty("enumerable", boolValue(descriptor.enumerable()), 0o111, false)
-	obj.defineProperty("configurable", boolValue(descriptor.configurable()), 0o111, false)
-	return obj
+	object.defineProperty("enumerable", toValue_bool(descriptor.enumerable()), 0111, false)
+	object.defineProperty("configurable", toValue_bool(descriptor.configurable()), 0111, false)
+	return object
 }

@@ -31,15 +31,12 @@ func floatToString(value float64, bitsize int) string {
 
 func numberToStringRadix(value Value, radix int) string {
 	float := value.float64()
-	switch {
-	case math.IsNaN(float):
+	if math.IsNaN(float) {
 		return "NaN"
-	case math.IsInf(float, 1):
+	} else if math.IsInf(float, 1) {
 		return "Infinity"
-	case math.IsInf(float, -1):
+	} else if math.IsInf(float, -1) {
 		return "-Infinity"
-	case float == 0:
-		return "0"
 	}
 	// FIXME This is very broken
 	// Need to do proper radix conversion for floats, ...
@@ -47,22 +44,22 @@ func numberToStringRadix(value Value, radix int) string {
 	return strconv.FormatInt(int64(float), radix)
 }
 
-func (v Value) string() string {
-	if v.kind == valueString {
-		switch value := v.value.(type) {
+func (value Value) string() string {
+	if value.kind == valueString {
+		switch value := value.value.(type) {
 		case string:
 			return value
 		case []uint16:
 			return string(utf16.Decode(value))
 		}
 	}
-	if v.IsUndefined() {
+	if value.IsUndefined() {
 		return "undefined"
 	}
-	if v.IsNull() {
+	if value.IsNull() {
 		return "null"
 	}
-	switch value := v.value.(type) {
+	switch value := value.value.(type) {
 	case bool:
 		return strconv.FormatBool(value)
 	case int:
@@ -99,8 +96,8 @@ func (v Value) string() string {
 		return string(utf16.Decode(value))
 	case string:
 		return value
-	case *object:
+	case *_object:
 		return value.DefaultValue(defaultValueHintString).string()
 	}
-	panic(fmt.Errorf("%v.string( %T)", v.value, v.value))
+	panic(fmt.Errorf("%v.string( %T)", value.value, value.value))
 }

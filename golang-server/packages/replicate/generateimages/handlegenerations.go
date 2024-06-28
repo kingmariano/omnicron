@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/config"
-	rep "github.com/charlesozo/omnicron-backendsever/golang-server/packages/replicate"
-	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/config"
+	rep "github.com/kingmariano/omnicron-backendsever/golang-server/packages/replicate"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/utils"
 	replicate "github.com/replicate/replicate-go"
 	"net/http"
 )
@@ -109,7 +109,7 @@ func processHighImageGenerationInput(ctx context.Context, r *http.Request, model
 	imageFile, imageFileHeader, err := r.FormFile("image")
 	if err == nil {
 		repFile, err := rep.RequestFileToReplicateFile(ctx, imageFileHeader, cfg.ReplicateAPIKey)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		HighImageGenerationParams.ImageFile = repFile
@@ -122,7 +122,7 @@ func processHighImageGenerationInput(ctx context.Context, r *http.Request, model
 	maskFile, maskFileHeader, err := r.FormFile("mask")
 	if err == nil {
 		repFile, err := rep.RequestFileToReplicateFile(ctx, maskFileHeader, cfg.ReplicateAPIKey)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		HighImageGenerationParams.MaskFile = repFile

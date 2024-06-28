@@ -8,36 +8,36 @@ import (
 	"github.com/robertkrimen/otto/token"
 )
 
-func (p *parser) parseIdentifier() *ast.Identifier {
-	literal := p.literal
-	idx := p.idx
-	if p.mode&StoreComments != 0 {
-		p.comments.MarkComments(ast.LEADING)
+func (self *_parser) parseIdentifier() *ast.Identifier {
+	literal := self.literal
+	idx := self.idx
+	if self.mode&StoreComments != 0 {
+		self.comments.MarkComments(ast.LEADING)
 	}
-	p.next()
+	self.next()
 	exp := &ast.Identifier{
 		Name: literal,
 		Idx:  idx,
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.SetExpression(exp)
+	if self.mode&StoreComments != 0 {
+		self.comments.SetExpression(exp)
 	}
 
 	return exp
 }
 
-func (p *parser) parsePrimaryExpression() ast.Expression {
-	literal := p.literal
-	idx := p.idx
-	switch p.token {
+func (self *_parser) parsePrimaryExpression() ast.Expression {
+	literal := self.literal
+	idx := self.idx
+	switch self.token {
 	case token.IDENTIFIER:
-		p.next()
+		self.next()
 		if len(literal) > 1 {
 			tkn, strict := token.IsKeyword(literal)
 			if tkn == token.KEYWORD {
 				if !strict {
-					p.error(idx, "Unexpected reserved word")
+					self.error(idx, "Unexpected reserved word")
 				}
 			}
 		}
@@ -46,13 +46,13 @@ func (p *parser) parsePrimaryExpression() ast.Expression {
 			Idx:  idx,
 		}
 	case token.NULL:
-		p.next()
+		self.next()
 		return &ast.NullLiteral{
 			Idx:     idx,
 			Literal: literal,
 		}
 	case token.BOOLEAN:
-		p.next()
+		self.next()
 		value := false
 		switch literal {
 		case "true":
@@ -60,7 +60,7 @@ func (p *parser) parsePrimaryExpression() ast.Expression {
 		case "false":
 			value = false
 		default:
-			p.error(idx, "Illegal boolean literal")
+			self.error(idx, "Illegal boolean literal")
 		}
 		return &ast.BooleanLiteral{
 			Idx:     idx,
@@ -68,10 +68,10 @@ func (p *parser) parsePrimaryExpression() ast.Expression {
 			Value:   value,
 		}
 	case token.STRING:
-		p.next()
+		self.next()
 		value, err := parseStringLiteral(literal[1 : len(literal)-1])
 		if err != nil {
-			p.error(idx, err.Error())
+			self.error(idx, err.Error())
 		}
 		return &ast.StringLiteral{
 			Idx:     idx,
@@ -79,10 +79,10 @@ func (p *parser) parsePrimaryExpression() ast.Expression {
 			Value:   value,
 		}
 	case token.NUMBER:
-		p.next()
+		self.next()
 		value, err := parseNumberLiteral(literal)
 		if err != nil {
-			p.error(idx, err.Error())
+			self.error(idx, err.Error())
 			value = 0
 		}
 		return &ast.NumberLiteral{
@@ -91,75 +91,79 @@ func (p *parser) parsePrimaryExpression() ast.Expression {
 			Value:   value,
 		}
 	case token.SLASH, token.QUOTIENT_ASSIGN:
-		return p.parseRegExpLiteral()
+		return self.parseRegExpLiteral()
 	case token.LEFT_BRACE:
-		return p.parseObjectLiteral()
+		return self.parseObjectLiteral()
 	case token.LEFT_BRACKET:
-		return p.parseArrayLiteral()
+		return self.parseArrayLiteral()
 	case token.LEFT_PARENTHESIS:
-		p.expect(token.LEFT_PARENTHESIS)
-		expression := p.parseExpression()
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+		self.expect(token.LEFT_PARENTHESIS)
+		expression := self.parseExpression()
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.expect(token.RIGHT_PARENTHESIS)
+		self.expect(token.RIGHT_PARENTHESIS)
 		return expression
 	case token.THIS:
-		p.next()
+		self.next()
 		return &ast.ThisExpression{
 			Idx: idx,
 		}
 	case token.FUNCTION:
-		return p.parseFunction(false)
+		return self.parseFunction(false)
 	}
 
-	p.errorUnexpectedToken(p.token)
-	p.nextStatement()
-	return &ast.BadExpression{From: idx, To: p.idx}
+	self.errorUnexpectedToken(self.token)
+	self.nextStatement()
+	return &ast.BadExpression{From: idx, To: self.idx}
 }
 
-func (p *parser) parseRegExpLiteral() *ast.RegExpLiteral {
-	offset := p.chrOffset - 1 // Opening slash already gotten
-	if p.token == token.QUOTIENT_ASSIGN {
-		offset-- // =
+func (self *_parser) parseRegExpLiteral() *ast.RegExpLiteral {
+
+	offset := self.chrOffset - 1 // Opening slash already gotten
+	if self.token == token.QUOTIENT_ASSIGN {
+		offset -= 1 // =
 	}
-	idx := p.idxOf(offset)
+	idx := self.idxOf(offset)
 
-	pattern, err := p.scanString(offset)
-	endOffset := p.chrOffset
+	pattern, err := self.scanString(offset)
+	endOffset := self.chrOffset
 
-	p.next()
+	self.next()
 	if err == nil {
 		pattern = pattern[1 : len(pattern)-1]
 	}
 
 	flags := ""
-	if p.token == token.IDENTIFIER { // gim
-		flags = p.literal
-		p.next()
-		endOffset = p.chrOffset - 1
+	if self.token == token.IDENTIFIER { // gim
+
+		flags = self.literal
+		self.next()
+		endOffset = self.chrOffset - 1
 	}
 
 	var value string
 	// TODO 15.10
-	// Test during parsing that this is a valid regular expression
-	// Sorry, (?=) and (?!) are invalid (for now)
-	pat, err := TransformRegExp(pattern)
-	if err != nil {
-		if pat == "" || p.mode&IgnoreRegExpErrors == 0 {
-			p.error(idx, "Invalid regular expression: %s", err.Error())
-		}
-	} else {
-		_, err = regexp.Compile(pat)
+	{
+		// Test during parsing that this is a valid regular expression
+		// Sorry, (?=) and (?!) are invalid (for now)
+		pattern, err := TransformRegExp(pattern)
 		if err != nil {
-			// We should not get here, ParseRegExp should catch any errors
-			p.error(idx, "Invalid regular expression: %s", err.Error()[22:]) // Skip redundant "parse regexp error"
+			if pattern == "" || self.mode&IgnoreRegExpErrors == 0 {
+				self.error(idx, "Invalid regular expression: %s", err.Error())
+			}
 		} else {
-			value = pat
+			_, err = regexp.Compile(pattern)
+			if err != nil {
+				// We should not get here, ParseRegExp should catch any errors
+				self.error(idx, "Invalid regular expression: %s", err.Error()[22:]) // Skip redundant "parse regexp error"
+			} else {
+				value = pattern
+			}
 		}
 	}
 
-	literal := p.str[offset:endOffset]
+	literal := self.str[offset:endOffset]
 
 	return &ast.RegExpLiteral{
 		Idx:     idx,
@@ -170,73 +174,75 @@ func (p *parser) parseRegExpLiteral() *ast.RegExpLiteral {
 	}
 }
 
-func (p *parser) parseVariableDeclaration(declarationList *[]*ast.VariableExpression) ast.Expression {
-	if p.token != token.IDENTIFIER {
-		idx := p.expect(token.IDENTIFIER)
-		p.nextStatement()
-		return &ast.BadExpression{From: idx, To: p.idx}
+func (self *_parser) parseVariableDeclaration(declarationList *[]*ast.VariableExpression) ast.Expression {
+
+	if self.token != token.IDENTIFIER {
+		idx := self.expect(token.IDENTIFIER)
+		self.nextStatement()
+		return &ast.BadExpression{From: idx, To: self.idx}
 	}
 
-	literal := p.literal
-	idx := p.idx
-	p.next()
+	literal := self.literal
+	idx := self.idx
+	self.next()
 	node := &ast.VariableExpression{
 		Name: literal,
 		Idx:  idx,
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.SetExpression(node)
+	if self.mode&StoreComments != 0 {
+		self.comments.SetExpression(node)
 	}
 
 	if declarationList != nil {
 		*declarationList = append(*declarationList, node)
 	}
 
-	if p.token == token.ASSIGN {
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	if self.token == token.ASSIGN {
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
-		node.Initializer = p.parseAssignmentExpression()
+		self.next()
+		node.Initializer = self.parseAssignmentExpression()
 	}
 
 	return node
 }
 
-func (p *parser) parseVariableDeclarationList(idx file.Idx) []ast.Expression {
+func (self *_parser) parseVariableDeclarationList(var_ file.Idx) []ast.Expression {
+
 	var declarationList []*ast.VariableExpression // Avoid bad expressions
 	var list []ast.Expression
 
 	for {
-		if p.mode&StoreComments != 0 {
-			p.comments.MarkComments(ast.LEADING)
+		if self.mode&StoreComments != 0 {
+			self.comments.MarkComments(ast.LEADING)
 		}
-		decl := p.parseVariableDeclaration(&declarationList)
+		decl := self.parseVariableDeclaration(&declarationList)
 		list = append(list, decl)
-		if p.token != token.COMMA {
+		if self.token != token.COMMA {
 			break
 		}
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 	}
 
-	p.scope.declare(&ast.VariableDeclaration{
-		Var:  idx,
+	self.scope.declare(&ast.VariableDeclaration{
+		Var:  var_,
 		List: declarationList,
 	})
 
 	return list
 }
 
-func (p *parser) parseObjectPropertyKey() (string, string) {
-	idx, tkn, literal := p.idx, p.token, p.literal
+func (self *_parser) parseObjectPropertyKey() (string, string) {
+	idx, tkn, literal := self.idx, self.token, self.literal
 	value := ""
-	if p.mode&StoreComments != 0 {
-		p.comments.MarkComments(ast.KEY)
+	if self.mode&StoreComments != 0 {
+		self.comments.MarkComments(ast.KEY)
 	}
-	p.next()
+	self.next()
 
 	switch tkn {
 	case token.IDENTIFIER:
@@ -245,7 +251,7 @@ func (p *parser) parseObjectPropertyKey() (string, string) {
 		var err error
 		_, err = parseNumberLiteral(literal)
 		if err != nil {
-			p.error(idx, err.Error())
+			self.error(idx, err.Error())
 		} else {
 			value = literal
 		}
@@ -253,7 +259,7 @@ func (p *parser) parseObjectPropertyKey() (string, string) {
 		var err error
 		value, err = parseStringLiteral(literal[1 : len(literal)-1])
 		if err != nil {
-			p.error(idx, err.Error())
+			self.error(idx, err.Error())
 		}
 	default:
 		// null, false, class, etc.
@@ -264,33 +270,33 @@ func (p *parser) parseObjectPropertyKey() (string, string) {
 	return literal, value
 }
 
-func (p *parser) parseObjectProperty() ast.Property {
-	literal, value := p.parseObjectPropertyKey()
-	if literal == "get" && p.token != token.COLON {
-		idx := p.idx
-		_, value = p.parseObjectPropertyKey()
-		parameterList := p.parseFunctionParameterList()
+func (self *_parser) parseObjectProperty() ast.Property {
+	literal, value := self.parseObjectPropertyKey()
+	if literal == "get" && self.token != token.COLON {
+		idx := self.idx
+		_, value := self.parseObjectPropertyKey()
+		parameterList := self.parseFunctionParameterList()
 
 		node := &ast.FunctionLiteral{
 			Function:      idx,
 			ParameterList: parameterList,
 		}
-		p.parseFunctionBlock(node)
+		self.parseFunctionBlock(node)
 		return ast.Property{
 			Key:   value,
 			Kind:  "get",
 			Value: node,
 		}
-	} else if literal == "set" && p.token != token.COLON {
-		idx := p.idx
-		_, value = p.parseObjectPropertyKey()
-		parameterList := p.parseFunctionParameterList()
+	} else if literal == "set" && self.token != token.COLON {
+		idx := self.idx
+		_, value := self.parseObjectPropertyKey()
+		parameterList := self.parseFunctionParameterList()
 
 		node := &ast.FunctionLiteral{
 			Function:      idx,
 			ParameterList: parameterList,
 		}
-		p.parseFunctionBlock(node)
+		self.parseFunctionBlock(node)
 		return ast.Property{
 			Key:   value,
 			Kind:  "set",
@@ -298,40 +304,40 @@ func (p *parser) parseObjectProperty() ast.Property {
 		}
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.MarkComments(ast.COLON)
+	if self.mode&StoreComments != 0 {
+		self.comments.MarkComments(ast.COLON)
 	}
-	p.expect(token.COLON)
+	self.expect(token.COLON)
 
 	exp := ast.Property{
 		Key:   value,
 		Kind:  "value",
-		Value: p.parseAssignmentExpression(),
+		Value: self.parseAssignmentExpression(),
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.SetExpression(exp.Value)
+	if self.mode&StoreComments != 0 {
+		self.comments.SetExpression(exp.Value)
 	}
 	return exp
 }
 
-func (p *parser) parseObjectLiteral() ast.Expression {
+func (self *_parser) parseObjectLiteral() ast.Expression {
 	var value []ast.Property
-	idx0 := p.expect(token.LEFT_BRACE)
-	for p.token != token.RIGHT_BRACE && p.token != token.EOF {
-		value = append(value, p.parseObjectProperty())
-		if p.token == token.COMMA {
-			if p.mode&StoreComments != 0 {
-				p.comments.Unset()
+	idx0 := self.expect(token.LEFT_BRACE)
+	for self.token != token.RIGHT_BRACE && self.token != token.EOF {
+		value = append(value, self.parseObjectProperty())
+		if self.token == token.COMMA {
+			if self.mode&StoreComments != 0 {
+				self.comments.Unset()
 			}
-			p.next()
+			self.next()
 			continue
 		}
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.MarkComments(ast.FINAL)
+	if self.mode&StoreComments != 0 {
+		self.comments.MarkComments(ast.FINAL)
 	}
-	idx1 := p.expect(token.RIGHT_BRACE)
+	idx1 := self.expect(token.RIGHT_BRACE)
 
 	return &ast.ObjectLiteral{
 		LeftBrace:  idx0,
@@ -340,37 +346,37 @@ func (p *parser) parseObjectLiteral() ast.Expression {
 	}
 }
 
-func (p *parser) parseArrayLiteral() ast.Expression {
-	idx0 := p.expect(token.LEFT_BRACKET)
+func (self *_parser) parseArrayLiteral() ast.Expression {
+	idx0 := self.expect(token.LEFT_BRACKET)
 	var value []ast.Expression
-	for p.token != token.RIGHT_BRACKET && p.token != token.EOF {
-		if p.token == token.COMMA {
+	for self.token != token.RIGHT_BRACKET && self.token != token.EOF {
+		if self.token == token.COMMA {
 			// This kind of comment requires a special empty expression node.
-			empty := &ast.EmptyExpression{Begin: p.idx, End: p.idx}
+			empty := &ast.EmptyExpression{Begin: self.idx, End: self.idx}
 
-			if p.mode&StoreComments != 0 {
-				p.comments.SetExpression(empty)
-				p.comments.Unset()
+			if self.mode&StoreComments != 0 {
+				self.comments.SetExpression(empty)
+				self.comments.Unset()
 			}
 			value = append(value, empty)
-			p.next()
+			self.next()
 			continue
 		}
 
-		exp := p.parseAssignmentExpression()
+		exp := self.parseAssignmentExpression()
 
 		value = append(value, exp)
-		if p.token != token.RIGHT_BRACKET {
-			if p.mode&StoreComments != 0 {
-				p.comments.Unset()
+		if self.token != token.RIGHT_BRACKET {
+			if self.mode&StoreComments != 0 {
+				self.comments.Unset()
 			}
-			p.expect(token.COMMA)
+			self.expect(token.COMMA)
 		}
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.MarkComments(ast.FINAL)
+	if self.mode&StoreComments != 0 {
+		self.comments.MarkComments(ast.FINAL)
 	}
-	idx1 := p.expect(token.RIGHT_BRACKET)
+	idx1 := self.expect(token.RIGHT_BRACKET)
 
 	return &ast.ArrayLiteral{
 		LeftBracket:  idx0,
@@ -379,36 +385,36 @@ func (p *parser) parseArrayLiteral() ast.Expression {
 	}
 }
 
-func (p *parser) parseArgumentList() (argumentList []ast.Expression, idx0, idx1 file.Idx) { //nolint:nonamedreturns
-	if p.mode&StoreComments != 0 {
-		p.comments.Unset()
+func (self *_parser) parseArgumentList() (argumentList []ast.Expression, idx0, idx1 file.Idx) {
+	if self.mode&StoreComments != 0 {
+		self.comments.Unset()
 	}
-	idx0 = p.expect(token.LEFT_PARENTHESIS)
-	if p.token != token.RIGHT_PARENTHESIS {
+	idx0 = self.expect(token.LEFT_PARENTHESIS)
+	if self.token != token.RIGHT_PARENTHESIS {
 		for {
-			exp := p.parseAssignmentExpression()
-			if p.mode&StoreComments != 0 {
-				p.comments.SetExpression(exp)
+			exp := self.parseAssignmentExpression()
+			if self.mode&StoreComments != 0 {
+				self.comments.SetExpression(exp)
 			}
 			argumentList = append(argumentList, exp)
-			if p.token != token.COMMA {
+			if self.token != token.COMMA {
 				break
 			}
-			if p.mode&StoreComments != 0 {
-				p.comments.Unset()
+			if self.mode&StoreComments != 0 {
+				self.comments.Unset()
 			}
-			p.next()
+			self.next()
 		}
 	}
-	if p.mode&StoreComments != 0 {
-		p.comments.Unset()
+	if self.mode&StoreComments != 0 {
+		self.comments.Unset()
 	}
-	idx1 = p.expect(token.RIGHT_PARENTHESIS)
+	idx1 = self.expect(token.RIGHT_PARENTHESIS)
 	return
 }
 
-func (p *parser) parseCallExpression(left ast.Expression) ast.Expression {
-	argumentList, idx0, idx1 := p.parseArgumentList()
+func (self *_parser) parseCallExpression(left ast.Expression) ast.Expression {
+	argumentList, idx0, idx1 := self.parseArgumentList()
 	exp := &ast.CallExpression{
 		Callee:           left,
 		LeftParenthesis:  idx0,
@@ -416,25 +422,25 @@ func (p *parser) parseCallExpression(left ast.Expression) ast.Expression {
 		RightParenthesis: idx1,
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.SetExpression(exp)
+	if self.mode&StoreComments != 0 {
+		self.comments.SetExpression(exp)
 	}
 	return exp
 }
 
-func (p *parser) parseDotMember(left ast.Expression) ast.Expression {
-	period := p.expect(token.PERIOD)
+func (self *_parser) parseDotMember(left ast.Expression) ast.Expression {
+	period := self.expect(token.PERIOD)
 
-	literal := p.literal
-	idx := p.idx
+	literal := self.literal
+	idx := self.idx
 
 	if !matchIdentifier.MatchString(literal) {
-		p.expect(token.IDENTIFIER)
-		p.nextStatement()
-		return &ast.BadExpression{From: period, To: p.idx}
+		self.expect(token.IDENTIFIER)
+		self.nextStatement()
+		return &ast.BadExpression{From: period, To: self.idx}
 	}
 
-	p.next()
+	self.next()
 
 	return &ast.DotExpression{
 		Left: left,
@@ -445,10 +451,10 @@ func (p *parser) parseDotMember(left ast.Expression) ast.Expression {
 	}
 }
 
-func (p *parser) parseBracketMember(left ast.Expression) ast.Expression {
-	idx0 := p.expect(token.LEFT_BRACKET)
-	member := p.parseExpression()
-	idx1 := p.expect(token.RIGHT_BRACKET)
+func (self *_parser) parseBracketMember(left ast.Expression) ast.Expression {
+	idx0 := self.expect(token.LEFT_BRACKET)
+	member := self.parseExpression()
+	idx1 := self.expect(token.RIGHT_BRACKET)
 	return &ast.BracketExpression{
 		LeftBracket:  idx0,
 		Left:         left,
@@ -457,121 +463,125 @@ func (p *parser) parseBracketMember(left ast.Expression) ast.Expression {
 	}
 }
 
-func (p *parser) parseNewExpression() ast.Expression {
-	idx := p.expect(token.NEW)
-	callee := p.parseLeftHandSideExpression()
+func (self *_parser) parseNewExpression() ast.Expression {
+	idx := self.expect(token.NEW)
+	callee := self.parseLeftHandSideExpression()
 	node := &ast.NewExpression{
 		New:    idx,
 		Callee: callee,
 	}
-	if p.token == token.LEFT_PARENTHESIS {
-		argumentList, idx0, idx1 := p.parseArgumentList()
+	if self.token == token.LEFT_PARENTHESIS {
+		argumentList, idx0, idx1 := self.parseArgumentList()
 		node.ArgumentList = argumentList
 		node.LeftParenthesis = idx0
 		node.RightParenthesis = idx1
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.SetExpression(node)
+	if self.mode&StoreComments != 0 {
+		self.comments.SetExpression(node)
 	}
 
 	return node
 }
 
-func (p *parser) parseLeftHandSideExpression() ast.Expression {
+func (self *_parser) parseLeftHandSideExpression() ast.Expression {
+
 	var left ast.Expression
-	if p.token == token.NEW {
-		left = p.parseNewExpression()
+	if self.token == token.NEW {
+		left = self.parseNewExpression()
 	} else {
-		if p.mode&StoreComments != 0 {
-			p.comments.MarkComments(ast.LEADING)
-			p.comments.MarkPrimary()
+		if self.mode&StoreComments != 0 {
+			self.comments.MarkComments(ast.LEADING)
+			self.comments.MarkPrimary()
 		}
-		left = p.parsePrimaryExpression()
+		left = self.parsePrimaryExpression()
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.SetExpression(left)
+	if self.mode&StoreComments != 0 {
+		self.comments.SetExpression(left)
 	}
 
 	for {
-		switch p.token {
-		case token.PERIOD:
-			left = p.parseDotMember(left)
-		case token.LEFT_BRACKET:
-			left = p.parseBracketMember(left)
-		default:
-			return left
+		if self.token == token.PERIOD {
+			left = self.parseDotMember(left)
+		} else if self.token == token.LEFT_BRACKET {
+			left = self.parseBracketMember(left)
+		} else {
+			break
 		}
 	}
+
+	return left
 }
 
-func (p *parser) parseLeftHandSideExpressionAllowCall() ast.Expression {
-	allowIn := p.scope.allowIn
-	p.scope.allowIn = true
+func (self *_parser) parseLeftHandSideExpressionAllowCall() ast.Expression {
+
+	allowIn := self.scope.allowIn
+	self.scope.allowIn = true
 	defer func() {
-		p.scope.allowIn = allowIn
+		self.scope.allowIn = allowIn
 	}()
 
 	var left ast.Expression
-	if p.token == token.NEW {
+	if self.token == token.NEW {
 		var newComments []*ast.Comment
-		if p.mode&StoreComments != 0 {
-			newComments = p.comments.FetchAll()
-			p.comments.MarkComments(ast.LEADING)
-			p.comments.MarkPrimary()
+		if self.mode&StoreComments != 0 {
+			newComments = self.comments.FetchAll()
+			self.comments.MarkComments(ast.LEADING)
+			self.comments.MarkPrimary()
 		}
-		left = p.parseNewExpression()
-		if p.mode&StoreComments != 0 {
-			p.comments.CommentMap.AddComments(left, newComments, ast.LEADING)
+		left = self.parseNewExpression()
+		if self.mode&StoreComments != 0 {
+			self.comments.CommentMap.AddComments(left, newComments, ast.LEADING)
 		}
 	} else {
-		if p.mode&StoreComments != 0 {
-			p.comments.MarkComments(ast.LEADING)
-			p.comments.MarkPrimary()
+		if self.mode&StoreComments != 0 {
+			self.comments.MarkComments(ast.LEADING)
+			self.comments.MarkPrimary()
 		}
-		left = p.parsePrimaryExpression()
+		left = self.parsePrimaryExpression()
 	}
 
-	if p.mode&StoreComments != 0 {
-		p.comments.SetExpression(left)
+	if self.mode&StoreComments != 0 {
+		self.comments.SetExpression(left)
 	}
 
 	for {
-		switch p.token {
-		case token.PERIOD:
-			left = p.parseDotMember(left)
-		case token.LEFT_BRACKET:
-			left = p.parseBracketMember(left)
-		case token.LEFT_PARENTHESIS:
-			left = p.parseCallExpression(left)
-		default:
-			return left
-		}
-	}
-}
-
-func (p *parser) parsePostfixExpression() ast.Expression {
-	operand := p.parseLeftHandSideExpressionAllowCall()
-
-	switch p.token {
-	case token.INCREMENT, token.DECREMENT:
-		// Make sure there is no line terminator here
-		if p.implicitSemicolon {
+		if self.token == token.PERIOD {
+			left = self.parseDotMember(left)
+		} else if self.token == token.LEFT_BRACKET {
+			left = self.parseBracketMember(left)
+		} else if self.token == token.LEFT_PARENTHESIS {
+			left = self.parseCallExpression(left)
+		} else {
 			break
 		}
-		tkn := p.token
-		idx := p.idx
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	}
+
+	return left
+}
+
+func (self *_parser) parsePostfixExpression() ast.Expression {
+	operand := self.parseLeftHandSideExpressionAllowCall()
+
+	switch self.token {
+	case token.INCREMENT, token.DECREMENT:
+		// Make sure there is no line terminator here
+		if self.implicitSemicolon {
+			break
 		}
-		p.next()
+		tkn := self.token
+		idx := self.idx
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
+		}
+		self.next()
 		switch operand.(type) {
 		case *ast.Identifier, *ast.DotExpression, *ast.BracketExpression:
 		default:
-			p.error(idx, "invalid left-hand side in assignment")
-			p.nextStatement()
-			return &ast.BadExpression{From: idx, To: p.idx}
+			self.error(idx, "Invalid left-hand side in assignment")
+			self.nextStatement()
+			return &ast.BadExpression{From: idx, To: self.idx}
 		}
 		exp := &ast.UnaryExpression{
 			Operator: tkn,
@@ -580,8 +590,8 @@ func (p *parser) parsePostfixExpression() ast.Expression {
 			Postfix:  true,
 		}
 
-		if p.mode&StoreComments != 0 {
-			p.comments.SetExpression(exp)
+		if self.mode&StoreComments != 0 {
+			self.comments.SetExpression(exp)
 		}
 
 		return exp
@@ -590,37 +600,38 @@ func (p *parser) parsePostfixExpression() ast.Expression {
 	return operand
 }
 
-func (p *parser) parseUnaryExpression() ast.Expression {
-	switch p.token {
+func (self *_parser) parseUnaryExpression() ast.Expression {
+
+	switch self.token {
 	case token.PLUS, token.MINUS, token.NOT, token.BITWISE_NOT:
 		fallthrough
 	case token.DELETE, token.VOID, token.TYPEOF:
-		tkn := p.token
-		idx := p.idx
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+		tkn := self.token
+		idx := self.idx
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 
 		return &ast.UnaryExpression{
 			Operator: tkn,
 			Idx:      idx,
-			Operand:  p.parseUnaryExpression(),
+			Operand:  self.parseUnaryExpression(),
 		}
 	case token.INCREMENT, token.DECREMENT:
-		tkn := p.token
-		idx := p.idx
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+		tkn := self.token
+		idx := self.idx
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
-		operand := p.parseUnaryExpression()
+		self.next()
+		operand := self.parseUnaryExpression()
 		switch operand.(type) {
 		case *ast.Identifier, *ast.DotExpression, *ast.BracketExpression:
 		default:
-			p.error(idx, "invalid left-hand side in assignment")
-			p.nextStatement()
-			return &ast.BadExpression{From: idx, To: p.idx}
+			self.error(idx, "Invalid left-hand side in assignment")
+			self.nextStatement()
+			return &ast.BadExpression{From: idx, To: self.idx}
 		}
 		return &ast.UnaryExpression{
 			Operator: tkn,
@@ -629,20 +640,20 @@ func (p *parser) parseUnaryExpression() ast.Expression {
 		}
 	}
 
-	return p.parsePostfixExpression()
+	return self.parsePostfixExpression()
 }
 
-func (p *parser) parseMultiplicativeExpression() ast.Expression {
-	next := p.parseUnaryExpression
+func (self *_parser) parseMultiplicativeExpression() ast.Expression {
+	next := self.parseUnaryExpression
 	left := next()
 
-	for p.token == token.MULTIPLY || p.token == token.SLASH ||
-		p.token == token.REMAINDER {
-		tkn := p.token
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	for self.token == token.MULTIPLY || self.token == token.SLASH ||
+		self.token == token.REMAINDER {
+		tkn := self.token
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 
 		left = &ast.BinaryExpression{
 			Operator: tkn,
@@ -654,16 +665,16 @@ func (p *parser) parseMultiplicativeExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseAdditiveExpression() ast.Expression {
-	next := p.parseMultiplicativeExpression
+func (self *_parser) parseAdditiveExpression() ast.Expression {
+	next := self.parseMultiplicativeExpression
 	left := next()
 
-	for p.token == token.PLUS || p.token == token.MINUS {
-		tkn := p.token
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	for self.token == token.PLUS || self.token == token.MINUS {
+		tkn := self.token
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 
 		left = &ast.BinaryExpression{
 			Operator: tkn,
@@ -675,17 +686,17 @@ func (p *parser) parseAdditiveExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseShiftExpression() ast.Expression {
-	next := p.parseAdditiveExpression
+func (self *_parser) parseShiftExpression() ast.Expression {
+	next := self.parseAdditiveExpression
 	left := next()
 
-	for p.token == token.SHIFT_LEFT || p.token == token.SHIFT_RIGHT ||
-		p.token == token.UNSIGNED_SHIFT_RIGHT {
-		tkn := p.token
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	for self.token == token.SHIFT_LEFT || self.token == token.SHIFT_RIGHT ||
+		self.token == token.UNSIGNED_SHIFT_RIGHT {
+		tkn := self.token
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 
 		left = &ast.BinaryExpression{
 			Operator: tkn,
@@ -697,58 +708,58 @@ func (p *parser) parseShiftExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseRelationalExpression() ast.Expression {
-	next := p.parseShiftExpression
+func (self *_parser) parseRelationalExpression() ast.Expression {
+	next := self.parseShiftExpression
 	left := next()
 
-	allowIn := p.scope.allowIn
-	p.scope.allowIn = true
+	allowIn := self.scope.allowIn
+	self.scope.allowIn = true
 	defer func() {
-		p.scope.allowIn = allowIn
+		self.scope.allowIn = allowIn
 	}()
 
-	switch p.token {
+	switch self.token {
 	case token.LESS, token.LESS_OR_EQUAL, token.GREATER, token.GREATER_OR_EQUAL:
-		tkn := p.token
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+		tkn := self.token
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 
 		exp := &ast.BinaryExpression{
 			Operator:   tkn,
 			Left:       left,
-			Right:      p.parseRelationalExpression(),
+			Right:      self.parseRelationalExpression(),
 			Comparison: true,
 		}
 		return exp
 	case token.INSTANCEOF:
-		tkn := p.token
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+		tkn := self.token
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 
 		exp := &ast.BinaryExpression{
 			Operator: tkn,
 			Left:     left,
-			Right:    p.parseRelationalExpression(),
+			Right:    self.parseRelationalExpression(),
 		}
 		return exp
 	case token.IN:
 		if !allowIn {
 			return left
 		}
-		tkn := p.token
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+		tkn := self.token
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 
 		exp := &ast.BinaryExpression{
 			Operator: tkn,
 			Left:     left,
-			Right:    p.parseRelationalExpression(),
+			Right:    self.parseRelationalExpression(),
 		}
 		return exp
 	}
@@ -756,17 +767,17 @@ func (p *parser) parseRelationalExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseEqualityExpression() ast.Expression {
-	next := p.parseRelationalExpression
+func (self *_parser) parseEqualityExpression() ast.Expression {
+	next := self.parseRelationalExpression
 	left := next()
 
-	for p.token == token.EQUAL || p.token == token.NOT_EQUAL ||
-		p.token == token.STRICT_EQUAL || p.token == token.STRICT_NOT_EQUAL {
-		tkn := p.token
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	for self.token == token.EQUAL || self.token == token.NOT_EQUAL ||
+		self.token == token.STRICT_EQUAL || self.token == token.STRICT_NOT_EQUAL {
+		tkn := self.token
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 
 		left = &ast.BinaryExpression{
 			Operator:   tkn,
@@ -779,16 +790,16 @@ func (p *parser) parseEqualityExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseBitwiseAndExpression() ast.Expression {
-	next := p.parseEqualityExpression
+func (self *_parser) parseBitwiseAndExpression() ast.Expression {
+	next := self.parseEqualityExpression
 	left := next()
 
-	for p.token == token.AND {
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	for self.token == token.AND {
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		tkn := p.token
-		p.next()
+		tkn := self.token
+		self.next()
 
 		left = &ast.BinaryExpression{
 			Operator: tkn,
@@ -800,16 +811,16 @@ func (p *parser) parseBitwiseAndExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseBitwiseExclusiveOrExpression() ast.Expression {
-	next := p.parseBitwiseAndExpression
+func (self *_parser) parseBitwiseExclusiveOrExpression() ast.Expression {
+	next := self.parseBitwiseAndExpression
 	left := next()
 
-	for p.token == token.EXCLUSIVE_OR {
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	for self.token == token.EXCLUSIVE_OR {
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		tkn := p.token
-		p.next()
+		tkn := self.token
+		self.next()
 
 		left = &ast.BinaryExpression{
 			Operator: tkn,
@@ -821,16 +832,16 @@ func (p *parser) parseBitwiseExclusiveOrExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseBitwiseOrExpression() ast.Expression {
-	next := p.parseBitwiseExclusiveOrExpression
+func (self *_parser) parseBitwiseOrExpression() ast.Expression {
+	next := self.parseBitwiseExclusiveOrExpression
 	left := next()
 
-	for p.token == token.OR {
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	for self.token == token.OR {
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		tkn := p.token
-		p.next()
+		tkn := self.token
+		self.next()
 
 		left = &ast.BinaryExpression{
 			Operator: tkn,
@@ -842,16 +853,16 @@ func (p *parser) parseBitwiseOrExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseLogicalAndExpression() ast.Expression {
-	next := p.parseBitwiseOrExpression
+func (self *_parser) parseLogicalAndExpression() ast.Expression {
+	next := self.parseBitwiseOrExpression
 	left := next()
 
-	for p.token == token.LOGICAL_AND {
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	for self.token == token.LOGICAL_AND {
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		tkn := p.token
-		p.next()
+		tkn := self.token
+		self.next()
 
 		left = &ast.BinaryExpression{
 			Operator: tkn,
@@ -863,16 +874,16 @@ func (p *parser) parseLogicalAndExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseLogicalOrExpression() ast.Expression {
-	next := p.parseLogicalAndExpression
+func (self *_parser) parseLogicalOrExpression() ast.Expression {
+	next := self.parseLogicalAndExpression
 	left := next()
 
-	for p.token == token.LOGICAL_OR {
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	for self.token == token.LOGICAL_OR {
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		tkn := p.token
-		p.next()
+		tkn := self.token
+		self.next()
 
 		left = &ast.BinaryExpression{
 			Operator: tkn,
@@ -884,24 +895,24 @@ func (p *parser) parseLogicalOrExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseConditionalExpression() ast.Expression {
-	left := p.parseLogicalOrExpression()
+func (self *_parser) parseConditionlExpression() ast.Expression {
+	left := self.parseLogicalOrExpression()
 
-	if p.token == token.QUESTION_MARK {
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+	if self.token == token.QUESTION_MARK {
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 
-		consequent := p.parseAssignmentExpression()
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+		consequent := self.parseAssignmentExpression()
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.expect(token.COLON)
+		self.expect(token.COLON)
 		exp := &ast.ConditionalExpression{
 			Test:       left,
 			Consequent: consequent,
-			Alternate:  p.parseAssignmentExpression(),
+			Alternate:  self.parseAssignmentExpression(),
 		}
 
 		return exp
@@ -910,12 +921,12 @@ func (p *parser) parseConditionalExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseAssignmentExpression() ast.Expression {
-	left := p.parseConditionalExpression()
+func (self *_parser) parseAssignmentExpression() ast.Expression {
+	left := self.parseConditionlExpression()
 	var operator token.Token
-	switch p.token {
+	switch self.token {
 	case token.ASSIGN:
-		operator = p.token
+		operator = self.token
 	case token.ADD_ASSIGN:
 		operator = token.PLUS
 	case token.SUBTRACT_ASSIGN:
@@ -943,27 +954,27 @@ func (p *parser) parseAssignmentExpression() ast.Expression {
 	}
 
 	if operator != 0 {
-		idx := p.idx
-		if p.mode&StoreComments != 0 {
-			p.comments.Unset()
+		idx := self.idx
+		if self.mode&StoreComments != 0 {
+			self.comments.Unset()
 		}
-		p.next()
+		self.next()
 		switch left.(type) {
 		case *ast.Identifier, *ast.DotExpression, *ast.BracketExpression:
 		default:
-			p.error(left.Idx0(), "invalid left-hand side in assignment")
-			p.nextStatement()
-			return &ast.BadExpression{From: idx, To: p.idx}
+			self.error(left.Idx0(), "Invalid left-hand side in assignment")
+			self.nextStatement()
+			return &ast.BadExpression{From: idx, To: self.idx}
 		}
 
 		exp := &ast.AssignExpression{
 			Left:     left,
 			Operator: operator,
-			Right:    p.parseAssignmentExpression(),
+			Right:    self.parseAssignmentExpression(),
 		}
 
-		if p.mode&StoreComments != 0 {
-			p.comments.SetExpression(exp)
+		if self.mode&StoreComments != 0 {
+			self.comments.SetExpression(exp)
 		}
 
 		return exp
@@ -972,17 +983,17 @@ func (p *parser) parseAssignmentExpression() ast.Expression {
 	return left
 }
 
-func (p *parser) parseExpression() ast.Expression {
-	next := p.parseAssignmentExpression
+func (self *_parser) parseExpression() ast.Expression {
+	next := self.parseAssignmentExpression
 	left := next()
 
-	if p.token == token.COMMA {
+	if self.token == token.COMMA {
 		sequence := []ast.Expression{left}
 		for {
-			if p.token != token.COMMA {
+			if self.token != token.COMMA {
 				break
 			}
-			p.next()
+			self.next()
 			sequence = append(sequence, next())
 		}
 		return &ast.SequenceExpression{

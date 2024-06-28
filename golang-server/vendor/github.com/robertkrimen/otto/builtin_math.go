@@ -7,37 +7,27 @@ import (
 
 // Math
 
-func builtinMathAbs(call FunctionCall) Value {
+func builtinMath_abs(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Abs(number))
+	return toValue_float64(math.Abs(number))
 }
 
-func builtinMathAcos(call FunctionCall) Value {
+func builtinMath_acos(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Acos(number))
+	return toValue_float64(math.Acos(number))
 }
 
-func builtinMathAcosh(call FunctionCall) Value {
+func builtinMath_asin(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Acosh(number))
+	return toValue_float64(math.Asin(number))
 }
 
-func builtinMathAsin(call FunctionCall) Value {
+func builtinMath_atan(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Asin(number))
+	return toValue_float64(math.Atan(number))
 }
 
-func builtinMathAsinh(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Asinh(number))
-}
-
-func builtinMathAtan(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Atan(number))
-}
-
-func builtinMathAtan2(call FunctionCall) Value {
+func builtinMath_atan2(call FunctionCall) Value {
 	y := call.Argument(0).float64()
 	if math.IsNaN(y) {
 		return NaNValue()
@@ -46,75 +36,40 @@ func builtinMathAtan2(call FunctionCall) Value {
 	if math.IsNaN(x) {
 		return NaNValue()
 	}
-	return float64Value(math.Atan2(y, x))
+	return toValue_float64(math.Atan2(y, x))
 }
 
-func builtinMathAtanh(call FunctionCall) Value {
+func builtinMath_cos(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Atanh(number))
+	return toValue_float64(math.Cos(number))
 }
 
-func builtinMathCbrt(call FunctionCall) Value {
+func builtinMath_ceil(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Cbrt(number))
+	return toValue_float64(math.Ceil(number))
 }
 
-func builtinMathCos(call FunctionCall) Value {
+func builtinMath_exp(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Cos(number))
+	return toValue_float64(math.Exp(number))
 }
 
-func builtinMathCeil(call FunctionCall) Value {
+func builtinMath_floor(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Ceil(number))
+	return toValue_float64(math.Floor(number))
 }
 
-func builtinMathCosh(call FunctionCall) Value {
+func builtinMath_log(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Cosh(number))
+	return toValue_float64(math.Log(number))
 }
 
-func builtinMathExp(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Exp(number))
-}
-
-func builtinMathExpm1(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Expm1(number))
-}
-
-func builtinMathFloor(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Floor(number))
-}
-
-func builtinMathLog(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Log(number))
-}
-
-func builtinMathLog10(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Log10(number))
-}
-
-func builtinMathLog1p(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Log1p(number))
-}
-
-func builtinMathLog2(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Log2(number))
-}
-
-func builtinMathMax(call FunctionCall) Value {
+func builtinMath_max(call FunctionCall) Value {
 	switch len(call.ArgumentList) {
 	case 0:
 		return negativeInfinityValue()
 	case 1:
-		return float64Value(call.ArgumentList[0].float64())
+		return toValue_float64(call.ArgumentList[0].float64())
 	}
 	result := call.ArgumentList[0].float64()
 	if math.IsNaN(result) {
@@ -127,15 +82,15 @@ func builtinMathMax(call FunctionCall) Value {
 		}
 		result = math.Max(result, value)
 	}
-	return float64Value(result)
+	return toValue_float64(result)
 }
 
-func builtinMathMin(call FunctionCall) Value {
+func builtinMath_min(call FunctionCall) Value {
 	switch len(call.ArgumentList) {
 	case 0:
 		return positiveInfinityValue()
 	case 1:
-		return float64Value(call.ArgumentList[0].float64())
+		return toValue_float64(call.ArgumentList[0].float64())
 	}
 	result := call.ArgumentList[0].float64()
 	if math.IsNaN(result) {
@@ -148,64 +103,49 @@ func builtinMathMin(call FunctionCall) Value {
 		}
 		result = math.Min(result, value)
 	}
-	return float64Value(result)
+	return toValue_float64(result)
 }
 
-func builtinMathPow(call FunctionCall) Value {
+func builtinMath_pow(call FunctionCall) Value {
 	// TODO Make sure this works according to the specification (15.8.2.13)
 	x := call.Argument(0).float64()
 	y := call.Argument(1).float64()
 	if math.Abs(x) == 1 && math.IsInf(y, 0) {
 		return NaNValue()
 	}
-	return float64Value(math.Pow(x, y))
+	return toValue_float64(math.Pow(x, y))
 }
 
-func builtinMathRandom(call FunctionCall) Value {
+func builtinMath_random(call FunctionCall) Value {
 	var v float64
 	if call.runtime.random != nil {
 		v = call.runtime.random()
 	} else {
-		v = rand.Float64() //nolint:gosec
+		v = rand.Float64()
 	}
-	return float64Value(v)
+	return toValue_float64(v)
 }
 
-func builtinMathRound(call FunctionCall) Value {
+func builtinMath_round(call FunctionCall) Value {
 	number := call.Argument(0).float64()
 	value := math.Floor(number + 0.5)
 	if value == 0 {
 		value = math.Copysign(0, number)
 	}
-	return float64Value(value)
+	return toValue_float64(value)
 }
 
-func builtinMathSin(call FunctionCall) Value {
+func builtinMath_sin(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Sin(number))
+	return toValue_float64(math.Sin(number))
 }
 
-func builtinMathSinh(call FunctionCall) Value {
+func builtinMath_sqrt(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Sinh(number))
+	return toValue_float64(math.Sqrt(number))
 }
 
-func builtinMathSqrt(call FunctionCall) Value {
+func builtinMath_tan(call FunctionCall) Value {
 	number := call.Argument(0).float64()
-	return float64Value(math.Sqrt(number))
-}
-
-func builtinMathTan(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Tan(number))
-}
-
-func builtinMathTanh(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Tanh(number))
-}
-
-func builtinMathTrunc(call FunctionCall) Value {
-	number := call.Argument(0).float64()
-	return float64Value(math.Trunc(number))
+	return toValue_float64(math.Tan(number))
 }

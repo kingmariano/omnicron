@@ -5,13 +5,11 @@ package htmlquery
 
 import (
 	"bufio"
-	"compress/gzip"
-	"compress/zlib"
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/antchfx/xpath"
 	"golang.org/x/net/html"
@@ -57,10 +55,10 @@ func QueryAll(top *html.Node, expr string) ([]*html.Node, error) {
 	return nodes, nil
 }
 
-// Query runs the given XPath expression against the given html.Node and
-// returns the first matching html.Node, or nil if no matches are found.
+// Query searches the html.Node that matches by the specified XPath expr,
+// and return the first element of matched html.Node.
 //
-// Returns an error if the expression `expr` cannot be parsed.
+// Return an error if the expression `expr` cannot be parsed.
 func Query(top *html.Node, expr string) (*html.Node, error) {
 	exp, err := getQuery(expr)
 	if err != nil {
@@ -85,49 +83,25 @@ func QuerySelectorAll(top *html.Node, selector *xpath.Expr) []*html.Node {
 	for t.MoveNext() {
 		nav := t.Current().(*NodeNavigator)
 		n := getCurrentNode(nav)
+		// avoid adding duplicate nodes.
+		if len(elems) > 0 && (elems[0] == n || (nav.NodeType() == xpath.AttributeNode &&
+			nav.LocalName() == elems[0].Data && nav.Value() == InnerText(elems[0]))) {
+			continue
+		}
 		elems = append(elems, n)
 	}
 	return elems
 }
 
-// LoadURL loads the HTML document from the specified URL. Default enabling gzip on a HTTP request.
+// LoadURL loads the HTML document from the specified URL.
 func LoadURL(url string) (*html.Node, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	// Enable gzip compression.
-	req.Header.Add("Accept-Encoding", "gzip")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	var reader io.ReadCloser
+	defer resp.Body.Close()
 
-	defer func() {
-		if reader != nil {
-			reader.Close()
-		}
-	}()
-	encoding := resp.Header.Get("Content-Encoding")
-	switch encoding {
-	case "gzip":
-		reader, err = gzip.NewReader(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-	case "deflate":
-		reader, err = zlib.NewReader(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-	case "":
-		reader = resp.Body
-	default:
-		return nil, fmt.Errorf("%s compression is not support", encoding)
-	}
-
-	r, err := charset.NewReader(reader, resp.Header.Get("Content-Type"))
+	r, err := charset.NewReader(resp.Body, resp.Header.Get("Content-Type"))
 	if err != nil {
 		return nil, err
 	}
@@ -169,23 +143,23 @@ func Parse(r io.Reader) (*html.Node, error) {
 
 // InnerText returns the text between the start and end tags of the object.
 func InnerText(n *html.Node) string {
-	var output func(*strings.Builder, *html.Node)
-	output = func(b *strings.Builder, n *html.Node) {
+	var output func(*bytes.Buffer, *html.Node)
+	output = func(buf *bytes.Buffer, n *html.Node) {
 		switch n.Type {
 		case html.TextNode:
-			b.WriteString(n.Data)
+			buf.WriteString(n.Data)
 			return
 		case html.CommentNode:
 			return
 		}
 		for child := n.FirstChild; child != nil; child = child.NextSibling {
-			output(b, child)
+			output(buf, child)
 		}
 	}
 
-	var b strings.Builder
-	output(&b, n)
-	return b.String()
+	var buf bytes.Buffer
+	output(&buf, n)
+	return buf.String()
 }
 
 // SelectAttr returns the attribute value with the specified name.
@@ -205,30 +179,17 @@ func SelectAttr(n *html.Node, name string) (val string) {
 	return
 }
 
-// ExistsAttr returns whether attribute with specified name exists.
-func ExistsAttr(n *html.Node, name string) bool {
-	if n == nil {
-		return false
-	}
-	for _, attr := range n.Attr {
-		if attr.Key == name {
-			return true
-		}
-	}
-	return false
-}
-
 // OutputHTML returns the text including tags name.
 func OutputHTML(n *html.Node, self bool) string {
-	var b strings.Builder
+	var buf bytes.Buffer
 	if self {
-		html.Render(&b, n)
+		html.Render(&buf, n)
 	} else {
 		for n := n.FirstChild; n != nil; n = n.NextSibling {
-			html.Render(&b, n)
+			html.Render(&buf, n)
 		}
 	}
-	return b.String()
+	return buf.String()
 }
 
 type NodeNavigator struct {

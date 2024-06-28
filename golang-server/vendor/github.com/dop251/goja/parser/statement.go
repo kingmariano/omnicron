@@ -511,10 +511,9 @@ func (self *_parser) parseThrowStatement() ast.Statement {
 }
 
 func (self *_parser) parseSwitchStatement() ast.Statement {
-	idx := self.expect(token.SWITCH)
+	self.expect(token.SWITCH)
 	self.expect(token.LEFT_PARENTHESIS)
 	node := &ast.SwitchStatement{
-		Switch:       idx,
 		Discriminant: self.parseExpression(),
 		Default:      -1,
 	}
@@ -530,7 +529,6 @@ func (self *_parser) parseSwitchStatement() ast.Statement {
 
 	for index := 0; self.token != token.EOF; index++ {
 		if self.token == token.RIGHT_BRACE {
-			node.RightBrace = self.idx
 			self.next()
 			break
 		}
@@ -549,10 +547,11 @@ func (self *_parser) parseSwitchStatement() ast.Statement {
 }
 
 func (self *_parser) parseWithStatement() ast.Statement {
-	node := &ast.WithStatement{}
-	node.With = self.expect(token.WITH)
+	self.expect(token.WITH)
 	self.expect(token.LEFT_PARENTHESIS)
-	node.Object = self.parseExpression()
+	node := &ast.WithStatement{
+		Object: self.parseExpression(),
+	}
 	self.expect(token.RIGHT_PARENTHESIS)
 	self.scope.allowLet = false
 	node.Body = self.parseStatement()
@@ -817,8 +816,8 @@ func (self *_parser) parseDoWhileStatement() ast.Statement {
 		self.scope.inIteration = inIteration
 	}()
 
+	self.expect(token.DO)
 	node := &ast.DoWhileStatement{}
-	node.Do = self.expect(token.DO)
 	if self.token == token.LEFT_BRACE {
 		node.Body = self.parseBlockStatement()
 	} else {
@@ -829,7 +828,7 @@ func (self *_parser) parseDoWhileStatement() ast.Statement {
 	self.expect(token.WHILE)
 	self.expect(token.LEFT_PARENTHESIS)
 	node.Test = self.parseExpression()
-	node.RightParenthesis = self.expect(token.RIGHT_PARENTHESIS)
+	self.expect(token.RIGHT_PARENTHESIS)
 	if self.token == token.SEMICOLON {
 		self.next()
 	}
@@ -838,11 +837,10 @@ func (self *_parser) parseDoWhileStatement() ast.Statement {
 }
 
 func (self *_parser) parseWhileStatement() ast.Statement {
-	idx := self.expect(token.WHILE)
+	self.expect(token.WHILE)
 	self.expect(token.LEFT_PARENTHESIS)
 	node := &ast.WhileStatement{
-		While: idx,
-		Test:  self.parseExpression(),
+		Test: self.parseExpression(),
 	}
 	self.expect(token.RIGHT_PARENTHESIS)
 	node.Body = self.parseIterationStatement()

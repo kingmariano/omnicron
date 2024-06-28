@@ -153,14 +153,9 @@ func prepareFlags(
 // flagDetails returns a string containing the flags metadata
 func flagDetails(flag DocGenerationFlag) string {
 	description := flag.GetUsage()
-	if flag.TakesValue() {
-		defaultText := flag.GetDefaultText()
-		if defaultText == "" {
-			defaultText = flag.GetValue()
-		}
-		if defaultText != "" {
-			description += " (default: " + defaultText + ")"
-		}
+	value := flag.GetValue()
+	if value != "" {
+		description += " (default: " + value + ")"
 	}
 	return ": " + description
 }

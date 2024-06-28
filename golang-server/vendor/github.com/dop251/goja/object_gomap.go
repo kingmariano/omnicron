@@ -97,6 +97,24 @@ func (o *objectGoMapSimple) defineOwnPropertyStr(name unistring.String, descr Pr
 	return false
 }
 
+/*
+func (o *objectGoMapSimple) toPrimitiveNumber() Value {
+	return o.toPrimitiveString()
+}
+
+func (o *objectGoMapSimple) toPrimitiveString() Value {
+	return stringObjectObject
+}
+
+func (o *objectGoMapSimple) toPrimitive() Value {
+	return o.toPrimitiveString()
+}
+
+func (o *objectGoMapSimple) assertCallable() (call func(FunctionCall) Value, ok bool) {
+	return nil, false
+}
+*/
+
 func (o *objectGoMapSimple) deleteStr(name unistring.String, _ bool) bool {
 	delete(o.data, name.String())
 	return true

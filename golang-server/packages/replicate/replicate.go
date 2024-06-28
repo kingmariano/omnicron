@@ -3,10 +3,10 @@ package replicate
 import (
 	"bytes"
 	"context"
+	replicate "github.com/replicate/replicate-go"
 	"io"
 	"log"
 	"mime/multipart"
-	replicate "github.com/replicate/replicate-go"
 )
 
 type CreateReplicatePrediction func(ctx context.Context, env, version string, predictionInput replicate.PredictionInput, webhook *replicate.Webhook, stream bool) (*replicate.Prediction, error)
@@ -26,6 +26,9 @@ type ReplicateModel struct {
 	Category string
 }
 
+// init initializes the global variables ImageGenModels, ImageUpscaleGenModels, VideoGenModels,
+// TTSGenModels, STTGenModels, and MusicGenModels. It maps the CreatePrediction function to each
+// model in the respective categories.
 func init() {
 	ImageGenModels = make(Model)
 	ImageUpscaleGenModels = make(Model)
@@ -62,6 +65,10 @@ func NewReplicateClient(token string) (*replicate.Client, error) {
 	return r8, nil
 }
 
+// CreatePrediction creates a new prediction using the provided token, version, predictionInput, webhook, and stream.
+// It uses the NewReplicateClient function to create a new replicate client and then calls the CreatePrediction method on the client.
+// After creating the prediction, it waits for the prediction to complete using the Wait method on the client.
+// If any error occurs during the process, it returns the error. Otherwise, it logs a success message and returns the prediction.
 func CreatePrediction(ctx context.Context, token, version string, predictionInput replicate.PredictionInput, webhook *replicate.Webhook, stream bool) (*replicate.Prediction, error) {
 	r8, err := NewReplicateClient(token)
 	if err != nil {
@@ -80,7 +87,7 @@ func CreatePrediction(ctx context.Context, token, version string, predictionInpu
 	return prediction, nil
 }
 
-// convert the request file to replicate file
+// converts the request file to replicate file
 func RequestFileToReplicateFile(ctx context.Context, fileHeader *multipart.FileHeader, token string) (*replicate.File, error) {
 	requestFile, err := fileHeader.Open()
 	if err != nil {

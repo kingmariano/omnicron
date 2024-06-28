@@ -1,7 +1,6 @@
 package otto
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"regexp"
@@ -12,25 +11,24 @@ import (
 var stringToNumberParseInteger = regexp.MustCompile(`^(?:0[xX])`)
 
 func parseNumber(value string) float64 {
-	value = strings.Trim(value, builtinStringTrimWhitespace)
+	value = strings.Trim(value, builtinString_trim_whitespace)
 
 	if value == "" {
 		return 0
 	}
 
-	var parseFloat bool
-	switch {
-	case strings.ContainsRune(value, '.'):
+	parseFloat := false
+	if strings.IndexRune(value, '.') != -1 {
 		parseFloat = true
-	case stringToNumberParseInteger.MatchString(value):
+	} else if stringToNumberParseInteger.MatchString(value) {
 		parseFloat = false
-	default:
+	} else {
 		parseFloat = true
 	}
 
 	if parseFloat {
 		number, err := strconv.ParseFloat(value, 64)
-		if err != nil && !errors.Is(err, strconv.ErrRange) {
+		if err != nil && err.(*strconv.NumError).Err != strconv.ErrRange {
 			return math.NaN()
 		}
 		return number
@@ -43,14 +41,14 @@ func parseNumber(value string) float64 {
 	return float64(number)
 }
 
-func (v Value) float64() float64 {
-	switch v.kind {
+func (value Value) float64() float64 {
+	switch value.kind {
 	case valueUndefined:
 		return math.NaN()
 	case valueNull:
 		return 0
 	}
-	switch value := v.value.(type) {
+	switch value := value.value.(type) {
 	case bool:
 		if value {
 			return 1
@@ -80,65 +78,67 @@ func (v Value) float64() float64 {
 		return value
 	case string:
 		return parseNumber(value)
-	case *object:
+	case *_object:
 		return value.DefaultValue(defaultValueHintNumber).float64()
 	}
-	panic(fmt.Errorf("toFloat(%T)", v.value))
+	panic(fmt.Errorf("toFloat(%T)", value.value))
 }
 
 const (
-	sqrt1_2 float64 = math.Sqrt2 / 2
+	float_2_32 float64 = 4294967296.0
+	float_2_31 float64 = 2147483648.0
+	float_2_16 float64 = 65536.0
+	sqrt1_2    float64 = math.Sqrt2 / 2
 )
 
 const (
 	maxUint32 = math.MaxUint32
 	maxInt    = int(^uint(0) >> 1)
 
-	// int64.
-	int64MaxInt8   int64 = math.MaxInt8
-	int64MinInt8   int64 = math.MinInt8
-	int64MaxInt16  int64 = math.MaxInt16
-	int64MinInt16  int64 = math.MinInt16
-	int64MaxInt32  int64 = math.MaxInt32
-	int64MinInt32  int64 = math.MinInt32
-	int64MaxUint8  int64 = math.MaxUint8
-	int64MaxUint16 int64 = math.MaxUint16
-	int64MaxUint32 int64 = math.MaxUint32
+	// int64
+	int64_maxInt8   int64 = math.MaxInt8
+	int64_minInt8   int64 = math.MinInt8
+	int64_maxInt16  int64 = math.MaxInt16
+	int64_minInt16  int64 = math.MinInt16
+	int64_maxInt32  int64 = math.MaxInt32
+	int64_minInt32  int64 = math.MinInt32
+	int64_maxUint8  int64 = math.MaxUint8
+	int64_maxUint16 int64 = math.MaxUint16
+	int64_maxUint32 int64 = math.MaxUint32
 
-	// float64.
-	floatMaxInt    float64 = float64(int(^uint(0) >> 1))
-	floatMinInt    float64 = float64(-maxInt - 1)
-	floatMaxUint   float64 = float64(^uint(0))
-	floatMaxUint64 float64 = math.MaxUint64
-	floatMaxInt64  float64 = math.MaxInt64
-	floatMinInt64  float64 = math.MinInt64
+	// float64
+	float_maxInt    float64 = float64(int(^uint(0) >> 1))
+	float_minInt    float64 = float64(int(-maxInt - 1))
+	float_maxUint   float64 = float64(uint(^uint(0)))
+	float_maxUint64 float64 = math.MaxUint64
+	float_maxInt64  float64 = math.MaxInt64
+	float_minInt64  float64 = math.MinInt64
 )
 
 func toIntegerFloat(value Value) float64 {
 	float := value.float64()
-	switch {
-	case math.IsInf(float, 0):
-		return float
-	case math.IsNaN(float):
-		return 0
-	case float > 0:
-		return math.Floor(float)
-	default:
-		return math.Ceil(float)
+	if math.IsInf(float, 0) {
+	} else if math.IsNaN(float) {
+		float = 0
+	} else if float > 0 {
+		float = math.Floor(float)
+	} else {
+		float = math.Ceil(float)
 	}
+	return float
 }
 
-type numberKind int
+type _numberKind int
 
 const (
-	numberInteger  numberKind = iota // 3.0 => 3.0
-	numberFloat                      // 3.14159 => 3.0, 1+2**63 > 2**63-1
-	numberInfinity                   // Infinity => 2**63-1
-	numberNaN                        // NaN => 0
+	numberInteger  _numberKind = iota // 3.0 => 3.0
+	numberFloat                       // 3.14159 => 3.0, 1+2**63 > 2**63-1
+	numberInfinity                    // Infinity => 2**63-1
+	numberNaN                         // NaN => 0
 )
 
 type _number struct {
-	kind    numberKind
+	kind    _numberKind
 	int64   int64
 	float64 float64
 }
@@ -146,57 +146,56 @@ type _number struct {
 // FIXME
 // http://www.goinggo.net/2013/08/gustavos-ieee-754-brain-teaser.html
 // http://bazaar.launchpad.net/~niemeyer/strepr/trunk/view/6/strepr.go#L160
-func (v Value) number() _number {
-	var num _number
-	switch value := v.value.(type) {
+func (value Value) number() (number _number) {
+	switch value := value.value.(type) {
 	case int8:
-		num.int64 = int64(value)
-		return num
+		number.int64 = int64(value)
+		return
 	case int16:
-		num.int64 = int64(value)
-		return num
+		number.int64 = int64(value)
+		return
 	case uint8:
-		num.int64 = int64(value)
-		return num
+		number.int64 = int64(value)
+		return
 	case uint16:
-		num.int64 = int64(value)
-		return num
+		number.int64 = int64(value)
+		return
 	case uint32:
-		num.int64 = int64(value)
-		return num
+		number.int64 = int64(value)
+		return
 	case int:
-		num.int64 = int64(value)
-		return num
+		number.int64 = int64(value)
+		return
 	case int64:
-		num.int64 = value
-		return num
+		number.int64 = value
+		return
 	}
 
-	float := v.float64()
+	float := value.float64()
 	if float == 0 {
-		return num
+		return
 	}
 
-	num.kind = numberFloat
-	num.float64 = float
+	number.kind = numberFloat
+	number.float64 = float
 
 	if math.IsNaN(float) {
-		num.kind = numberNaN
-		return num
+		number.kind = numberNaN
+		return
 	}
 
 	if math.IsInf(float, 0) {
-		num.kind = numberInfinity
+		number.kind = numberInfinity
 	}
 
-	if float >= floatMaxInt64 {
-		num.int64 = math.MaxInt64
-		return num
+	if float >= float_maxInt64 {
+		number.int64 = math.MaxInt64
+		return
 	}
 
-	if float <= floatMinInt64 {
-		num.int64 = math.MinInt64
-		return num
+	if float <= float_minInt64 {
+		number.int64 = math.MinInt64
+		return
 	}
 
 	var integer float64
@@ -207,116 +206,142 @@ func (v Value) number() _number {
 	}
 
 	if float == integer {
-		num.kind = numberInteger
+		number.kind = numberInteger
 	}
-	num.int64 = int64(float)
-	return num
+	number.int64 = int64(float)
+	return
 }
 
-// ECMA 262: 9.5.
+// ECMA 262: 9.5
 func toInt32(value Value) int32 {
-	switch value := value.value.(type) {
-	case int8:
-		return int32(value)
-	case int16:
-		return int32(value)
-	case int32:
-		return value
+	{
+		switch value := value.value.(type) {
+		case int8:
+			return int32(value)
+		case int16:
+			return int32(value)
+		case int32:
+			return value
+		}
 	}
-
 	floatValue := value.float64()
-	if math.IsNaN(floatValue) || math.IsInf(floatValue, 0) || floatValue == 0 {
+	if math.IsNaN(floatValue) || math.IsInf(floatValue, 0) {
 		return 0
 	}
-
-	// Convert to int64 before int32 to force correct wrapping.
-	return int32(int64(floatValue))
+	if floatValue == 0 { // This will work for +0 & -0
+		return 0
+	}
+	remainder := math.Mod(floatValue, float_2_32)
+	if remainder > 0 {
+		remainder = math.Floor(remainder)
+	} else {
+		remainder = math.Ceil(remainder) + float_2_32
+	}
+	if remainder > float_2_31 {
+		return int32(remainder - float_2_32)
+	}
+	return int32(remainder)
 }
 
 func toUint32(value Value) uint32 {
-	switch value := value.value.(type) {
-	case int8:
-		return uint32(value)
-	case int16:
-		return uint32(value)
-	case uint8:
-		return uint32(value)
-	case uint16:
-		return uint32(value)
-	case uint32:
-		return value
+	{
+		switch value := value.value.(type) {
+		case int8:
+			return uint32(value)
+		case int16:
+			return uint32(value)
+		case uint8:
+			return uint32(value)
+		case uint16:
+			return uint32(value)
+		case uint32:
+			return value
+		}
 	}
-
 	floatValue := value.float64()
-	if math.IsNaN(floatValue) || math.IsInf(floatValue, 0) || floatValue == 0 {
+	if math.IsNaN(floatValue) || math.IsInf(floatValue, 0) {
 		return 0
 	}
-
-	// Convert to int64 before uint32 to force correct wrapping.
-	return uint32(int64(floatValue))
+	if floatValue == 0 {
+		return 0
+	}
+	remainder := math.Mod(floatValue, float_2_32)
+	if remainder > 0 {
+		remainder = math.Floor(remainder)
+	} else {
+		remainder = math.Ceil(remainder) + float_2_32
+	}
+	return uint32(remainder)
 }
 
-// ECMA 262 - 6.0 - 7.1.8.
 func toUint16(value Value) uint16 {
-	switch value := value.value.(type) {
-	case int8:
-		return uint16(value)
-	case uint8:
-		return uint16(value)
-	case uint16:
-		return value
+	{
+		switch value := value.value.(type) {
+		case int8:
+			return uint16(value)
+		case uint8:
+			return uint16(value)
+		case uint16:
+			return value
+		}
 	}
-
 	floatValue := value.float64()
-	if math.IsNaN(floatValue) || math.IsInf(floatValue, 0) || floatValue == 0 {
+	if math.IsNaN(floatValue) || math.IsInf(floatValue, 0) {
 		return 0
 	}
-
-	// Convert to int64 before uint16 to force correct wrapping.
-	return uint16(int64(floatValue))
+	if floatValue == 0 {
+		return 0
+	}
+	remainder := math.Mod(floatValue, float_2_16)
+	if remainder > 0 {
+		remainder = math.Floor(remainder)
+	} else {
+		remainder = math.Ceil(remainder) + float_2_16
+	}
+	return uint16(remainder)
 }
 
-// toIntSign returns sign of a number converted to -1, 0 ,1.
+// toIntSign returns sign of a number converted to -1, 0 ,1
 func toIntSign(value Value) int {
 	switch value := value.value.(type) {
 	case int8:
-		if value > 0 {
+		if int8(value) > 0 {
 			return 1
-		} else if value < 0 {
+		} else if int8(value) < 0 {
 			return -1
 		}
 
 		return 0
 	case int16:
-		if value > 0 {
+		if int16(value) > 0 {
 			return 1
-		} else if value < 0 {
+		} else if int16(value) < 0 {
 			return -1
 		}
 
 		return 0
 	case int32:
-		if value > 0 {
+		if int32(value) > 0 {
 			return 1
-		} else if value < 0 {
+		} else if int32(value) < 0 {
 			return -1
 		}
 
 		return 0
 	case uint8:
-		if value > 0 {
+		if uint8(value) > 0 {
 			return 1
 		}
 
 		return 0
 	case uint16:
-		if value > 0 {
+		if uint16(value) > 0 {
 			return 1
 		}
 
 		return 0
 	case uint32:
-		if value > 0 {
+		if uint32(value) > 0 {
 			return 1
 		}
 

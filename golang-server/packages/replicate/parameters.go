@@ -1,7 +1,7 @@
 package replicate
 
 import (
-	"github.com/charlesozo/omnicron-backendsever/golang-server/utils"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/utils"
 	"github.com/replicate/replicate-go"
 )
 
@@ -19,112 +19,112 @@ type LowImageGenerationParams struct {
 
 // support file upload
 type HighImageGenerationParams struct {
-	Prompt            string   `json:"prompt"`
-	Width             *int     `json:"width,omitempty"`
-	Height            *int     `json:"height,omitempty"`
-	Scheduler         *string  `json:"scheduler,omitempty"`
-	NumOutputs        *int     `json:"num_outputs,omitempty"`
-	GuidanceScale     *float64 `json:"guidance_scale,omitempty"`
-	NegativePrompt    *string  `json:"negative_prompt,omitempty"`
-	NumInferenceSteps *int     `json:"num_inference_steps,omitempty"`
-	LoraScale         *float64 `json:"lora_scale,omitempty"`
-	ImageFile          *replicate.File  `json:"image_file,omitempty"`
+	Prompt            string          `json:"prompt"`
+	Width             *int            `json:"width,omitempty"`
+	Height            *int            `json:"height,omitempty"`
+	Scheduler         *string         `json:"scheduler,omitempty"`
+	NumOutputs        *int            `json:"num_outputs,omitempty"`
+	GuidanceScale     *float64        `json:"guidance_scale,omitempty"`
+	NegativePrompt    *string         `json:"negative_prompt,omitempty"`
+	NumInferenceSteps *int            `json:"num_inference_steps,omitempty"`
+	LoraScale         *float64        `json:"lora_scale,omitempty"`
+	ImageFile         *replicate.File `json:"image_file,omitempty"`
 	MaskFile          *replicate.File `json:"mask_file,omitempty"`
-	PromptStrength    *float64 `json:"prompt_strength,omitempty"`
-	ApplyWatermark    *bool    `json:"apply_watermark,omitempty"`
-	Seed              *int     `json:"seed,omitempty"`
+	PromptStrength    *float64        `json:"prompt_strength,omitempty"`
+	ApplyWatermark    *bool           `json:"apply_watermark,omitempty"`
+	Seed              *int            `json:"seed,omitempty"`
 }
 
 type HighImageUpscaleGenerationParams struct {
-	ImageFile               *replicate.File   `json:"image_file"`
-	Prompt                *string  `json:"prompt,omitempty"`
-	NegativePrompt        *string  `json:"negative_prompt,omitempty"`
-	ScaleFactor           *float64 `json:"scale_factor,omitempty"`
-	Dynamic               *float64 `json:"dynamic,omitempty"`
-	Creativity            *float64 `json:"creativity,omitempty"`
-	Resemblance           *float64 `json:"resemblance,omitempty"`
-	TilingWidth           *int     `json:"tiling_width,omitempty"`
-	TilingHeight          *int     `json:"tiling_height,omitempty"`
-	SdModel               *string  `json:"sd_model,omitempty"`
-	Scheduler             *string  `json:"scheduler,omitempty"`
-	NumInferenceSteps     *int     `json:"num_inference_steps,omitempty"`
-	Seed                  *int     `json:"seed,omitempty"`
-	Downscaling           *bool    `json:"downscaling,omitempty"`
-	DownscalingResolution *int     `json:"downscaling_resolution,omitempty"`
-	Sharpen               *float64 `json:"sharpen,omitempty"`
-	OutputFormat          *string  `json:"output_format,omitempty"`
+	ImageFile             *replicate.File `json:"image_file"`
+	Prompt                *string         `json:"prompt,omitempty"`
+	NegativePrompt        *string         `json:"negative_prompt,omitempty"`
+	ScaleFactor           *float64        `json:"scale_factor,omitempty"`
+	Dynamic               *float64        `json:"dynamic,omitempty"`
+	Creativity            *float64        `json:"creativity,omitempty"`
+	Resemblance           *float64        `json:"resemblance,omitempty"`
+	TilingWidth           *int            `json:"tiling_width,omitempty"`
+	TilingHeight          *int            `json:"tiling_height,omitempty"`
+	SdModel               *string         `json:"sd_model,omitempty"`
+	Scheduler             *string         `json:"scheduler,omitempty"`
+	NumInferenceSteps     *int            `json:"num_inference_steps,omitempty"`
+	Seed                  *int            `json:"seed,omitempty"`
+	Downscaling           *bool           `json:"downscaling,omitempty"`
+	DownscalingResolution *int            `json:"downscaling_resolution,omitempty"`
+	Sharpen               *float64        `json:"sharpen,omitempty"`
+	OutputFormat          *string         `json:"output_format,omitempty"`
 }
 
 type LowImageUpscaleGenerationParams struct {
-	ImageFile    *replicate.File   `json:"image_file"`
-	Scale       *float64 `json:"scale,omitempty"`
-	FaceEnhance *bool    `json:"face_enhance,omitempty"`
+	ImageFile   *replicate.File `json:"image_file"`
+	Scale       *float64        `json:"scale,omitempty"`
+	FaceEnhance *bool           `json:"face_enhance,omitempty"`
 }
 
 type HighVideoGenerationParams struct {
-	Prompt            string   `json:"prompt"`
-	NegativePrompt    *string  `json:"negative_prompt,omitempty"`
-	InitVideoFile      *replicate.File  `json:"init_video_file,omitempty"`
-	InitWeight        *float64 `json:"init_weight,omitempty"`
-	NumFrames         *int     `json:"num_frames,omitempty"`
-	NumInferenceSteps *int     `json:"num_inferences_steps,omitempty"`
-	Width             *int     `json:"width,omitempty"`
-	Height            *int     `json:"height,omitempty"`
-	GuidanceScale     *float64 `json:"guidance_scale,omitempty"`
-	FPS               *int     `json:"fps,omitempty"`
-	VideoModel        *string  `json:"video_model,omitempty"`
-	BatchSize         *int     `json:"batch_size,omitempty"`
-	RemoveWatermark   *bool    `json:"remove_watermark,omitempty"`
+	Prompt            string          `json:"prompt"`
+	NegativePrompt    *string         `json:"negative_prompt,omitempty"`
+	InitVideoFile     *replicate.File `json:"init_video_file,omitempty"`
+	InitWeight        *float64        `json:"init_weight,omitempty"`
+	NumFrames         *int            `json:"num_frames,omitempty"`
+	NumInferenceSteps *int            `json:"num_inferences_steps,omitempty"`
+	Width             *int            `json:"width,omitempty"`
+	Height            *int            `json:"height,omitempty"`
+	GuidanceScale     *float64        `json:"guidance_scale,omitempty"`
+	FPS               *int            `json:"fps,omitempty"`
+	VideoModel        *string         `json:"video_model,omitempty"`
+	BatchSize         *int            `json:"batch_size,omitempty"`
+	RemoveWatermark   *bool           `json:"remove_watermark,omitempty"`
 }
 
 type LowTTSParams struct {
-	Text         string  `json:"text"`
-	SpeakerFile     *replicate.File  `json:"speaker"`
-	Language     *string `json:"language,omitempty"`
-	CleanupVoice *bool   `json:"cleanup_voice,omitempty"`
+	Text         string          `json:"text"`
+	SpeakerFile  *replicate.File `json:"speaker"`
+	Language     *string         `json:"language,omitempty"`
+	CleanupVoice *bool           `json:"cleanup_voice,omitempty"`
 }
 type MediumTTSParams struct {
-	SongInputFile              *replicate.File   `json:"song_input_file"`
-	RvcModel                  *string  `json:"rvc_model,omitempty"`
-	CustomRvcModelDownloadURL *string  `json:"custom_rvc_model_download_url,omitempty"`
-	PitchChange               *string  `json:"pitch_change,omitempty"`
-	IndexRate                 *float64 `json:"index_rate,omitempty"`
-	FilterRaidus              *int     `json:"filter_raidus,omitempty"`
-	RmsMixRate                *float64 `json:"rms_mix_rate,omitempty"`
-	PitchDetectionAlgorithm   *string  `json:"pitch_detection_algorithm,omitempty"`
-	CrepeHopLength            *int     `json:"crepe_hop_length,omitempty"`
-	Protect                   *float64 `json:"protect,omitempty"`
-	MainVocalsVolumeChange    *float64 `json:"main_vocals_volume_change,omitempty"`
-	BackupVocalsVolumeChange  *float64 `json:"backup_vocals_volume_change,omitempty"`
-	InstrumentalVolumeChange  *float64 `json:"instrumental_volume_change,omitempty"`
-	PitchChangeAll            *float64 `json:"pitch_change_all,omitempty"`
-	ReverbSize                *float64 `json:"reverb_size,omitempty"`
-	ReverbWetness             *float64 `json:"reverb_wetness,omitempty"`
-	ReverbDryness             *float64 `json:"reverb_dryness,omitempty"`
-	ReverbDamping             *float64 `json:"reverb_damping,omitempty"`
-	OutputFormat              *string  `json:"output_format,omitempty"`
+	SongInputFile             *replicate.File `json:"song_input_file"`
+	RvcModel                  *string         `json:"rvc_model,omitempty"`
+	CustomRvcModelDownloadURL *string         `json:"custom_rvc_model_download_url,omitempty"`
+	PitchChange               *string         `json:"pitch_change,omitempty"`
+	IndexRate                 *float64        `json:"index_rate,omitempty"`
+	FilterRaidus              *int            `json:"filter_raidus,omitempty"`
+	RmsMixRate                *float64        `json:"rms_mix_rate,omitempty"`
+	PitchDetectionAlgorithm   *string         `json:"pitch_detection_algorithm,omitempty"`
+	CrepeHopLength            *int            `json:"crepe_hop_length,omitempty"`
+	Protect                   *float64        `json:"protect,omitempty"`
+	MainVocalsVolumeChange    *float64        `json:"main_vocals_volume_change,omitempty"`
+	BackupVocalsVolumeChange  *float64        `json:"backup_vocals_volume_change,omitempty"`
+	InstrumentalVolumeChange  *float64        `json:"instrumental_volume_change,omitempty"`
+	PitchChangeAll            *float64        `json:"pitch_change_all,omitempty"`
+	ReverbSize                *float64        `json:"reverb_size,omitempty"`
+	ReverbWetness             *float64        `json:"reverb_wetness,omitempty"`
+	ReverbDryness             *float64        `json:"reverb_dryness,omitempty"`
+	ReverbDamping             *float64        `json:"reverb_damping,omitempty"`
+	OutputFormat              *string         `json:"output_format,omitempty"`
 }
 
 type HighTTSParams struct {
-	AudioFile *replicate.File   `json:"audio_file"`
-	Text     string   `json:"text"`
-	Language *string  `json:"language,omitempty"`
-	Speed    *float64 `json:"speed,omitempty"`
+	AudioFile *replicate.File `json:"audio_file"`
+	Text      string          `json:"text"`
+	Language  *string         `json:"language,omitempty"`
+	Speed     *float64        `json:"speed,omitempty"`
 }
 type LowSTTParams struct {
-	AudioFile               *replicate.File   `json:"audio_file"`
-	Transcription           *string  `json:"transcription,omitempty"`
-	Temperature             *float64 `json:"temperature,omitempty"`
-	Translate               *bool    `json:"translate,omitempty"`
-	InitialPrompt           *string  `json:"initial_prompt,omitempty"`
-	ConditionOnPreviousText *bool    `json:"condition_on_previous_text,omitempty"`
+	AudioFile               *replicate.File `json:"audio_file"`
+	Transcription           *string         `json:"transcription,omitempty"`
+	Temperature             *float64        `json:"temperature,omitempty"`
+	Translate               *bool           `json:"translate,omitempty"`
+	InitialPrompt           *string         `json:"initial_prompt,omitempty"`
+	ConditionOnPreviousText *bool           `json:"condition_on_previous_text,omitempty"`
 }
 type HighSTTParams struct {
-	AudioFile  *replicate.File  `json:"audio_file"`
-	URL *string `json:"url,omitempty"`
-	Task      *string `json:"task,omitempty"`
-	BatchSize *int    `json:"batch_size,omitempty"`
-	Timestamp *string `json:"timestamp,omitempty"`
+	AudioFile *replicate.File `json:"audio_file"`
+	URL       *string         `json:"url,omitempty"`
+	Task      *string         `json:"task,omitempty"`
+	BatchSize *int            `json:"batch_size,omitempty"`
+	Timestamp *string         `json:"timestamp,omitempty"`
 }
 type LowMusicGenerationParams struct {
 	PromptA           string   `json:"prompt_a"`
@@ -135,20 +135,20 @@ type LowMusicGenerationParams struct {
 	SeedImageID       *string  `json:"seed_image_id,omitempty"`
 }
 type HighMusicGenerationParams struct {
-	Prompt                 string   `json:"prompt"`
-	ModelVersion           *string  `json:"model_version,omitempty"`
-	InputAudioFile          *replicate.File  `json:"input_audio_file,omitempty"`
-	Duration               *int     `json:"duration,omitempty"`
-	Continuation           *bool    `json:"continuation,omitempty"`
-	ContinuationStart      *int     `json:"continuation_start,omitempty"`
-	ContinuationEnd        *int     `json:"continuation_end,omitempty"`
-	MultiBandDiffusion     *bool    `json:"multi_band_diffusion,omitempty"`
-	NormalizationStrategy  *string  `json:"normalization_strategy,omitempty"`
-	TopK                   *int     `json:"top_k,omitempty"`
-	TopP                   *float64 `json:"top_p,omitempty"`
-	Temperature            *float64 `json:"temperature,omitempty"`
-	ClassifierFreeGuidance *int     `json:"classifier_free_guidance,omitempty"`
-	OutputFormat           *string  `json:"output_format,omitempty"`
+	Prompt                 string          `json:"prompt"`
+	ModelVersion           *string         `json:"model_version,omitempty"`
+	InputAudioFile         *replicate.File `json:"input_audio_file,omitempty"`
+	Duration               *int            `json:"duration,omitempty"`
+	Continuation           *bool           `json:"continuation,omitempty"`
+	ContinuationStart      *int            `json:"continuation_start,omitempty"`
+	ContinuationEnd        *int            `json:"continuation_end,omitempty"`
+	MultiBandDiffusion     *bool           `json:"multi_band_diffusion,omitempty"`
+	NormalizationStrategy  *string         `json:"normalization_strategy,omitempty"`
+	TopK                   *int            `json:"top_k,omitempty"`
+	TopP                   *float64        `json:"top_p,omitempty"`
+	Temperature            *float64        `json:"temperature,omitempty"`
+	ClassifierFreeGuidance *int            `json:"classifier_free_guidance,omitempty"`
+	OutputFormat           *string         `json:"output_format,omitempty"`
 }
 
 func (m LowMusicGenerationParams) Riffusion() LowMusicGenerationParams {

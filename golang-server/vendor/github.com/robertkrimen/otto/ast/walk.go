@@ -38,7 +38,6 @@ func Walk(v Visitor, n Node) {
 			Walk(v, n.Right)
 		}
 	case *BadExpression:
-	case *BadStatement:
 	case *BinaryExpression:
 		if n != nil {
 			Walk(v, n.Left)
@@ -94,7 +93,6 @@ func Walk(v Visitor, n Node) {
 	case *DotExpression:
 		if n != nil {
 			Walk(v, n.Left)
-			Walk(v, n.Identifier)
 		}
 	case *EmptyExpression:
 	case *EmptyStatement:
@@ -136,7 +134,6 @@ func Walk(v Visitor, n Node) {
 		}
 	case *LabelledStatement:
 		if n != nil {
-			Walk(v, n.Label)
 			Walk(v, n.Statement)
 		}
 	case *NewExpression:

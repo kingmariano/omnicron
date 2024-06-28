@@ -63,11 +63,9 @@ type srcMapItem struct {
 	srcPos int
 }
 
-// Program is an internal, compiled representation of code which is produced by the Compile function.
-// This representation is not linked to a runtime in any way and can be used concurrently.
-// It is always preferable to use a Program over a string when running code as it skips the compilation step.
 type Program struct {
-	code []instruction
+	code   []instruction
+	values []Value
 
 	funcName unistring.String
 	src      *file.File
@@ -87,8 +85,6 @@ type compiler struct {
 	ctxVM  *vm // VM in which an eval() code is compiled
 
 	codeScratchpad []instruction
-
-	stringCache map[unistring.String]Value
 }
 
 type binding struct {
@@ -385,29 +381,6 @@ func (c *compiler) popScope() {
 	c.scope = c.scope.outer
 }
 
-func (c *compiler) emitLiteralString(s String) {
-	key := s.string()
-	if c.stringCache == nil {
-		c.stringCache = make(map[unistring.String]Value)
-	}
-	internVal := c.stringCache[key]
-	if internVal == nil {
-		c.stringCache[key] = s
-		internVal = s
-	}
-
-	c.emit(loadVal{internVal})
-}
-
-func (c *compiler) emitLiteralValue(v Value) {
-	if s, ok := v.(String); ok {
-		c.emitLiteralString(s)
-		return
-	}
-
-	c.emit(loadVal{v})
-}
-
 func newCompiler() *compiler {
 	c := &compiler{
 		p: &Program{},
@@ -418,11 +391,23 @@ func newCompiler() *compiler {
 	return c
 }
 
+func (p *Program) defineLiteralValue(val Value) uint32 {
+	for idx, v := range p.values {
+		if v.SameAs(val) {
+			return uint32(idx)
+		}
+	}
+	idx := uint32(len(p.values))
+	p.values = append(p.values, val)
+	return idx
+}
+
 func (p *Program) dumpCode(logger func(format string, args ...interface{})) {
 	p._dumpCode("", logger)
 }
 
 func (p *Program) _dumpCode(indent string, logger func(format string, args ...interface{})) {
+	logger("values: %+v", p.values)
 	dumpInitFields := func(initFields *Program) {
 		i := indent + ">"
 		logger("%s ---- init_fields:", i)
@@ -994,7 +979,6 @@ func (c *compiler) compile(in *ast.Program, strict, inGlobal bool, evalVm *vm) {
 	}
 
 	scope.finaliseVarAlloc(0)
-	c.stringCache = nil
 }
 
 func (c *compiler) compileDeclList(v []*ast.VariableDeclaration, inFunc bool) {
@@ -1230,8 +1214,6 @@ func (c *compiler) compileLexicalDeclarationsFuncBody(list []ast.Statement, call
 					c.createLexicalIdBindingFuncBody(name, isConst, offset, calleeBinding)
 				})
 			}
-		} else if cls, ok := st.(*ast.ClassDeclaration); ok {
-			c.createLexicalIdBindingFuncBody(cls.Class.Name.Name, false, int(cls.Class.Name.Idx)-1, calleeBinding)
 		}
 	}
 }
@@ -1355,7 +1337,7 @@ func (c *compiler) assert(cond bool, offset int, msg string, args ...interface{}
 }
 
 func privateIdString(desc unistring.String) unistring.String {
-	return asciiString("#").Concat(stringValueFromRaw(desc)).string()
+	return asciiString("#").concat(stringValueFromRaw(desc)).string()
 }
 
 type privateName struct {

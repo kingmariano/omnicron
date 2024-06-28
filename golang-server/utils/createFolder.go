@@ -1,19 +1,29 @@
 package utils
-import (
-	"os"
-	"log"
-)
 
-func CreateFolder(outputPath string){
-	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
-		err := os.Mkdir(outputPath, os.ModePerm)
-		if err != nil {
-			log.Printf("error creating directory %v", err)
-			return
-			// utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error creating directory, %v", err))
-		}
-		defer os.RemoveAll(outputPath) // Ensure the folder is deleted after task completion
+import (
+	"fmt"
+	"os"
+	"github.com/google/uuid"
+)
+// set the default path to where the video or audio will be downloaded
+var BasePath string = "./downloads"
+var OutputName string = "youtube"
+func CreateUniqueFolder(basePath string) (string, error) {
+	uniqueFolder := basePath + uuid.New().String()
+
+	err := os.MkdirAll(uniqueFolder, os.ModePerm)
+	if err != nil {
+		return "", fmt.Errorf("error creating directory: %v", err)
 	}
-	log.Print("file already exists")
-	return
+
+	return uniqueFolder, nil
+}
+
+
+func DeleteFolder(path string) error {
+	err := os.RemoveAll(path)
+	if err != nil {
+		return fmt.Errorf("error deleting directory: %v", err)
+	}
+	return nil
 }

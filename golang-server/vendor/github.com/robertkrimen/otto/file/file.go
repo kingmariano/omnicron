@@ -1,4 +1,5 @@
 // Package file encapsulates the file abstractions used by the ast & parser.
+//
 package file
 
 import (
@@ -20,12 +21,13 @@ type Position struct {
 	Offset   int    // The src offset
 	Line     int    // The line number, starting at 1
 	Column   int    // The column number, starting at 1 (The character count)
+
 }
 
 // A Position is valid if the line number is > 0.
 
-func (p *Position) isValid() bool {
-	return p.Line > 0
+func (self *Position) isValid() bool {
+	return self.Line > 0
 }
 
 // String returns a string in one of several forms:
@@ -34,13 +36,14 @@ func (p *Position) isValid() bool {
 //	line:column         A valid position without filename
 //	file                An invalid position with filename
 //	-                   An invalid position without filename
-func (p *Position) String() string {
-	str := p.Filename
-	if p.isValid() {
+//
+func (self *Position) String() string {
+	str := self.Filename
+	if self.isValid() {
 		if str != "" {
 			str += ":"
 		}
-		str += fmt.Sprintf("%d:%d", p.Line, p.Column)
+		str += fmt.Sprintf("%d:%d", self.Line, self.Column)
 	}
 	if str == "" {
 		str = "-"
@@ -48,37 +51,38 @@ func (p *Position) String() string {
 	return str
 }
 
+// FileSet
+
 // A FileSet represents a set of source files.
 type FileSet struct {
-	last  *File
 	files []*File
+	last  *File
 }
 
 // AddFile adds a new file with the given filename and src.
 //
 // This an internal method, but exported for cross-package use.
-func (fs *FileSet) AddFile(filename, src string) int {
-	base := fs.nextBase()
+func (self *FileSet) AddFile(filename, src string) int {
+	base := self.nextBase()
 	file := &File{
 		name: filename,
 		src:  src,
 		base: base,
 	}
-	fs.files = append(fs.files, file)
-	fs.last = file
+	self.files = append(self.files, file)
+	self.last = file
 	return base
 }
 
-func (fs *FileSet) nextBase() int {
-	if fs.last == nil {
+func (self *FileSet) nextBase() int {
+	if self.last == nil {
 		return 1
 	}
-	return fs.last.base + len(fs.last.src) + 1
+	return self.last.base + len(self.last.src) + 1
 }
 
-// File returns the File at idx or nil if not found.
-func (fs *FileSet) File(idx Idx) *File {
-	for _, file := range fs.files {
+func (self *FileSet) File(idx Idx) *File {
+	for _, file := range self.files {
 		if idx <= Idx(file.base+len(file.src)) {
 			return file
 		}
@@ -87,8 +91,8 @@ func (fs *FileSet) File(idx Idx) *File {
 }
 
 // Position converts an Idx in the FileSet into a Position.
-func (fs *FileSet) Position(idx Idx) *Position {
-	for _, file := range fs.files {
+func (self *FileSet) Position(idx Idx) *Position {
+	for _, file := range self.files {
 		if idx <= Idx(file.base+len(file.src)) {
 			return file.Position(idx - Idx(file.base))
 		}
@@ -97,15 +101,13 @@ func (fs *FileSet) Position(idx Idx) *Position {
 	return nil
 }
 
-// File represents a file to parse.
 type File struct {
-	sm   *sourcemap.Consumer
 	name string
 	src  string
-	base int
+	base int // This will always be 1 or greater
+	sm   *sourcemap.Consumer
 }
 
-// NewFile returns a new file with the given filename, src and base.
 func NewFile(filename, src string, base int) *File {
 	return &File{
 		name: filename,
@@ -114,28 +116,23 @@ func NewFile(filename, src string, base int) *File {
 	}
 }
 
-// WithSourceMap sets the source map of fl.
 func (fl *File) WithSourceMap(sm *sourcemap.Consumer) *File {
 	fl.sm = sm
 	return fl
 }
 
-// Name returns the name of fl.
 func (fl *File) Name() string {
 	return fl.name
 }
 
-// Source returns the source of fl.
 func (fl *File) Source() string {
 	return fl.src
 }
 
-// Base returns the base of fl.
 func (fl *File) Base() int {
 	return fl.base
 }
 
-// Position returns the position at idx or nil if not valid.
 func (fl *File) Position(idx Idx) *Position {
 	position := &Position{}
 

@@ -2,94 +2,92 @@ package otto
 
 import (
 	"strconv"
-	"unicode/utf16"
 	"unicode/utf8"
 )
 
-type stringObjecter interface {
+type _stringObject interface {
 	Length() int
-	At(at int) rune
+	At(int) rune
 	String() string
 }
 
-type stringASCII string
+type _stringASCII string
 
-func (str stringASCII) Length() int {
+func (str _stringASCII) Length() int {
 	return len(str)
 }
 
-func (str stringASCII) At(at int) rune {
+func (str _stringASCII) At(at int) rune {
 	return rune(str[at])
 }
 
-func (str stringASCII) String() string {
+func (str _stringASCII) String() string {
 	return string(str)
 }
 
-type stringWide struct {
-	string  string
-	value16 []uint16
+type _stringWide struct {
+	string string
+	length int
+	runes  []rune
 }
 
-func (str stringWide) Length() int {
-	if str.value16 == nil {
-		str.value16 = utf16.Encode([]rune(str.string))
+func (str _stringWide) Length() int {
+	return str.length
+}
+
+func (str _stringWide) At(at int) rune {
+	if str.runes == nil {
+		str.runes = []rune(str.string)
 	}
-	return len(str.value16)
+	return str.runes[at]
 }
 
-func (str stringWide) At(at int) rune {
-	if str.value16 == nil {
-		str.value16 = utf16.Encode([]rune(str.string))
-	}
-	return rune(str.value16[at])
-}
-
-func (str stringWide) String() string {
+func (str _stringWide) String() string {
 	return str.string
 }
 
-func newStringObject(str string) stringObjecter {
+func _newStringObject(str string) _stringObject {
 	for i := 0; i < len(str); i++ {
 		if str[i] >= utf8.RuneSelf {
 			goto wide
 		}
 	}
 
-	return stringASCII(str)
+	return _stringASCII(str)
 
 wide:
-	return &stringWide{
+	return &_stringWide{
 		string: str,
+		length: utf8.RuneCountInString(str),
 	}
 }
 
-func stringAt(str stringObjecter, index int) rune {
+func stringAt(str _stringObject, index int) rune {
 	if 0 <= index && index < str.Length() {
 		return str.At(index)
 	}
 	return utf8.RuneError
 }
 
-func (rt *runtime) newStringObject(value Value) *object {
-	str := newStringObject(value.string())
+func (runtime *_runtime) newStringObject(value Value) *_object {
+	str := _newStringObject(value.string())
 
-	obj := rt.newClassObject(classStringName)
-	obj.defineProperty(propertyLength, intValue(str.Length()), 0, false)
-	obj.objectClass = classString
-	obj.value = str
-	return obj
+	self := runtime.newClassObject(classString)
+	self.defineProperty(propertyLength, toValue_int(str.Length()), 0, false)
+	self.objectClass = _classString
+	self.value = str
+	return self
 }
 
-func (o *object) stringValue() stringObjecter {
-	if str, ok := o.value.(stringObjecter); ok {
+func (self *_object) stringValue() _stringObject {
+	if str, ok := self.value.(_stringObject); ok {
 		return str
 	}
 	return nil
 }
 
-func stringEnumerate(obj *object, all bool, each func(string) bool) {
-	if str := obj.stringValue(); str != nil {
+func stringEnumerate(self *_object, all bool, each func(string) bool) {
+	if str := self.stringValue(); str != nil {
 		length := str.Length()
 		for index := 0; index < length; index++ {
 			if !each(strconv.FormatInt(int64(index), 10)) {
@@ -97,17 +95,17 @@ func stringEnumerate(obj *object, all bool, each func(string) bool) {
 			}
 		}
 	}
-	objectEnumerate(obj, all, each)
+	objectEnumerate(self, all, each)
 }
 
-func stringGetOwnProperty(obj *object, name string) *property {
-	if prop := objectGetOwnProperty(obj, name); prop != nil {
-		return prop
+func stringGetOwnProperty(self *_object, name string) *_property {
+	if property := objectGetOwnProperty(self, name); property != nil {
+		return property
 	}
 	// TODO Test a string of length >= +int32 + 1?
 	if index := stringToArrayIndex(name); index >= 0 {
-		if chr := stringAt(obj.stringValue(), int(index)); chr != utf8.RuneError {
-			return &property{stringValue(string(chr)), 0}
+		if chr := stringAt(self.stringValue(), int(index)); chr != utf8.RuneError {
+			return &_property{toValue_string(string(chr)), 0}
 		}
 	}
 	return nil

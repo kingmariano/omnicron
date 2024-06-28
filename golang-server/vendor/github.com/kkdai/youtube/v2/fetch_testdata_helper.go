@@ -1,4 +1,3 @@
-//go:build fetch
 // +build fetch
 
 package youtube

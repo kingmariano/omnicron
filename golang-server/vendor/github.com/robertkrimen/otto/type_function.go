@@ -1,20 +1,20 @@
 package otto
 
-// constructFunction.
-type constructFunction func(*object, []Value) Value
+// _constructFunction
+type _constructFunction func(*_object, []Value) Value
 
-// 13.2.2 [[Construct]].
-func defaultConstruct(fn *object, argumentList []Value) Value {
-	obj := fn.runtime.newObject()
-	obj.class = classObjectName
+// 13.2.2 [[Construct]]
+func defaultConstruct(fn *_object, argumentList []Value) Value {
+	object := fn.runtime.newObject()
+	object.class = classObject
 
 	prototype := fn.get("prototype")
 	if prototype.kind != valueObject {
-		prototype = objectValue(fn.runtime.global.ObjectPrototype)
+		prototype = toValue_object(fn.runtime.global.ObjectPrototype)
 	}
-	obj.prototype = prototype.object()
+	object.prototype = prototype._object()
 
-	this := objectValue(obj)
+	this := toValue_object(object)
 	value := fn.call(this, argumentList, false, nativeFrame)
 	if value.kind == valueObject {
 		return value
@@ -22,66 +22,72 @@ func defaultConstruct(fn *object, argumentList []Value) Value {
 	return this
 }
 
-// nativeFunction.
-type nativeFunction func(FunctionCall) Value
+// _nativeFunction
+type _nativeFunction func(FunctionCall) Value
 
-// nativeFunctionObject.
-type nativeFunctionObject struct {
-	call      nativeFunction
-	construct constructFunction
+// ===================== //
+// _nativeFunctionObject //
+// ===================== //
+
+type _nativeFunctionObject struct {
 	name      string
 	file      string
 	line      int
+	call      _nativeFunction    // [[Call]]
+	construct _constructFunction // [[Construct]]
 }
 
-func (rt *runtime) newNativeFunctionProperty(name, file string, line int, native nativeFunction, length int) *object {
-	o := rt.newClassObject(classFunctionName)
-	o.value = nativeFunctionObject{
+func (runtime *_runtime) _newNativeFunctionObject(name, file string, line int, native _nativeFunction, length int) *_object {
+	self := runtime.newClassObject(classFunction)
+	self.value = _nativeFunctionObject{
 		name:      name,
 		file:      file,
 		line:      line,
 		call:      native,
 		construct: defaultConstruct,
 	}
-	o.defineProperty("name", stringValue(name), 0o000, false)
-	o.defineProperty(propertyLength, intValue(length), 0o000, false)
-	return o
+	self.defineProperty("name", toValue_string(name), 0000, false)
+	self.defineProperty(propertyLength, toValue_int(length), 0000, false)
+	return self
 }
 
-func (rt *runtime) newNativeFunctionObject(name, file string, line int, native nativeFunction, length int) *object {
-	o := rt.newNativeFunctionProperty(name, file, line, native, length)
-	o.defineOwnProperty("caller", property{
-		value: propertyGetSet{
-			rt.newNativeFunctionProperty("get", "internal", 0, func(fc FunctionCall) Value {
-				for sc := rt.scope; sc != nil; sc = sc.outer {
-					if sc.frame.fn == o {
+func (runtime *_runtime) newNativeFunctionObject(name, file string, line int, native _nativeFunction, length int) *_object {
+	self := runtime._newNativeFunctionObject(name, file, line, native, length)
+	self.defineOwnProperty("caller", _property{
+		value: _propertyGetSet{
+			runtime._newNativeFunctionObject("get", "internal", 0, func(fc FunctionCall) Value {
+				for sc := runtime.scope; sc != nil; sc = sc.outer {
+					if sc.frame.fn == self {
 						if sc.outer == nil || sc.outer.frame.fn == nil {
 							return nullValue
 						}
 
-						return rt.toValue(sc.outer.frame.fn)
+						return runtime.toValue(sc.outer.frame.fn)
 					}
 				}
 
 				return nullValue
 			}, 0),
-			&nilGetSetObject,
+			&_nilGetSetObject,
 		},
-		mode: 0o000,
+		mode: 0000,
 	}, false)
-	return o
+	return self
 }
 
-// bindFunctionObject.
-type bindFunctionObject struct {
-	target       *object
+// =================== //
+// _bindFunctionObject //
+// =================== //
+
+type _bindFunctionObject struct {
+	target       *_object
 	this         Value
 	argumentList []Value
 }
 
-func (rt *runtime) newBoundFunctionObject(target *object, this Value, argumentList []Value) *object {
-	o := rt.newClassObject(classFunctionName)
-	o.value = bindFunctionObject{
+func (runtime *_runtime) newBoundFunctionObject(target *_object, this Value, argumentList []Value) *_object {
+	self := runtime.newClassObject(classFunction)
+	self.value = _bindFunctionObject{
 		target:       target,
 		this:         this,
 		argumentList: argumentList,
@@ -91,96 +97,101 @@ func (rt *runtime) newBoundFunctionObject(target *object, this Value, argumentLi
 	if length < 0 {
 		length = 0
 	}
-	o.defineProperty("name", stringValue("bound "+target.get("name").String()), 0o000, false)
-	o.defineProperty(propertyLength, intValue(length), 0o000, false)
-	o.defineProperty("caller", Value{}, 0o000, false)    // TODO Should throw a TypeError
-	o.defineProperty("arguments", Value{}, 0o000, false) // TODO Should throw a TypeError
-	return o
+	self.defineProperty("name", toValue_string("bound "+target.get("name").String()), 0000, false)
+	self.defineProperty(propertyLength, toValue_int(length), 0000, false)
+	self.defineProperty("caller", Value{}, 0000, false)    // TODO Should throw a TypeError
+	self.defineProperty("arguments", Value{}, 0000, false) // TODO Should throw a TypeError
+	return self
 }
 
-// [[Construct]].
-func (fn bindFunctionObject) construct(argumentList []Value) Value {
-	obj := fn.target
-	switch value := obj.value.(type) {
-	case nativeFunctionObject:
-		return value.construct(obj, fn.argumentList)
-	case nodeFunctionObject:
+// [[Construct]]
+func (fn _bindFunctionObject) construct(argumentList []Value) Value {
+	object := fn.target
+	switch value := object.value.(type) {
+	case _nativeFunctionObject:
+		return value.construct(object, fn.argumentList)
+	case _nodeFunctionObject:
 		argumentList = append(fn.argumentList, argumentList...)
-		return obj.construct(argumentList)
-	default:
-		panic(fn.target.runtime.panicTypeError("construct unknown type %T", obj.value))
+		return object.construct(argumentList)
 	}
+	panic(fn.target.runtime.panicTypeError())
 }
 
-// nodeFunctionObject.
-type nodeFunctionObject struct {
-	node  *nodeFunctionLiteral
-	stash stasher
+// =================== //
+// _nodeFunctionObject //
+// =================== //
+
+type _nodeFunctionObject struct {
+	node  *_nodeFunctionLiteral
+	stash _stash
 }
 
-func (rt *runtime) newNodeFunctionObject(node *nodeFunctionLiteral, stash stasher) *object {
-	o := rt.newClassObject(classFunctionName)
-	o.value = nodeFunctionObject{
+func (runtime *_runtime) newNodeFunctionObject(node *_nodeFunctionLiteral, stash _stash) *_object {
+	self := runtime.newClassObject(classFunction)
+	self.value = _nodeFunctionObject{
 		node:  node,
 		stash: stash,
 	}
-	o.defineProperty("name", stringValue(node.name), 0o000, false)
-	o.defineProperty(propertyLength, intValue(len(node.parameterList)), 0o000, false)
-	o.defineOwnProperty("caller", property{
-		value: propertyGetSet{
-			rt.newNativeFunction("get", "internal", 0, func(fc FunctionCall) Value {
-				for sc := rt.scope; sc != nil; sc = sc.outer {
-					if sc.frame.fn == o {
+	self.defineProperty("name", toValue_string(node.name), 0000, false)
+	self.defineProperty(propertyLength, toValue_int(len(node.parameterList)), 0000, false)
+	self.defineOwnProperty("caller", _property{
+		value: _propertyGetSet{
+			runtime.newNativeFunction("get", "internal", 0, func(fc FunctionCall) Value {
+				for sc := runtime.scope; sc != nil; sc = sc.outer {
+					if sc.frame.fn == self {
 						if sc.outer == nil || sc.outer.frame.fn == nil {
 							return nullValue
 						}
 
-						return rt.toValue(sc.outer.frame.fn)
+						return runtime.toValue(sc.outer.frame.fn)
 					}
 				}
 
 				return nullValue
 			}),
-			&nilGetSetObject,
+			&_nilGetSetObject,
 		},
-		mode: 0o000,
+		mode: 0000,
 	}, false)
-	return o
+	return self
 }
 
-// _object.
-func (o *object) isCall() bool {
-	switch fn := o.value.(type) {
-	case nativeFunctionObject:
+// ======= //
+// _object //
+// ======= //
+
+func (self *_object) isCall() bool {
+	switch fn := self.value.(type) {
+	case _nativeFunctionObject:
 		return fn.call != nil
-	case bindFunctionObject:
+	case _bindFunctionObject:
 		return true
-	case nodeFunctionObject:
+	case _nodeFunctionObject:
 		return true
-	default:
-		return false
 	}
+	return false
 }
 
-func (o *object) call(this Value, argumentList []Value, eval bool, frm frame) Value { //nolint:unparam // Isn't currently used except in recursive self.
-	switch fn := o.value.(type) {
-	case nativeFunctionObject:
+func (self *_object) call(this Value, argumentList []Value, eval bool, frame _frame) Value {
+	switch fn := self.value.(type) {
+
+	case _nativeFunctionObject:
 		// Since eval is a native function, we only have to check for it here
 		if eval {
-			eval = o == o.runtime.eval // If eval is true, then it IS a direct eval
+			eval = self == self.runtime.eval // If eval is true, then it IS a direct eval
 		}
 
 		// Enter a scope, name from the native object...
-		rt := o.runtime
+		rt := self.runtime
 		if rt.scope != nil && !eval {
 			rt.enterFunctionScope(rt.scope.lexical, this)
-			rt.scope.frame = frame{
+			rt.scope.frame = _frame{
 				native:     true,
 				nativeFile: fn.file,
 				nativeLine: fn.line,
 				callee:     fn.name,
 				file:       nil,
-				fn:         o,
+				fn:         self,
 			}
 			defer func() {
 				rt.leaveScope()
@@ -188,77 +199,78 @@ func (o *object) call(this Value, argumentList []Value, eval bool, frm frame) Va
 		}
 
 		return fn.call(FunctionCall{
-			runtime: o.runtime,
+			runtime: self.runtime,
 			eval:    eval,
 
 			This:         this,
 			ArgumentList: argumentList,
-			Otto:         o.runtime.otto,
+			Otto:         self.runtime.otto,
 		})
 
-	case bindFunctionObject:
+	case _bindFunctionObject:
 		// TODO Passthrough site, do not enter a scope
 		argumentList = append(fn.argumentList, argumentList...)
-		return fn.target.call(fn.this, argumentList, false, frm)
+		return fn.target.call(fn.this, argumentList, false, frame)
 
-	case nodeFunctionObject:
-		rt := o.runtime
+	case _nodeFunctionObject:
+		rt := self.runtime
 		stash := rt.enterFunctionScope(fn.stash, this)
-		rt.scope.frame = frame{
+		rt.scope.frame = _frame{
 			callee: fn.node.name,
 			file:   fn.node.file,
-			fn:     o,
+			fn:     self,
 		}
 		defer func() {
 			rt.leaveScope()
 		}()
-		callValue := rt.cmplCallNodeFunction(o, stash, fn.node, argumentList)
-		if value, valid := callValue.value.(result); valid {
+		callValue := rt.cmpl_call_nodeFunction(self, stash, fn.node, this, argumentList)
+		if value, valid := callValue.value.(_result); valid {
 			return value.value
 		}
 		return callValue
 	}
 
-	panic(o.runtime.panicTypeError("%v is not a function", objectValue(o)))
+	panic(self.runtime.panicTypeError("%v is not a function", toValue_object(self)))
 }
 
-func (o *object) construct(argumentList []Value) Value {
-	switch fn := o.value.(type) {
-	case nativeFunctionObject:
+func (self *_object) construct(argumentList []Value) Value {
+	switch fn := self.value.(type) {
+
+	case _nativeFunctionObject:
 		if fn.call == nil {
-			panic(o.runtime.panicTypeError("%v is not a function", objectValue(o)))
+			panic(self.runtime.panicTypeError("%v is not a function", toValue_object(self)))
 		}
 		if fn.construct == nil {
-			panic(o.runtime.panicTypeError("%v is not a constructor", objectValue(o)))
+			panic(self.runtime.panicTypeError("%v is not a constructor", toValue_object(self)))
 		}
-		return fn.construct(o, argumentList)
+		return fn.construct(self, argumentList)
 
-	case bindFunctionObject:
+	case _bindFunctionObject:
 		return fn.construct(argumentList)
 
-	case nodeFunctionObject:
-		return defaultConstruct(o, argumentList)
+	case _nodeFunctionObject:
+		return defaultConstruct(self, argumentList)
 	}
 
-	panic(o.runtime.panicTypeError("%v is not a function", objectValue(o)))
+	panic(self.runtime.panicTypeError("%v is not a function", toValue_object(self)))
 }
 
-// 15.3.5.3.
-func (o *object) hasInstance(of Value) bool {
-	if !o.isCall() {
+// 15.3.5.3
+func (self *_object) hasInstance(of Value) bool {
+	if !self.isCall() {
 		// We should not have a hasInstance method
-		panic(o.runtime.panicTypeError("Object.hasInstance not callable"))
+		panic(self.runtime.panicTypeError())
 	}
 	if !of.IsObject() {
 		return false
 	}
-	prototype := o.get("prototype")
+	prototype := self.get("prototype")
 	if !prototype.IsObject() {
-		panic(o.runtime.panicTypeError("Object.hasInstance prototype %q is not an object", prototype))
+		panic(self.runtime.panicTypeError())
 	}
-	prototypeObject := prototype.object()
+	prototypeObject := prototype._object()
 
-	value := of.object().prototype
+	value := of._object().prototype
 	for value != nil {
 		if value == prototypeObject {
 			return true
@@ -268,55 +280,61 @@ func (o *object) hasInstance(of Value) bool {
 	return false
 }
 
+// ============ //
+// FunctionCall //
+// ============ //
+
 // FunctionCall is an encapsulation of a JavaScript function call.
 type FunctionCall struct {
+	runtime     *_runtime
+	_thisObject *_object
+	eval        bool // This call is a direct call to eval
+
 	This         Value
-	runtime      *runtime
-	thisObj      *object
-	Otto         *Otto
 	ArgumentList []Value
-	eval         bool
+	Otto         *Otto
 }
 
 // Argument will return the value of the argument at the given index.
 //
 // If no such argument exists, undefined is returned.
-func (f FunctionCall) Argument(index int) Value {
-	return valueOfArrayIndex(f.ArgumentList, index)
+func (self FunctionCall) Argument(index int) Value {
+	return valueOfArrayIndex(self.ArgumentList, index)
 }
 
-func (f FunctionCall) getArgument(index int) (Value, bool) {
-	return getValueOfArrayIndex(f.ArgumentList, index)
+func (self FunctionCall) getArgument(index int) (Value, bool) {
+	return getValueOfArrayIndex(self.ArgumentList, index)
 }
 
-func (f FunctionCall) slice(index int) []Value {
-	if index < len(f.ArgumentList) {
-		return f.ArgumentList[index:]
+func (self FunctionCall) slice(index int) []Value {
+	if index < len(self.ArgumentList) {
+		return self.ArgumentList[index:]
 	}
 	return []Value{}
 }
 
-func (f *FunctionCall) thisObject() *object {
-	if f.thisObj == nil {
-		this := f.This.resolve() // FIXME Is this right?
-		f.thisObj = f.runtime.toObject(this)
+func (self *FunctionCall) thisObject() *_object {
+	if self._thisObject == nil {
+		this := self.This.resolve() // FIXME Is this right?
+		self._thisObject = self.runtime.toObject(this)
 	}
-	return f.thisObj
+	return self._thisObject
 }
 
-func (f *FunctionCall) thisClassObject(class string) *object {
-	if o := f.thisObject(); o.class != class {
-		panic(f.runtime.panicTypeError("Function.Class %s != %s", o.class, class))
+func (self *FunctionCall) thisClassObject(class string) *_object {
+	thisObject := self.thisObject()
+	if thisObject.class != class {
+		panic(self.runtime.panicTypeError())
 	}
-	return f.thisObj
+	return self._thisObject
 }
 
-func (f FunctionCall) toObject(value Value) *object {
-	return f.runtime.toObject(value)
+func (self FunctionCall) toObject(value Value) *_object {
+	return self.runtime.toObject(value)
 }
 
 // CallerLocation will return file location information (file:line:pos) where this function is being called.
-func (f FunctionCall) CallerLocation() string {
+func (self FunctionCall) CallerLocation() string {
 	// see error.go for location()
-	return f.runtime.scope.outer.frame.location()
+	return self.runtime.scope.outer.frame.location()
 }

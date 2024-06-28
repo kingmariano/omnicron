@@ -1,8 +1,6 @@
-FROM golang:1.22 AS builder
+FROM golang:1.17 AS builder
 
 WORKDIR /app
-COPY go.* ./
-RUN go mod download
 COPY . .
 ENV CGO_ENABLED 0
 RUN make build

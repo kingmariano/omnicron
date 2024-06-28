@@ -58,10 +58,7 @@ type global struct {
 	Date     *Object
 	Symbol   *Object
 	Proxy    *Object
-	Reflect  *Object
 	Promise  *Object
-	Math     *Object
-	JSON     *Object
 
 	AsyncFunction *Object
 
@@ -126,11 +123,21 @@ type global struct {
 	StringIteratorPrototype       *Object
 	RegExpStringIteratorPrototype *Object
 
-	ErrorPrototype *Object
+	ErrorPrototype          *Object
+	AggregateErrorPrototype *Object
+	TypeErrorPrototype      *Object
+	SyntaxErrorPrototype    *Object
+	RangeErrorPrototype     *Object
+	ReferenceErrorPrototype *Object
+	EvalErrorPrototype      *Object
+	URIErrorPrototype       *Object
+
+	GoErrorPrototype *Object
 
 	Eval *Object
 
-	thrower *Object
+	thrower         *Object
+	throwerProperty Value
 
 	stdRegexpProto *guardedObject
 
@@ -140,13 +147,6 @@ type global struct {
 	setAdder      *Object
 	arrayValues   *Object
 	arrayToString *Object
-
-	stringproto_trimEnd   *Object
-	stringproto_trimStart *Object
-
-	parseFloat, parseInt *Object
-
-	typedArrayValues *Object
 }
 
 type Flag int
@@ -228,24 +228,24 @@ func (f *StackFrame) Position() file.Position {
 	return f.prg.src.Position(f.prg.sourceOffset(f.pc))
 }
 
-func (f *StackFrame) WriteToValueBuilder(b *StringBuilder) {
+func (f *StackFrame) WriteToValueBuilder(b *valueStringBuilder) {
 	if f.prg != nil {
 		if n := f.prg.funcName; n != "" {
 			b.WriteString(stringValueFromRaw(n))
-			b.writeASCII(" (")
+			b.WriteASCII(" (")
 		}
 		p := f.Position()
 		if p.Filename != "" {
-			b.WriteUTF8String(p.Filename)
+			b.WriteASCII(p.Filename)
 		} else {
-			b.writeASCII("<eval>")
+			b.WriteASCII("<eval>")
 		}
 		b.WriteRune(':')
-		b.writeASCII(strconv.Itoa(p.Line))
+		b.WriteASCII(strconv.Itoa(p.Line))
 		b.WriteRune(':')
-		b.writeASCII(strconv.Itoa(p.Column))
+		b.WriteASCII(strconv.Itoa(p.Column))
 		b.WriteRune('(')
-		b.writeASCII(strconv.Itoa(f.pc))
+		b.WriteASCII(strconv.Itoa(f.pc))
 		b.WriteRune(')')
 		if f.prg.funcName != "" {
 			b.WriteRune(')')
@@ -253,9 +253,9 @@ func (f *StackFrame) WriteToValueBuilder(b *StringBuilder) {
 	} else {
 		if f.funcName != "" {
 			b.WriteString(stringValueFromRaw(f.funcName))
-			b.writeASCII(" (")
+			b.WriteASCII(" (")
 		}
-		b.writeASCII("native")
+		b.WriteASCII("native")
 		if f.funcName != "" {
 			b.WriteRune(')')
 		}
@@ -386,13 +386,11 @@ func (e *Exception) String() string {
 }
 
 func (e *Exception) Error() string {
-	if e == nil {
+	if e == nil || e.val == nil {
 		return "<nil>"
 	}
 	var b bytes.Buffer
-	if e.val != nil {
-		b.WriteString(e.val.String())
-	}
+	b.WriteString(e.val.String())
 	e.writeShortStack(&b)
 	return b.String()
 }
@@ -401,26 +399,14 @@ func (e *Exception) Value() Value {
 	return e.val
 }
 
-func (e *Exception) Unwrap() error {
-	if obj, ok := e.val.(*Object); ok {
-		if obj.runtime.getGoError().self.hasInstance(obj) {
-			if val := obj.Get("value"); val != nil {
-				e1, _ := val.Export().(error)
-				return e1
-			}
-		}
-	}
-	return nil
-}
-
-func (e *Exception) Stack() []StackFrame {
-	return e.stack
+func (r *Runtime) addToGlobal(name string, value Value) {
+	r.globalObject.self._putProp(unistring.String(name), value, true, false, true)
 }
 
 func (r *Runtime) createIterProto(val *Object) objectImpl {
 	o := newBaseObjectObj(val, r.global.ObjectPrototype, classObject)
 
-	o._putSym(SymIterator, valueProp(r.newNativeFunc(r.returnThis, "[Symbol.iterator]", 0), true, false, true))
+	o._putSym(SymIterator, valueProp(r.newNativeFunc(r.returnThis, nil, "[Symbol.iterator]", nil, 0), true, false, true))
 	return o
 }
 
@@ -437,17 +423,68 @@ func (r *Runtime) getIteratorPrototype() *Object {
 func (r *Runtime) init() {
 	r.rand = rand.Float64
 	r.now = time.Now
-
-	r.global.ObjectPrototype = &Object{runtime: r}
-	r.newTemplatedObject(getObjectProtoTemplate(), r.global.ObjectPrototype)
-
-	r.globalObject = &Object{runtime: r}
-	r.newTemplatedObject(getGlobalObjectTemplate(), r.globalObject)
+	r.global.ObjectPrototype = r.newBaseObject(nil, classObject).val
+	r.globalObject = r.NewObject()
 
 	r.vm = &vm{
 		r: r,
 	}
 	r.vm.init()
+
+	funcProto := r.newNativeFunc(func(FunctionCall) Value {
+		return _undefined
+	}, nil, " ", nil, 0)
+	r.global.FunctionPrototype = funcProto
+	funcProtoObj := funcProto.self.(*nativeFuncObject)
+
+	r.initObject()
+	r.initFunction()
+	r.initArray()
+	r.initString()
+	r.initGlobalObject()
+	r.initNumber()
+	r.initRegExp()
+	r.initDate()
+	r.initBoolean()
+	r.initProxy()
+	r.initReflect()
+
+	r.initErrors()
+
+	r.global.Eval = r.newNativeFunc(r.builtin_eval, nil, "eval", nil, 1)
+	r.addToGlobal("eval", r.global.Eval)
+
+	r.initMath()
+	r.initJSON()
+
+	r.initTypedArrays()
+	r.initSymbol()
+	r.initWeakSet()
+	r.initWeakMap()
+	r.initMap()
+	r.initSet()
+	r.initPromise()
+
+	r.global.thrower = r.newNativeFunc(r.builtin_thrower, nil, "", nil, 0)
+	r.global.throwerProperty = &valueProperty{
+		getterFunc: r.global.thrower,
+		setterFunc: r.global.thrower,
+		accessor:   true,
+	}
+	r.object_freeze(FunctionCall{Arguments: []Value{r.global.thrower}})
+
+	funcProtoObj._put("caller", &valueProperty{
+		getterFunc:   r.global.thrower,
+		setterFunc:   r.global.thrower,
+		accessor:     true,
+		configurable: true,
+	})
+	funcProtoObj._put("arguments", &valueProperty{
+		getterFunc:   r.global.thrower,
+		setterFunc:   r.global.thrower,
+		accessor:     true,
+		configurable: true,
+	})
 }
 
 func (r *Runtime) typeErrorResult(throw bool, args ...interface{}) {
@@ -471,11 +508,11 @@ func (r *Runtime) throwReferenceError(name unistring.String) {
 }
 
 func (r *Runtime) newReferenceError(name unistring.String) Value {
-	return r.newError(r.getReferenceError(), "%s is not defined", name)
+	return r.newError(r.global.ReferenceError, "%s is not defined", name)
 }
 
 func (r *Runtime) newSyntaxError(msg string, offset int) Value {
-	return r.builtin_new(r.getSyntaxError(), []Value{newStringValue(msg)})
+	return r.builtin_new(r.global.SyntaxError, []Value{newStringValue(msg)})
 }
 
 func newBaseObjectObj(obj, proto *Object, class string) *baseObject {
@@ -537,11 +574,11 @@ func (r *Runtime) NewTypeError(args ...interface{}) *Object {
 		f, _ := args[0].(string)
 		msg = fmt.Sprintf(f, args[1:]...)
 	}
-	return r.builtin_new(r.getTypeError(), []Value{newStringValue(msg)})
+	return r.builtin_new(r.global.TypeError, []Value{newStringValue(msg)})
 }
 
 func (r *Runtime) NewGoError(err error) *Object {
-	e := r.newError(r.getGoError(), err.Error()).(*Object)
+	e := r.newError(r.global.GoError, err.Error()).(*Object)
 	e.Set("value", err)
 	return e
 }
@@ -597,7 +634,7 @@ func (r *Runtime) initBaseJsFunction(f *baseJsFuncObject, strict bool) {
 	f.val = v
 	f.extensible = true
 	f.strict = strict
-	f.prototype = r.getFunctionPrototype()
+	f.prototype = r.global.FunctionPrototype
 }
 
 func (r *Runtime) newMethod(name unistring.String, length int, strict bool) (f *methodFuncObject) {
@@ -649,6 +686,27 @@ func (r *Runtime) newAsyncArrowFunc(name unistring.String, length int, strict bo
 	return
 }
 
+func (r *Runtime) newNativeFuncObj(v *Object, call func(FunctionCall) Value, construct func(args []Value, proto *Object) *Object, name unistring.String, proto *Object, length Value) *nativeFuncObject {
+	f := &nativeFuncObject{
+		baseFuncObject: baseFuncObject{
+			baseObject: baseObject{
+				class:      classFunction,
+				val:        v,
+				extensible: true,
+				prototype:  r.global.FunctionPrototype,
+			},
+		},
+		f:         call,
+		construct: r.wrapNativeConstruct(construct, proto),
+	}
+	v.self = f
+	f.init(name, length)
+	if proto != nil {
+		f._putProp("prototype", proto, false, false, false)
+	}
+	return f
+}
+
 func (r *Runtime) newNativeConstructor(call func(ConstructorCall) *Object, name unistring.String, length int64) *Object {
 	v := &Object{runtime: r}
 
@@ -658,7 +716,7 @@ func (r *Runtime) newNativeConstructor(call func(ConstructorCall) *Object, name 
 				class:      classFunction,
 				val:        v,
 				extensible: true,
-				prototype:  r.getFunctionPrototype(),
+				prototype:  r.global.FunctionPrototype,
 			},
 		},
 	}
@@ -715,7 +773,7 @@ func (r *Runtime) newNativeFuncAndConstruct(v *Object, call func(call FunctionCa
 				class:      classFunction,
 				val:        v,
 				extensible: true,
-				prototype:  r.getFunctionPrototype(),
+				prototype:  r.global.FunctionPrototype,
 			},
 		},
 		f:         call,
@@ -730,7 +788,7 @@ func (r *Runtime) newNativeFuncAndConstruct(v *Object, call func(call FunctionCa
 	return f
 }
 
-func (r *Runtime) newNativeFunc(call func(FunctionCall) Value, name unistring.String, length int) *Object {
+func (r *Runtime) newNativeFunc(call func(FunctionCall) Value, construct func(args []Value, proto *Object) *Object, name unistring.String, proto *Object, length int) *Object {
 	v := &Object{runtime: r}
 
 	f := &nativeFuncObject{
@@ -739,13 +797,18 @@ func (r *Runtime) newNativeFunc(call func(FunctionCall) Value, name unistring.St
 				class:      classFunction,
 				val:        v,
 				extensible: true,
-				prototype:  r.getFunctionPrototype(),
+				prototype:  r.global.FunctionPrototype,
 			},
 		},
-		f: call,
+		f:         call,
+		construct: r.wrapNativeConstruct(construct, proto),
 	}
 	v.self = f
 	f.init(name, intToValue(int64(length)))
+	if proto != nil {
+		f._putProp("prototype", proto, false, false, false)
+		proto.self._putProp("constructor", v, true, false, true)
+	}
 	return v
 }
 
@@ -760,7 +823,7 @@ func (r *Runtime) newWrappedFunc(value reflect.Value) *Object {
 					class:      classFunction,
 					val:        v,
 					extensible: true,
-					prototype:  r.getFunctionPrototype(),
+					prototype:  r.global.FunctionPrototype,
 				},
 			},
 			f: r.wrapReflectFunc(value),
@@ -780,11 +843,11 @@ func (r *Runtime) newNativeFuncConstructObj(v *Object, construct func(args []Val
 				class:      classFunction,
 				val:        v,
 				extensible: true,
-				prototype:  r.getFunctionPrototype(),
+				prototype:  r.global.FunctionPrototype,
 			},
 		},
 		f:         r.constructToCall(construct, proto),
-		construct: r.wrapNativeConstruct(construct, v, proto),
+		construct: r.wrapNativeConstruct(construct, proto),
 	}
 
 	f.init(name, intToValue(int64(length)))
@@ -794,11 +857,13 @@ func (r *Runtime) newNativeFuncConstructObj(v *Object, construct func(args []Val
 	return f
 }
 
-func (r *Runtime) newNativeFuncConstruct(v *Object, construct func(args []Value, proto *Object) *Object, name unistring.String, prototype *Object, length int64) *Object {
-	return r.newNativeFuncConstructProto(v, construct, name, prototype, r.getFunctionPrototype(), length)
+func (r *Runtime) newNativeFuncConstruct(construct func(args []Value, proto *Object) *Object, name unistring.String, prototype *Object, length int64) *Object {
+	return r.newNativeFuncConstructProto(construct, name, prototype, r.global.FunctionPrototype, length)
 }
 
-func (r *Runtime) newNativeFuncConstructProto(v *Object, construct func(args []Value, proto *Object) *Object, name unistring.String, prototype, proto *Object, length int64) *Object {
+func (r *Runtime) newNativeFuncConstructProto(construct func(args []Value, proto *Object) *Object, name unistring.String, prototype, proto *Object, length int64) *Object {
+	v := &Object{runtime: r}
+
 	f := &nativeFuncObject{}
 	f.class = classFunction
 	f.val = v
@@ -806,10 +871,11 @@ func (r *Runtime) newNativeFuncConstructProto(v *Object, construct func(args []V
 	v.self = f
 	f.prototype = proto
 	f.f = r.constructToCall(construct, prototype)
-	f.construct = r.wrapNativeConstruct(construct, v, prototype)
+	f.construct = r.wrapNativeConstruct(construct, prototype)
 	f.init(name, intToValue(length))
 	if prototype != nil {
 		f._putProp("prototype", prototype, false, false, false)
+		prototype.self._putProp("constructor", v, true, false, true)
 	}
 	return v
 }
@@ -873,7 +939,7 @@ func (r *Runtime) builtin_newBoolean(args []Value, proto *Object) *Object {
 }
 
 func (r *Runtime) builtin_new(construct *Object, args []Value) *Object {
-	return r.toConstructor(construct)(args, construct)
+	return r.toConstructor(construct)(args, nil)
 }
 
 func (r *Runtime) builtin_thrower(call FunctionCall) Value {
@@ -887,7 +953,7 @@ func (r *Runtime) builtin_thrower(call FunctionCall) Value {
 	return nil
 }
 
-func (r *Runtime) eval(srcVal String, direct, strict bool) Value {
+func (r *Runtime) eval(srcVal valueString, direct, strict bool) Value {
 	src := escapeInvalidUtf16(srcVal)
 	vm := r.vm
 	inGlobal := true
@@ -935,7 +1001,7 @@ func (r *Runtime) builtin_eval(call FunctionCall) Value {
 	if len(call.Arguments) == 0 {
 		return _undefined
 	}
-	if str, ok := call.Arguments[0].(String); ok {
+	if str, ok := call.Arguments[0].(valueString); ok {
 		return r.eval(str, false, false)
 	}
 	return call.Arguments[0]
@@ -947,18 +1013,21 @@ func (r *Runtime) constructToCall(construct func(args []Value, proto *Object) *O
 	}
 }
 
-func (r *Runtime) wrapNativeConstruct(c func(args []Value, proto *Object) *Object, ctorObj, defProto *Object) func(args []Value, newTarget *Object) *Object {
+func (r *Runtime) wrapNativeConstruct(c func(args []Value, proto *Object) *Object, proto *Object) func(args []Value, newTarget *Object) *Object {
 	if c == nil {
 		return nil
 	}
 	return func(args []Value, newTarget *Object) *Object {
-		var proto *Object
+		var p *Object
 		if newTarget != nil {
-			proto = r.getPrototypeFromCtor(newTarget, ctorObj, defProto)
-		} else {
-			proto = defProto
+			if pp, ok := newTarget.self.getStr("prototype", nil).(*Object); ok {
+				p = pp
+			}
 		}
-		return c(args, proto)
+		if p == nil {
+			p = proto
+		}
+		return c(args, p)
 	}
 }
 
@@ -1198,7 +1267,7 @@ repeat:
 				goto fail
 			}
 		}
-	case String:
+	case valueString:
 		v = num.ToNumber()
 		goto repeat
 	default:
@@ -1220,7 +1289,7 @@ repeat:
 		return uint32(intVal)
 	}
 fail:
-	panic(r.newError(r.getRangeError(), "Invalid array length"))
+	panic(r.newError(r.global.RangeError, "Invalid array length"))
 }
 
 func toIntStrict(i int64) int {
@@ -1248,11 +1317,11 @@ func (r *Runtime) toIndex(v Value) int {
 	num := v.ToInteger()
 	if num >= 0 && num < maxInt {
 		if bits.UintSize == 32 && num >= math.MaxInt32 {
-			panic(r.newError(r.getRangeError(), "Index %s overflows int", v.String()))
+			panic(r.newError(r.global.RangeError, "Index %s overflows int", v.String()))
 		}
 		return int(num)
 	}
-	panic(r.newError(r.getRangeError(), "Invalid index %s", v.String()))
+	panic(r.newError(r.global.RangeError, "Invalid index %s", v.String()))
 }
 
 func (r *Runtime) toBoolean(b bool) Value {
@@ -1353,11 +1422,11 @@ func (r *Runtime) compile(name, src string, strict, inGlobal bool, evalVm *vm) (
 		switch x1 := err.(type) {
 		case *CompilerSyntaxError:
 			err = &Exception{
-				val: r.builtin_new(r.getSyntaxError(), []Value{newStringValue(x1.Error())}),
+				val: r.builtin_new(r.global.SyntaxError, []Value{newStringValue(x1.Error())}),
 			}
 		case *CompilerReferenceError:
 			err = &Exception{
-				val: r.newError(r.getReferenceError(), x1.Message),
+				val: r.newError(r.global.ReferenceError, x1.Message),
 			} // TODO proper message
 		}
 	}
@@ -1589,8 +1658,7 @@ Notes on individual types:
 
 # Primitive types
 
-Primitive types (numbers, string, bool) are converted to the corresponding JavaScript primitives. These values
-are goroutine-safe and can be transferred between runtimes.
+Primitive types (numbers, string, bool) are converted to the corresponding JavaScript primitives.
 
 # Strings
 
@@ -1785,12 +1853,12 @@ func (r *Runtime) toValue(i interface{}, origValue reflect.Value) Value {
 		}
 	case func(FunctionCall) Value:
 		name := unistring.NewFromString(runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name())
-		return r.newNativeFunc(i, name, 0)
+		return r.newNativeFunc(i, nil, name, nil, 0)
 	case func(FunctionCall, *Runtime) Value:
 		name := unistring.NewFromString(runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name())
 		return r.newNativeFunc(func(call FunctionCall) Value {
 			return i(call, r)
-		}, name, 0)
+		}, nil, name, nil, 0)
 	case func(ConstructorCall) *Object:
 		name := unistring.NewFromString(runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name())
 		return r.newNativeConstructor(i, name, 0)
@@ -1846,12 +1914,12 @@ func (r *Runtime) toValue(i interface{}, origValue reflect.Value) Value {
 		m.init()
 		return obj
 	case []interface{}:
-		return r.newObjectGoSlice(&i, false).val
+		return r.newObjectGoSlice(&i).val
 	case *[]interface{}:
 		if i == nil {
 			return _null
 		}
-		return r.newObjectGoSlice(i, true).val
+		return r.newObjectGoSlice(i).val
 	}
 
 	if !origValue.IsValid() {
@@ -2301,9 +2369,6 @@ func (r *Runtime) wrapJSFunc(fn Callable, typ reflect.Type) func(args []reflect.
 // If an object has a 'length' property and is not a function it is treated as array-like. The resulting slice
 // will contain obj[0], ... obj[length-1].
 //
-// ArrayBuffer and ArrayBuffer-backed types (i.e. typed arrays and DataView) can be exported into []byte. The result
-// is backed by the original data, no copy is performed.
-//
 // For any other Object an error is returned.
 //
 // # Array types
@@ -2352,13 +2417,16 @@ func (r *Runtime) Set(name string, value interface{}) error {
 // Note, this is not the same as GlobalObject().Get(name),
 // because if a global lexical binding (let or const) exists, it is used instead.
 // This method will panic with an *Exception if a JavaScript exception is thrown in the process.
-func (r *Runtime) Get(name string) Value {
-	n := unistring.NewFromString(name)
-	if v, exists := r.global.stash.getByName(n); exists {
-		return v
-	} else {
-		return r.globalObject.self.getStr(n, nil)
-	}
+func (r *Runtime) Get(name string) (ret Value) {
+	r.tryPanic(func() {
+		n := unistring.NewFromString(name)
+		if v, exists := r.global.stash.getByName(n); exists {
+			ret = v
+		} else {
+			ret = r.globalObject.self.getStr(n, nil)
+		}
+	})
+	return
 }
 
 // SetRandSource sets random source for this Runtime. If not called, the default math/rand is used.
@@ -2517,18 +2585,17 @@ func tryFunc(f func()) (ret interface{}) {
 	return
 }
 
-// Try runs a given function catching and returning any JS exception. Use this method to run any code
-// that may throw exceptions (such as Object.Get, Object.String, Object.ToInteger, Object.Export, Runtime.Get, Runtime.InstanceOf, etc.)
-// outside the Runtime execution context (i.e. when calling directly from Go, not from a JS function implemented in Go).
-func (r *Runtime) Try(f func()) *Exception {
-	return r.vm.try(f)
-}
-
 func (r *Runtime) try(f func()) error {
 	if ex := r.vm.try(f); ex != nil {
 		return ex
 	}
 	return nil
+}
+
+func (r *Runtime) tryPanic(f func()) {
+	if ex := r.vm.try(f); ex != nil {
+		panic(ex)
+	}
 }
 
 func (r *Runtime) toObject(v Value, args ...interface{}) *Object {
@@ -2546,6 +2613,18 @@ func (r *Runtime) toObject(v Value, args ...interface{}) *Object {
 		}
 		panic(r.NewTypeError("Value is not an object: %s", s))
 	}
+}
+
+func (r *Runtime) toNumber(v Value) Value {
+	switch o := v.(type) {
+	case valueInt, valueFloat:
+		return v
+	case *Object:
+		if pvo, ok := o.self.(*primitiveValueObject); ok {
+			return r.toNumber(pvo.pValue)
+		}
+	}
+	panic(r.NewTypeError("Value is not a number: %s", v))
 }
 
 func (r *Runtime) speciesConstructor(o, defaultConstructor *Object) func(args []Value, newTarget *Object) *Object {
@@ -2703,42 +2782,21 @@ func (ir *iteratorRecord) close() {
 	ir.next = nil
 }
 
-// ForOf is a Go equivalent of for-of loop. The function panics if an exception is thrown at any point
-// while iterating, including if the supplied value is not iterable
-// (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterable_protocol).
-// When using outside of Runtime.Run (i.e. when calling directly from Go code, not from a JS function implemented
-// in Go) it must be enclosed in Try. See the example.
-func (r *Runtime) ForOf(iterable Value, step func(curValue Value) (continueIteration bool)) {
-	iter := r.getIterator(iterable, nil)
-	for {
-		value, ex := iter.step()
-		if ex != nil {
-			panic(ex)
-		}
-		if value != nil {
-			var continueIteration bool
-			ex := r.vm.try(func() {
-				continueIteration = step(value)
-			})
-			if ex != nil {
-				iter.returnIter()
-				panic(ex)
-			}
-			if !continueIteration {
-				iter.returnIter()
-				break
-			}
-		} else {
-			break
-		}
-	}
-}
-
 func (r *Runtime) createIterResultObject(value Value, done bool) Value {
 	o := r.NewObject()
 	o.self.setOwnStr("value", value, false)
 	o.self.setOwnStr("done", r.toBoolean(done), false)
 	return o
+}
+
+func (r *Runtime) newLazyObject(create func(*Object) objectImpl) *Object {
+	val := &Object{runtime: r}
+	o := &lazyObject{
+		val:    val,
+		create: create,
+	}
+	val.self = o
+	return val
 }
 
 func (r *Runtime) getHash() *maphash.Hash {
@@ -2900,7 +2958,7 @@ func (r *Runtime) iterableToList(iterable Value, method func(FunctionCall) Value
 
 func (r *Runtime) putSpeciesReturnThis(o objectImpl) {
 	o._putSym(SymSpecies, &valueProperty{
-		getterFunc:   r.newNativeFunc(r.returnThis, "get [Symbol.species]", 0),
+		getterFunc:   r.newNativeFunc(r.returnThis, nil, "get [Symbol.species]", nil, 0),
 		accessor:     true,
 		configurable: true,
 	})
@@ -3123,25 +3181,4 @@ func assertCallable(v Value) (func(FunctionCall) Value, bool) {
 		return obj.self.assertCallable()
 	}
 	return nil, false
-}
-
-// InstanceOf is an equivalent of "left instanceof right".
-// This method will panic with an *Exception if a JavaScript exception is thrown in the process.
-func (r *Runtime) InstanceOf(left Value, right *Object) (res bool) {
-	return instanceOfOperator(left, right)
-}
-
-func (r *Runtime) methodProp(f func(FunctionCall) Value, name unistring.String, nArgs int) Value {
-	return valueProp(r.newNativeFunc(f, name, nArgs), true, false, true)
-}
-
-func (r *Runtime) getPrototypeFromCtor(newTarget, defCtor, defProto *Object) *Object {
-	if newTarget == defCtor {
-		return defProto
-	}
-	proto := newTarget.self.getStr("prototype", nil)
-	if obj, ok := proto.(*Object); ok {
-		return obj
-	}
-	return defProto
 }

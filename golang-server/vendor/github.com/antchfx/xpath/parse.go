@@ -65,13 +65,11 @@ const (
 	nodeOperator
 	nodeVariable
 	nodeConstantOperand
-	nodeGroup
 )
 
 type parser struct {
-	r          *scanner
-	d          int
-	namespaces map[string]string
+	r *scanner
+	d int
 }
 
 // newOperatorNode returns new operator node OperatorNode.
@@ -85,8 +83,8 @@ func newOperandNode(v interface{}) node {
 }
 
 // newAxisNode returns new axis node AxisNode.
-func newAxisNode(axeTyp, localName, prefix, prop string, n node, opts ...func(p *axisNode)) node {
-	a := axisNode{
+func newAxisNode(axeTyp, localName, prefix, prop string, n node) node {
+	return &axisNode{
 		nodeType:  nodeAxis,
 		LocalName: localName,
 		Prefix:    prefix,
@@ -94,10 +92,6 @@ func newAxisNode(axeTyp, localName, prefix, prop string, n node, opts ...func(p 
 		Prop:      prop,
 		Input:     n,
 	}
-	for _, o := range opts {
-		o(&a)
-	}
-	return &a
 }
 
 // newVariableNode returns new variable node VariableNode.
@@ -108,10 +102,6 @@ func newVariableNode(prefix, name string) node {
 // newFilterNode returns a new filter node FilterNode.
 func newFilterNode(n, m node) node {
 	return &filterNode{nodeType: nodeFilter, Input: n, Condition: m}
-}
-
-func newGroupNode(n node) node {
-	return &groupNode{nodeType: nodeGroup, Input: n}
 }
 
 // newRootNode returns a root node.
@@ -474,16 +464,7 @@ func (p *parser) parseNodeTest(n node, axeTyp string) (opnd node) {
 			if p.r.name == "*" {
 				name = ""
 			}
-			opnd = newAxisNode(axeTyp, name, prefix, "", n, func(a *axisNode) {
-				if prefix != "" && p.namespaces != nil {
-					if ns, ok := p.namespaces[prefix]; ok {
-						a.hasNamespaceURI = true
-						a.namespaceURI = ns
-					} else {
-						panic(fmt.Sprintf("prefix %s not defined.", prefix))
-					}
-				}
-			})
+			opnd = newAxisNode(axeTyp, name, prefix, "", n)
 		}
 	case itemStar:
 		opnd = newAxisNode(axeTyp, "", "", "", n)
@@ -511,9 +492,6 @@ func (p *parser) parsePrimaryExpr(n node) (opnd node) {
 	case itemLParens:
 		p.next()
 		opnd = p.parseExpression(n)
-		if opnd.Type() != nodeConstantOperand {
-			opnd = newGroupNode(opnd)
-		}
 		p.skipItem(itemRParens)
 	case itemName:
 		if p.r.canBeFunc && !isNodeType(p.r) {
@@ -545,11 +523,11 @@ func (p *parser) parseMethod(n node) node {
 }
 
 // Parse parsing the XPath express string expr and returns a tree node.
-func parse(expr string, namespaces map[string]string) node {
+func parse(expr string) node {
 	r := &scanner{text: expr}
 	r.nextChar()
 	r.nextItem()
-	p := &parser{r: r, namespaces: namespaces}
+	p := &parser{r: r}
 	return p.parseExpression(nil)
 }
 
@@ -577,13 +555,11 @@ func (o *operatorNode) String() string {
 // axisNode holds a location step.
 type axisNode struct {
 	nodeType
-	Input           node
-	Prop            string // node-test name.[comment|text|processing-instruction|node]
-	AxeType         string // name of the axes.[attribute|ancestor|child|....]
-	LocalName       string // local part name of node.
-	Prefix          string // prefix name of node.
-	namespaceURI    string // namespace URI of node
-	hasNamespaceURI bool   // if namespace URI is set (can be "")
+	Input     node
+	Prop      string // node-test name.[comment|text|processing-instruction|node]
+	AxeType   string // name of the axes.[attribute|ancestor|child|....]
+	LocalName string // local part name of node.
+	Prefix    string // prefix name of node.
 }
 
 func (a *axisNode) String() string {
@@ -609,16 +585,6 @@ type operandNode struct {
 
 func (o *operandNode) String() string {
 	return fmt.Sprintf("%v", o.Val)
-}
-
-// groupNode holds a set of node expression
-type groupNode struct {
-	nodeType
-	Input node
-}
-
-func (g *groupNode) String() string {
-	return fmt.Sprintf("%s", g.Input)
 }
 
 // filterNode holds a condition filter.

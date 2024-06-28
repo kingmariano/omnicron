@@ -141,7 +141,7 @@ func (r *Runtime) NewDynamicArray(a DynamicArray) *Object {
 		a: a,
 		baseDynamicObject: baseDynamicObject{
 			val:       v,
-			prototype: r.getArrayPrototype(),
+			prototype: r.global.ArrayPrototype,
 		},
 	}
 	v.self = o
@@ -431,6 +431,18 @@ func (*baseDynamicObject) deleteSym(_ *Symbol, _ bool) bool {
 	return true
 }
 
+func (o *baseDynamicObject) toPrimitiveNumber() Value {
+	return o.val.genericToPrimitiveNumber()
+}
+
+func (o *baseDynamicObject) toPrimitiveString() Value {
+	return o.val.genericToPrimitiveString()
+}
+
+func (o *baseDynamicObject) toPrimitive() Value {
+	return o.val.genericToPrimitive()
+}
+
 func (o *baseDynamicObject) assertCallable() (call func(FunctionCall) Value, ok bool) {
 	return nil, false
 }
@@ -555,7 +567,7 @@ func (o *baseDynamicObject) getPrivateEnv(*privateEnvType, bool) *privateElement
 	panic(newTypeError("Dynamic objects cannot have private elements"))
 }
 
-func (o *baseDynamicObject) typeOf() String {
+func (o *baseDynamicObject) typeOf() valueString {
 	return stringObjectC
 }
 

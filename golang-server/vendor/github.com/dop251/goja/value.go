@@ -43,16 +43,15 @@ var (
 )
 
 var (
-	reflectTypeInt      = reflect.TypeOf(int64(0))
-	reflectTypeBool     = reflect.TypeOf(false)
-	reflectTypeNil      = reflect.TypeOf(nil)
-	reflectTypeFloat    = reflect.TypeOf(float64(0))
-	reflectTypeMap      = reflect.TypeOf(map[string]interface{}{})
-	reflectTypeArray    = reflect.TypeOf([]interface{}{})
-	reflectTypeArrayPtr = reflect.TypeOf((*[]interface{})(nil))
-	reflectTypeString   = reflect.TypeOf("")
-	reflectTypeFunc     = reflect.TypeOf((func(FunctionCall) Value)(nil))
-	reflectTypeError    = reflect.TypeOf((*error)(nil)).Elem()
+	reflectTypeInt    = reflect.TypeOf(int64(0))
+	reflectTypeBool   = reflect.TypeOf(false)
+	reflectTypeNil    = reflect.TypeOf(nil)
+	reflectTypeFloat  = reflect.TypeOf(float64(0))
+	reflectTypeMap    = reflect.TypeOf(map[string]interface{}{})
+	reflectTypeArray  = reflect.TypeOf([]interface{}{})
+	reflectTypeString = reflect.TypeOf("")
+	reflectTypeFunc   = reflect.TypeOf((func(FunctionCall) Value)(nil))
+	reflectTypeError  = reflect.TypeOf((*error)(nil)).Elem()
 )
 
 var intCache [256]Value
@@ -74,7 +73,7 @@ var intCache [256]Value
 // For Object it depends on the Object type, see Object.Export() for more details.
 type Value interface {
 	ToInteger() int64
-	toString() String
+	toString() valueString
 	string() unistring.String
 	ToString() Value
 	String() string
@@ -116,7 +115,7 @@ type valueUndefined struct {
 // Symbols can be shared by multiple Runtimes.
 type Symbol struct {
 	h    uintptr
-	desc String
+	desc valueString
 }
 
 type valueUnresolved struct {
@@ -178,7 +177,7 @@ func (i valueInt) ToInteger() int64 {
 	return int64(i)
 }
 
-func (i valueInt) toString() String {
+func (i valueInt) toString() valueString {
 	return asciiString(i.String())
 }
 
@@ -203,7 +202,7 @@ func (i valueInt) ToBoolean() bool {
 }
 
 func (i valueInt) ToObject(r *Runtime) *Object {
-	return r.newPrimitiveObject(i, r.getNumberPrototype(), classNumber)
+	return r.newPrimitiveObject(i, r.global.NumberPrototype, classNumber)
 }
 
 func (i valueInt) ToNumber() Value {
@@ -220,7 +219,7 @@ func (i valueInt) Equals(other Value) bool {
 		return i == o
 	case valueFloat:
 		return float64(i) == float64(o)
-	case String:
+	case valueString:
 		return o.ToNumber().Equals(i)
 	case valueBool:
 		return int64(i) == o.ToInteger()
@@ -243,7 +242,7 @@ func (i valueInt) StrictEquals(other Value) bool {
 }
 
 func (i valueInt) baseObject(r *Runtime) *Object {
-	return r.getNumberPrototype()
+	return r.global.NumberPrototype
 }
 
 func (i valueInt) Export() interface{} {
@@ -265,7 +264,7 @@ func (b valueBool) ToInteger() int64 {
 	return 0
 }
 
-func (b valueBool) toString() String {
+func (b valueBool) toString() valueString {
 	if b {
 		return stringTrue
 	}
@@ -299,7 +298,7 @@ func (b valueBool) ToBoolean() bool {
 }
 
 func (b valueBool) ToObject(r *Runtime) *Object {
-	return r.newPrimitiveObject(b, r.getBooleanPrototype(), "Boolean")
+	return r.newPrimitiveObject(b, r.global.BooleanPrototype, "Boolean")
 }
 
 func (b valueBool) ToNumber() Value {
@@ -337,7 +336,7 @@ func (b valueBool) StrictEquals(other Value) bool {
 }
 
 func (b valueBool) baseObject(r *Runtime) *Object {
-	return r.getBooleanPrototype()
+	return r.global.BooleanPrototype
 }
 
 func (b valueBool) Export() interface{} {
@@ -360,7 +359,7 @@ func (n valueNull) ToInteger() int64 {
 	return 0
 }
 
-func (n valueNull) toString() String {
+func (n valueNull) toString() valueString {
 	return stringNull
 }
 
@@ -376,7 +375,7 @@ func (n valueNull) String() string {
 	return "null"
 }
 
-func (u valueUndefined) toString() String {
+func (u valueUndefined) toString() valueString {
 	return stringUndefined
 }
 
@@ -470,7 +469,7 @@ func (p *valueProperty) ToInteger() int64 {
 	return 0
 }
 
-func (p *valueProperty) toString() String {
+func (p *valueProperty) toString() valueString {
 	return stringEmpty
 }
 
@@ -579,7 +578,7 @@ func (f valueFloat) ToInteger() int64 {
 	return floatToIntClip(float64(f))
 }
 
-func (f valueFloat) toString() String {
+func (f valueFloat) toString() valueString {
 	return asciiString(f.String())
 }
 
@@ -604,7 +603,7 @@ func (f valueFloat) ToBoolean() bool {
 }
 
 func (f valueFloat) ToObject(r *Runtime) *Object {
-	return r.newPrimitiveObject(f, r.getNumberPrototype(), "Number")
+	return r.newPrimitiveObject(f, r.global.NumberPrototype, "Number")
 }
 
 func (f valueFloat) ToNumber() Value {
@@ -643,7 +642,7 @@ func (f valueFloat) Equals(other Value) bool {
 		return f == o
 	case valueInt:
 		return float64(f) == float64(o)
-	case String, valueBool:
+	case valueString, valueBool:
 		return float64(f) == o.ToFloat()
 	case *Object:
 		return f.Equals(o.toPrimitive())
@@ -664,7 +663,7 @@ func (f valueFloat) StrictEquals(other Value) bool {
 }
 
 func (f valueFloat) baseObject(r *Runtime) *Object {
-	return r.getNumberPrototype()
+	return r.global.NumberPrototype
 }
 
 func (f valueFloat) Export() interface{} {
@@ -686,7 +685,7 @@ func (o *Object) ToInteger() int64 {
 	return o.toPrimitiveNumber().ToNumber().ToInteger()
 }
 
-func (o *Object) toString() String {
+func (o *Object) toString() valueString {
 	return o.toPrimitiveString().toString()
 }
 
@@ -719,7 +718,10 @@ func (o *Object) ToNumber() Value {
 }
 
 func (o *Object) SameAs(other Value) bool {
-	return o.StrictEquals(other)
+	if other, ok := other.(*Object); ok {
+		return o == other
+	}
+	return false
 }
 
 func (o *Object) Equals(other Value) bool {
@@ -728,7 +730,7 @@ func (o *Object) Equals(other Value) bool {
 	}
 
 	switch o1 := other.(type) {
-	case valueInt, valueFloat, String, *Symbol:
+	case valueInt, valueFloat, valueString, *Symbol:
 		return o.toPrimitive().Equals(other)
 	case valueBool:
 		return o.Equals(o1.ToNumber())
@@ -739,7 +741,7 @@ func (o *Object) Equals(other Value) bool {
 
 func (o *Object) StrictEquals(other Value) bool {
 	if other, ok := other.(*Object); ok {
-		return o == other || o != nil && other != nil && o.self.equal(other.self)
+		return o == other || o.self.equal(other.self)
 	}
 	return false
 }
@@ -766,15 +768,17 @@ func (o *Object) baseObject(*Runtime) *Object {
 //
 // For a DynamicObject or a DynamicArray, returns the underlying handler.
 //
-// For typed arrays it returns a slice of the corresponding type backed by the original data (i.e. it does not copy).
-//
-// For an untyped array, returns its items exported into a newly created []interface{}.
+// For an array, returns its items as []interface{}.
 //
 // In all other cases returns own enumerable non-symbol properties as map[string]interface{}.
 //
 // This method will panic with an *Exception if a JavaScript exception is thrown in the process.
-func (o *Object) Export() interface{} {
-	return o.self.export(&objectExportCtx{})
+func (o *Object) Export() (ret interface{}) {
+	o.runtime.tryPanic(func() {
+		ret = o.self.export(&objectExportCtx{})
+	})
+
+	return
 }
 
 // ExportType returns the type of the value that is returned by Export().
@@ -952,7 +956,7 @@ func (o valueUnresolved) ToInteger() int64 {
 	return 0
 }
 
-func (o valueUnresolved) toString() String {
+func (o valueUnresolved) toString() valueString {
 	o.throw()
 	return nil
 }
@@ -1031,7 +1035,7 @@ func (s *Symbol) ToInteger() int64 {
 	panic(typeError("Cannot convert a Symbol value to a number"))
 }
 
-func (s *Symbol) toString() String {
+func (s *Symbol) toString() valueString {
 	panic(typeError("Cannot convert a Symbol value to a string"))
 }
 
@@ -1097,7 +1101,7 @@ func (s *Symbol) ExportType() reflect.Type {
 }
 
 func (s *Symbol) baseObject(r *Runtime) *Object {
-	return r.newPrimitiveObject(s, r.getSymbolPrototype(), classObject)
+	return r.newPrimitiveObject(s, r.global.SymbolPrototype, classObject)
 }
 
 func (s *Symbol) hash(*maphash.Hash) uint64 {
@@ -1111,7 +1115,7 @@ func exportValue(v Value, ctx *objectExportCtx) interface{} {
 	return v.Export()
 }
 
-func newSymbol(s String) *Symbol {
+func newSymbol(s valueString) *Symbol {
 	r := &Symbol{
 		desc: s,
 	}
@@ -1127,16 +1131,16 @@ func NewSymbol(s string) *Symbol {
 	return newSymbol(newStringValue(s))
 }
 
-func (s *Symbol) descriptiveString() String {
+func (s *Symbol) descriptiveString() valueString {
 	desc := s.desc
 	if desc == nil {
 		desc = stringEmpty
 	}
-	return asciiString("Symbol(").Concat(desc).Concat(asciiString(")"))
+	return asciiString("Symbol(").concat(desc).concat(asciiString(")"))
 }
 
-func funcName(prefix string, n Value) String {
-	var b StringBuilder
+func funcName(prefix string, n Value) valueString {
+	var b valueStringBuilder
 	b.WriteString(asciiString(prefix))
 	if sym, ok := n.(*Symbol); ok {
 		if sym.desc != nil {

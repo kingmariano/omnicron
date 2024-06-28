@@ -29,48 +29,14 @@ func (rr *asciiRuneReader) ReadRune() (r rune, size int, err error) {
 	return
 }
 
-type asciiUtf16Reader struct {
-	s   asciiString
-	pos int
-}
-
-func (rr *asciiUtf16Reader) readChar() (c uint16, err error) {
-	if rr.pos < len(rr.s) {
-		c = uint16(rr.s[rr.pos])
-		rr.pos++
-	} else {
-		err = io.EOF
-	}
-	return
-}
-
-func (rr *asciiUtf16Reader) ReadRune() (r rune, size int, err error) {
-	if rr.pos < len(rr.s) {
-		r = rune(rr.s[rr.pos])
-		rr.pos++
-		size = 1
-	} else {
-		err = io.EOF
-	}
-	return
-}
-
-func (s asciiString) Reader() io.RuneReader {
+func (s asciiString) reader() io.RuneReader {
 	return &asciiRuneReader{
 		s: s,
 	}
 }
 
-func (s asciiString) utf16Reader() utf16Reader {
-	return &asciiUtf16Reader{
-		s: s,
-	}
-}
-
-func (s asciiString) utf16RuneReader() io.RuneReader {
-	return &asciiUtf16Reader{
-		s: s,
-	}
+func (s asciiString) utf16Reader() io.RuneReader {
+	return s.reader()
 }
 
 func (s asciiString) utf16Runes() []rune {
@@ -149,7 +115,7 @@ func (s asciiString) ToInteger() int64 {
 	return i
 }
 
-func (s asciiString) toString() String {
+func (s asciiString) toString() valueString {
 	return s
 }
 
@@ -209,7 +175,7 @@ func (s asciiString) ToNumber() Value {
 }
 
 func (s asciiString) ToObject(r *Runtime) *Object {
-	return r._newString(s, r.getStringPrototype())
+	return r._newString(s, r.global.StringPrototype)
 }
 
 func (s asciiString) SameAs(other Value) bool {
@@ -258,7 +224,7 @@ func (s asciiString) StrictEquals(other Value) bool {
 }
 
 func (s asciiString) baseObject(r *Runtime) *Object {
-	ss := r.getStringSingleton()
+	ss := r.stringSingleton
 	ss.value = s
 	ss.setLength()
 	return ss.val
@@ -271,15 +237,15 @@ func (s asciiString) hash(hash *maphash.Hash) uint64 {
 	return h
 }
 
-func (s asciiString) CharAt(idx int) uint16 {
-	return uint16(s[idx])
+func (s asciiString) charAt(idx int) rune {
+	return rune(s[idx])
 }
 
-func (s asciiString) Length() int {
+func (s asciiString) length() int {
 	return len(s)
 }
 
-func (s asciiString) Concat(other String) String {
+func (s asciiString) concat(other valueString) valueString {
 	a, u := devirtualizeString(other)
 	if u != nil {
 		b := make([]uint16, len(s)+len(u))
@@ -293,11 +259,11 @@ func (s asciiString) Concat(other String) String {
 	return s + a
 }
 
-func (s asciiString) Substring(start, end int) String {
+func (s asciiString) substring(start, end int) valueString {
 	return s[start:end]
 }
 
-func (s asciiString) CompareTo(other String) int {
+func (s asciiString) compareTo(other valueString) int {
 	switch other := other.(type) {
 	case asciiString:
 		return strings.Compare(string(s), string(other))
@@ -310,12 +276,9 @@ func (s asciiString) CompareTo(other String) int {
 	}
 }
 
-func (s asciiString) index(substr String, start int) int {
+func (s asciiString) index(substr valueString, start int) int {
 	a, u := devirtualizeString(substr)
 	if u == nil {
-		if start > len(s) {
-			return -1
-		}
 		p := strings.Index(string(s[start:]), string(a))
 		if p >= 0 {
 			return p + start
@@ -324,7 +287,7 @@ func (s asciiString) index(substr String, start int) int {
 	return -1
 }
 
-func (s asciiString) lastIndex(substr String, pos int) int {
+func (s asciiString) lastIndex(substr valueString, pos int) int {
 	a, u := devirtualizeString(substr)
 	if u == nil {
 		end := pos + len(a)
@@ -339,11 +302,11 @@ func (s asciiString) lastIndex(substr String, pos int) int {
 	return -1
 }
 
-func (s asciiString) toLower() String {
+func (s asciiString) toLower() valueString {
 	return asciiString(strings.ToLower(string(s)))
 }
 
-func (s asciiString) toUpper() String {
+func (s asciiString) toUpper() valueString {
 	return asciiString(strings.ToUpper(string(s)))
 }
 

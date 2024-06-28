@@ -7,13 +7,13 @@ import (
 	"strings"
 )
 
-type builtinJSONParseContext struct {
-	reviver Value
+type _builtinJSON_parseContext struct {
 	call    FunctionCall
+	reviver Value
 }
 
-func builtinJSONParse(call FunctionCall) Value {
-	ctx := builtinJSONParseContext{
+func builtinJSON_parse(call FunctionCall) Value {
+	ctx := _builtinJSON_parseContext{
 		call: call,
 	}
 	revive := false
@@ -27,107 +27,109 @@ func builtinJSONParse(call FunctionCall) Value {
 	if err != nil {
 		panic(call.runtime.panicSyntaxError(err.Error()))
 	}
-	value, exists := builtinJSONParseWalk(ctx, root)
+	value, exists := builtinJSON_parseWalk(ctx, root)
 	if !exists {
 		value = Value{}
 	}
 	if revive {
 		root := ctx.call.runtime.newObject()
 		root.put("", value, false)
-		return builtinJSONReviveWalk(ctx, root, "")
+		return builtinJSON_reviveWalk(ctx, root, "")
 	}
 	return value
 }
 
-func builtinJSONReviveWalk(ctx builtinJSONParseContext, holder *object, name string) Value {
+func builtinJSON_reviveWalk(ctx _builtinJSON_parseContext, holder *_object, name string) Value {
 	value := holder.get(name)
-	if obj := value.object(); obj != nil {
-		if isArray(obj) {
-			length := int64(objectLength(obj))
-			for index := int64(0); index < length; index++ {
-				idxName := arrayIndexToString(index)
-				idxValue := builtinJSONReviveWalk(ctx, obj, idxName)
-				if idxValue.IsUndefined() {
-					obj.delete(idxName, false)
+	if object := value._object(); object != nil {
+		if isArray(object) {
+			length := int64(objectLength(object))
+			for index := int64(0); index < length; index += 1 {
+				name := arrayIndexToString(index)
+				value := builtinJSON_reviveWalk(ctx, object, name)
+				if value.IsUndefined() {
+					object.delete(name, false)
 				} else {
-					obj.defineProperty(idxName, idxValue, 0o111, false)
+					object.defineProperty(name, value, 0111, false)
 				}
 			}
 		} else {
-			obj.enumerate(false, func(name string) bool {
-				enumVal := builtinJSONReviveWalk(ctx, obj, name)
-				if enumVal.IsUndefined() {
-					obj.delete(name, false)
+			object.enumerate(false, func(name string) bool {
+				value := builtinJSON_reviveWalk(ctx, object, name)
+				if value.IsUndefined() {
+					object.delete(name, false)
 				} else {
-					obj.defineProperty(name, enumVal, 0o111, false)
+					object.defineProperty(name, value, 0111, false)
 				}
 				return true
 			})
 		}
 	}
-	return ctx.reviver.call(ctx.call.runtime, objectValue(holder), name, value)
+	return ctx.reviver.call(ctx.call.runtime, toValue_object(holder), name, value)
 }
 
-func builtinJSONParseWalk(ctx builtinJSONParseContext, rawValue interface{}) (Value, bool) {
+func builtinJSON_parseWalk(ctx _builtinJSON_parseContext, rawValue interface{}) (Value, bool) {
 	switch value := rawValue.(type) {
 	case nil:
 		return nullValue, true
 	case bool:
-		return boolValue(value), true
+		return toValue_bool(value), true
 	case string:
-		return stringValue(value), true
+		return toValue_string(value), true
 	case float64:
-		return float64Value(value), true
+		return toValue_float64(value), true
 	case []interface{}:
 		arrayValue := make([]Value, len(value))
 		for index, rawValue := range value {
-			if value, exists := builtinJSONParseWalk(ctx, rawValue); exists {
+			if value, exists := builtinJSON_parseWalk(ctx, rawValue); exists {
 				arrayValue[index] = value
 			}
 		}
-		return objectValue(ctx.call.runtime.newArrayOf(arrayValue)), true
+		return toValue_object(ctx.call.runtime.newArrayOf(arrayValue)), true
 	case map[string]interface{}:
-		obj := ctx.call.runtime.newObject()
+		object := ctx.call.runtime.newObject()
 		for name, rawValue := range value {
-			if value, exists := builtinJSONParseWalk(ctx, rawValue); exists {
-				obj.put(name, value, false)
+			if value, exists := builtinJSON_parseWalk(ctx, rawValue); exists {
+				object.put(name, value, false)
 			}
 		}
-		return objectValue(obj), true
+		return toValue_object(object), true
 	}
 	return Value{}, false
 }
 
-type builtinJSONStringifyContext struct {
+type _builtinJSON_stringifyContext struct {
+	call             FunctionCall
+	stack            []*_object
+	propertyList     []string
 	replacerFunction *Value
 	gap              string
-	stack            []*object
-	propertyList     []string
-	call             FunctionCall
 }
 
-func builtinJSONStringify(call FunctionCall) Value {
-	ctx := builtinJSONStringifyContext{
+func builtinJSON_stringify(call FunctionCall) Value {
+	ctx := _builtinJSON_stringifyContext{
 		call:  call,
-		stack: []*object{nil},
+		stack: []*_object{nil},
 	}
-	replacer := call.Argument(1).object()
+	replacer := call.Argument(1)._object()
 	if replacer != nil {
 		if isArray(replacer) {
 			length := objectLength(replacer)
 			seen := map[string]bool{}
 			propertyList := make([]string, length)
 			length = 0
-			for index := range propertyList {
+			for index, _ := range propertyList {
 				value := replacer.get(arrayIndexToString(int64(index)))
 				switch value.kind {
 				case valueObject:
-					switch value.value.(*object).class {
-					case classStringName, classNumberName:
+					switch value.value.(*_object).class {
+					case classString:
+					case classNumber:
 					default:
 						continue
 					}
-				case valueString, valueNumber:
+				case valueString:
+				case valueNumber:
 				default:
 					continue
 				}
@@ -136,21 +138,21 @@ func builtinJSONStringify(call FunctionCall) Value {
 					continue
 				}
 				seen[name] = true
-				length++
+				length += 1
 				propertyList[index] = name
 			}
 			ctx.propertyList = propertyList[0:length]
-		} else if replacer.class == classFunctionName {
-			value := objectValue(replacer)
+		} else if replacer.class == classFunction {
+			value := toValue_object(replacer)
 			ctx.replacerFunction = &value
 		}
 	}
 	if spaceValue, exists := call.getArgument(2); exists {
 		if spaceValue.kind == valueObject {
-			switch spaceValue.value.(*object).class {
-			case classStringName:
-				spaceValue = stringValue(spaceValue.string())
-			case classNumberName:
+			switch spaceValue.value.(*_object).class {
+			case classString:
+				spaceValue = toValue_string(spaceValue.string())
+			case classNumber:
 				spaceValue = spaceValue.numberValue()
 			}
 		}
@@ -174,51 +176,51 @@ func builtinJSONStringify(call FunctionCall) Value {
 	}
 	holder := call.runtime.newObject()
 	holder.put("", call.Argument(0), false)
-	value, exists := builtinJSONStringifyWalk(ctx, "", holder)
+	value, exists := builtinJSON_stringifyWalk(ctx, "", holder)
 	if !exists {
 		return Value{}
 	}
 	valueJSON, err := json.Marshal(value)
 	if err != nil {
-		panic(call.runtime.panicTypeError("JSON.stringify marshal: %s", err))
+		panic(call.runtime.panicTypeError(err.Error()))
 	}
 	if ctx.gap != "" {
 		valueJSON1 := bytes.Buffer{}
-		if err = json.Indent(&valueJSON1, valueJSON, "", ctx.gap); err != nil {
-			panic(call.runtime.panicTypeError("JSON.stringify indent: %s", err))
-		}
+		json.Indent(&valueJSON1, valueJSON, "", ctx.gap)
 		valueJSON = valueJSON1.Bytes()
 	}
-	return stringValue(string(valueJSON))
+	return toValue_string(string(valueJSON))
 }
 
-func builtinJSONStringifyWalk(ctx builtinJSONStringifyContext, key string, holder *object) (interface{}, bool) {
+func builtinJSON_stringifyWalk(ctx _builtinJSON_stringifyContext, key string, holder *_object) (interface{}, bool) {
 	value := holder.get(key)
 
 	if value.IsObject() {
-		obj := value.object()
-		if toJSON := obj.get("toJSON"); toJSON.IsFunction() {
+		object := value._object()
+		if toJSON := object.get("toJSON"); toJSON.IsFunction() {
 			value = toJSON.call(ctx.call.runtime, value, key)
-		} else if obj.objectClass.marshalJSON != nil {
+		} else {
 			// If the object is a GoStruct or something that implements json.Marshaler
-			marshaler := obj.objectClass.marshalJSON(obj)
-			if marshaler != nil {
-				return marshaler, true
+			if object.objectClass.marshalJSON != nil {
+				marshaler := object.objectClass.marshalJSON(object)
+				if marshaler != nil {
+					return marshaler, true
+				}
 			}
 		}
 	}
 
 	if ctx.replacerFunction != nil {
-		value = ctx.replacerFunction.call(ctx.call.runtime, objectValue(holder), key, value)
+		value = ctx.replacerFunction.call(ctx.call.runtime, toValue_object(holder), key, value)
 	}
 
 	if value.kind == valueObject {
-		switch value.value.(*object).class {
-		case classBooleanName:
-			value = value.object().value.(Value)
-		case classStringName:
-			value = stringValue(value.string())
-		case classNumberName:
+		switch value.value.(*_object).class {
+		case classBoolean:
+			value = value._object().value.(Value)
+		case classString:
+			value = toValue_string(value.string())
+		case classNumber:
 			value = value.numberValue()
 		}
 	}
@@ -241,19 +243,19 @@ func builtinJSONStringifyWalk(ctx builtinJSONStringifyContext, key string, holde
 	case valueNull:
 		return nil, true
 	case valueObject:
-		objHolder := value.object()
-		if value := value.object(); nil != value {
-			for _, obj := range ctx.stack {
-				if objHolder == obj {
+		holder := value._object()
+		if value := value._object(); nil != value {
+			for _, object := range ctx.stack {
+				if holder == object {
 					panic(ctx.call.runtime.panicTypeError("Converting circular structure to JSON"))
 				}
 			}
 			ctx.stack = append(ctx.stack, value)
 			defer func() { ctx.stack = ctx.stack[:len(ctx.stack)-1] }()
 		}
-		if isArray(objHolder) {
+		if isArray(holder) {
 			var length uint32
-			switch value := objHolder.get(propertyLength).value.(type) {
+			switch value := holder.get(propertyLength).value.(type) {
 			case uint32:
 				length = value
 			case int:
@@ -264,33 +266,33 @@ func builtinJSONStringifyWalk(ctx builtinJSONStringifyContext, key string, holde
 				panic(ctx.call.runtime.panicTypeError(fmt.Sprintf("JSON.stringify: invalid length: %v (%[1]T)", value)))
 			}
 			array := make([]interface{}, length)
-			for index := range array {
+			for index, _ := range array {
 				name := arrayIndexToString(int64(index))
-				value, _ := builtinJSONStringifyWalk(ctx, name, objHolder)
+				value, _ := builtinJSON_stringifyWalk(ctx, name, holder)
 				array[index] = value
 			}
 			return array, true
-		} else if objHolder.class != classFunctionName {
-			obj := map[string]interface{}{}
+		} else if holder.class != classFunction {
+			object := map[string]interface{}{}
 			if ctx.propertyList != nil {
 				for _, name := range ctx.propertyList {
-					value, exists := builtinJSONStringifyWalk(ctx, name, objHolder)
+					value, exists := builtinJSON_stringifyWalk(ctx, name, holder)
 					if exists {
-						obj[name] = value
+						object[name] = value
 					}
 				}
 			} else {
 				// Go maps are without order, so this doesn't conform to the ECMA ordering
 				// standard, but oh well...
-				objHolder.enumerate(false, func(name string) bool {
-					value, exists := builtinJSONStringifyWalk(ctx, name, objHolder)
+				holder.enumerate(false, func(name string) bool {
+					value, exists := builtinJSON_stringifyWalk(ctx, name, holder)
 					if exists {
-						obj[name] = value
+						object[name] = value
 					}
 					return true
 				})
 			}
-			return obj, true
+			return object, true
 		}
 	}
 	return nil, false

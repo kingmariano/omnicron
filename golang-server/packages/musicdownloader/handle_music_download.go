@@ -3,33 +3,18 @@ package musicdownloader
 import (
 	"context"
 	"fmt"
-	"log"
-	"sync"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/packages/videodownloader"
+	"github.com/kingmariano/omnicron-backendsever/golang-server/utils"
 	"google.golang.org/api/option"
 	"google.golang.org/api/youtube/v3"
 )
 
-func handleError(err error, message string) {
-	if message == "" {
-	  message = "Error making API call"
-	}
-	if err != nil {
-	  log.Printf(message + ": %v", err.Error())
-	}
-}
-
-
-// searchYouTube performs a search on YouTube with the given query and filters out playlists.
-func searchYouTube(ctx context.Context, query string, maxResults int64, youtubeApiKey string, wg *sync.WaitGroup, resultChan chan <- map[string][]string) {
-	defer wg.Done()
-
+// searchYouTube performs a search for audio music on YouTube with the given query and filters out playlists.
+func searchMusicOnYouTube(ctx context.Context, query string, maxResults int64, youtubeApiKey, _ string) ([]string, error) {
 	clientOptions := option.WithAPIKey(youtubeApiKey)
-
 	service, err := youtube.NewService(ctx, clientOptions)
 	if err != nil {
-		resultChan <- map[string][]string{query: nil}
-		handleError(err, "Error creating new YouTube client for query")
-		return
+		return []string{}, fmt.Errorf("error creating new YouTube client for query %v: %v", query, err)
 	}
 
 	// Make the API call to YouTube with the search filter to exclude playlists.
@@ -39,9 +24,7 @@ func searchYouTube(ctx context.Context, query string, maxResults int64, youtubeA
 		Type("video") // This will filter out channels and playlists
 	response, err := call.Do()
 	if err != nil {
-		resultChan <- map[string][]string{query: nil}
-		handleError(err, "Error making YouTube API call for query")
-        return
+		return []string{}, fmt.Errorf("failed to make request to youtube client %v", err)
 	}
 
 	// Collect video URLs
@@ -50,6 +33,53 @@ func searchYouTube(ctx context.Context, query string, maxResults int64, youtubeA
 		videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", item.Id.VideoId)
 		videoURLs = append(videoURLs, videoURL)
 	}
+	return videoURLs, nil
+}
 
-	resultChan <- map[string][]string{query: videoURLs}
+func downloadYoutubeLinkAndConvertToMp3(ctx context.Context, query string, maxResults int64, youtubeApiKey, cloudinaryURL, outputPath string) ([]string, error) {
+	// Perform a search on YouTube for the given query and retrieve video URLs
+	//set output path to where the song will be downloaded
+
+	urlList, err := searchMusicOnYouTube(ctx, query, maxResults, youtubeApiKey, cloudinaryURL)
+	if err != nil {
+		return []string{}, err
+	}
+
+	// If no video URLs are found, return an empty list
+	if len(urlList) == 0 {
+		return []string{}, nil
+	}
+
+	// Download all the video in the list
+	videoPathList := make([]string, 0)
+	for _, url := range urlList {
+		videopath, err := videodownloader.DownloadVideoData(url, utils.OutputName, outputPath, "")
+		if err != nil {
+			return []string{}, err
+		}
+		videoPathList = append(videoPathList, videopath)
+	}
+
+	// Convert the downloaded videos to MP3 format
+	audioPathList := make([]string, 0)
+	for _, videopath := range videoPathList {
+		audiopath, err := utils.ConvertFileToMP3(videopath)
+		if err != nil {
+			return []string{}, err
+		}
+		audioPathList = append(audioPathList, audiopath)
+	}
+
+	// Upload the converted audio file to Cloudinary and retrieve direct URLs
+	audioFileURLList := make([]string, 0)
+	for _, audiopath := range audioPathList {
+		audioDirectURL, err := utils.HandleFileUpload(ctx, audiopath, cloudinaryURL)
+		if err != nil {
+			return []string{}, err
+		}
+		audioFileURLList = append(audioFileURLList, audioDirectURL)
+	}
+
+	// Return the list of direct URLs to the uploaded audio files on Cloudinary
+	return audioFileURLList, nil
 }

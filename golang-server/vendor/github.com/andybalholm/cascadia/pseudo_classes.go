@@ -184,6 +184,10 @@ func nthChildMatch(a, b int, last, ofType bool, n *html.Node) bool {
 		return false
 	}
 
+	if parent.Type == html.DocumentNode {
+		return false
+	}
+
 	i := -1
 	count := 0
 	for c := parent.FirstChild; c != nil; c = c.NextSibling {
@@ -228,6 +232,10 @@ func simpleNthChildMatch(b int, ofType bool, n *html.Node) bool {
 		return false
 	}
 
+	if parent.Type == html.DocumentNode {
+		return false
+	}
+
 	count := 0
 	for c := parent.FirstChild; c != nil; c = c.NextSibling {
 		if c.Type != html.ElementNode || (ofType && c.Data != n.Data) {
@@ -253,6 +261,10 @@ func simpleNthLastChildMatch(b int, ofType bool, n *html.Node) bool {
 
 	parent := n.Parent
 	if parent == nil {
+		return false
+	}
+
+	if parent.Type == html.DocumentNode {
 		return false
 	}
 
@@ -286,6 +298,10 @@ func (s onlyChildPseudoClassSelector) Match(n *html.Node) bool {
 
 	parent := n.Parent
 	if parent == nil {
+		return false
+	}
+
+	if parent.Type == html.DocumentNode {
 		return false
 	}
 

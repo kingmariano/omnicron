@@ -13,17 +13,15 @@ type objectGoSlice struct {
 	baseObject
 	data       *[]interface{}
 	lengthProp valueProperty
-	origIsPtr  bool
 }
 
-func (r *Runtime) newObjectGoSlice(data *[]interface{}, isPtr bool) *objectGoSlice {
+func (r *Runtime) newObjectGoSlice(data *[]interface{}) *objectGoSlice {
 	obj := &Object{runtime: r}
 	a := &objectGoSlice{
 		baseObject: baseObject{
 			val: obj,
 		},
-		data:      data,
-		origIsPtr: isPtr,
+		data: data,
 	}
 	obj.self = a
 	a.init()
@@ -34,9 +32,10 @@ func (r *Runtime) newObjectGoSlice(data *[]interface{}, isPtr bool) *objectGoSli
 func (o *objectGoSlice) init() {
 	o.baseObject.init()
 	o.class = classArray
-	o.prototype = o.val.runtime.getArrayPrototype()
+	o.prototype = o.val.runtime.global.ArrayPrototype
 	o.lengthProp.writable = true
 	o.extensible = true
+	o.updateLen()
 	o.baseObject._put("length", &o.lengthProp)
 }
 
@@ -53,7 +52,6 @@ func (o *objectGoSlice) getStr(name unistring.String, receiver Value) Value {
 	if idx := strToGoIdx(name); idx >= 0 && idx < len(*o.data) {
 		ownProp = o._getIdx(idx)
 	} else if name == "length" {
-		o.updateLen()
 		ownProp = &o.lengthProp
 	}
 
@@ -85,7 +83,6 @@ func (o *objectGoSlice) getOwnPropStr(name unistring.String) Value {
 		return nil
 	}
 	if name == "length" {
-		o.updateLen()
 		return &o.lengthProp
 	}
 	return nil
@@ -115,6 +112,7 @@ func (o *objectGoSlice) grow(size int) {
 		}
 		*o.data = (*o.data)[:size]
 	}
+	o.updateLen()
 }
 
 func (o *objectGoSlice) shrink(size int) {
@@ -123,6 +121,7 @@ func (o *objectGoSlice) shrink(size int) {
 		tail[k] = nil
 	}
 	*o.data = (*o.data)[:size]
+	o.updateLen()
 }
 
 func (o *objectGoSlice) putIdx(idx int, v Value, throw bool) {
@@ -298,16 +297,10 @@ func (o *objectGoSlice) stringKeys(_ bool, accum []Value) []Value {
 }
 
 func (o *objectGoSlice) export(*objectExportCtx) interface{} {
-	if o.origIsPtr {
-		return o.data
-	}
 	return *o.data
 }
 
 func (o *objectGoSlice) exportType() reflect.Type {
-	if o.origIsPtr {
-		return reflectTypeArrayPtr
-	}
 	return reflectTypeArray
 }
 

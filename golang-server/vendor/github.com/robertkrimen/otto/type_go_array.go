@@ -5,51 +5,51 @@ import (
 	"strconv"
 )
 
-func (rt *runtime) newGoArrayObject(value reflect.Value) *object {
-	o := rt.newObject()
-	o.class = classGoArrayName
-	o.objectClass = classGoArray
-	o.value = newGoArrayObject(value)
-	return o
+func (runtime *_runtime) newGoArrayObject(value reflect.Value) *_object {
+	self := runtime.newObject()
+	self.class = classGoArray
+	self.objectClass = _classGoArray
+	self.value = _newGoArrayObject(value)
+	return self
 }
 
-type goArrayObject struct {
+type _goArrayObject struct {
 	value        reflect.Value
 	writable     bool
-	propertyMode propertyMode
+	propertyMode _propertyMode
 }
 
-func newGoArrayObject(value reflect.Value) *goArrayObject {
-	writable := value.Kind() == reflect.Ptr || value.CanSet() // The Array is addressable (like a Slice)
-	mode := propertyMode(0o010)
+func _newGoArrayObject(value reflect.Value) *_goArrayObject {
+	writable := value.Kind() == reflect.Ptr // The Array is addressable (like a Slice)
+	mode := _propertyMode(0010)
 	if writable {
-		mode = 0o110
+		mode = 0110
 	}
-
-	return &goArrayObject{
+	self := &_goArrayObject{
 		value:        value,
 		writable:     writable,
 		propertyMode: mode,
 	}
+	return self
 }
 
-func (o goArrayObject) getValue(name string) (reflect.Value, bool) { //nolint:unused
+func (self _goArrayObject) getValue(name string) (reflect.Value, bool) {
 	if index, err := strconv.ParseInt(name, 10, 64); err != nil {
-		v, ok := o.getValueIndex(index)
+		v, ok := self.getValueIndex(index)
 		if ok {
 			return v, ok
 		}
 	}
 
-	if m := o.value.MethodByName(name); m.IsValid() {
+	if m := self.value.MethodByName(name); m != (reflect.Value{}) {
 		return m, true
 	}
 
 	return reflect.Value{}, false
 }
 
-func (o goArrayObject) getValueIndex(index int64) (reflect.Value, bool) {
-	value := reflect.Indirect(o.value)
+func (self _goArrayObject) getValueIndex(index int64) (reflect.Value, bool) {
+	value := reflect.Indirect(self.value)
 	if index < int64(value.Len()) {
 		return value.Index(int(index)), true
 	}
@@ -57,12 +57,12 @@ func (o goArrayObject) getValueIndex(index int64) (reflect.Value, bool) {
 	return reflect.Value{}, false
 }
 
-func (o goArrayObject) setValue(index int64, value Value) bool {
-	indexValue, exists := o.getValueIndex(index)
+func (self _goArrayObject) setValue(index int64, value Value) bool {
+	indexValue, exists := self.getValueIndex(index)
 	if !exists {
 		return false
 	}
-	reflectValue, err := value.toReflectValue(reflect.Indirect(o.value).Type().Elem())
+	reflectValue, err := value.toReflectValue(reflect.Indirect(self.value).Type().Elem().Kind())
 	if err != nil {
 		panic(err)
 	}
@@ -70,87 +70,87 @@ func (o goArrayObject) setValue(index int64, value Value) bool {
 	return true
 }
 
-func goArrayGetOwnProperty(obj *object, name string) *property {
+func goArrayGetOwnProperty(self *_object, name string) *_property {
 	// length
 	if name == propertyLength {
-		return &property{
-			value: toValue(reflect.Indirect(obj.value.(*goArrayObject).value).Len()),
+		return &_property{
+			value: toValue(reflect.Indirect(self.value.(*_goArrayObject).value).Len()),
 			mode:  0,
 		}
 	}
 
 	// .0, .1, .2, ...
 	if index := stringToArrayIndex(name); index >= 0 {
-		goObj := obj.value.(*goArrayObject)
+		object := self.value.(*_goArrayObject)
 		value := Value{}
-		reflectValue, exists := goObj.getValueIndex(index)
+		reflectValue, exists := object.getValueIndex(index)
 		if exists {
-			value = obj.runtime.toValue(reflectValue.Interface())
+			value = self.runtime.toValue(reflectValue.Interface())
 		}
-		return &property{
+		return &_property{
 			value: value,
-			mode:  goObj.propertyMode,
+			mode:  object.propertyMode,
 		}
 	}
 
-	if method := obj.value.(*goArrayObject).value.MethodByName(name); method.IsValid() {
-		return &property{
-			obj.runtime.toValue(method.Interface()),
-			0o110,
+	if method := self.value.(*_goArrayObject).value.MethodByName(name); method != (reflect.Value{}) {
+		return &_property{
+			self.runtime.toValue(method.Interface()),
+			0110,
 		}
 	}
 
-	return objectGetOwnProperty(obj, name)
+	return objectGetOwnProperty(self, name)
 }
 
-func goArrayEnumerate(obj *object, all bool, each func(string) bool) {
-	goObj := obj.value.(*goArrayObject)
+func goArrayEnumerate(self *_object, all bool, each func(string) bool) {
+	object := self.value.(*_goArrayObject)
 	// .0, .1, .2, ...
 
-	for index, length := 0, goObj.value.Len(); index < length; index++ {
+	for index, length := 0, object.value.Len(); index < length; index++ {
 		name := strconv.FormatInt(int64(index), 10)
 		if !each(name) {
 			return
 		}
 	}
 
-	objectEnumerate(obj, all, each)
+	objectEnumerate(self, all, each)
 }
 
-func goArrayDefineOwnProperty(obj *object, name string, descriptor property, throw bool) bool {
+func goArrayDefineOwnProperty(self *_object, name string, descriptor _property, throw bool) bool {
 	if name == propertyLength {
-		return obj.runtime.typeErrorResult(throw)
+		return self.runtime.typeErrorResult(throw)
 	} else if index := stringToArrayIndex(name); index >= 0 {
-		goObj := obj.value.(*goArrayObject)
-		if goObj.writable {
-			if obj.value.(*goArrayObject).setValue(index, descriptor.value.(Value)) {
+		object := self.value.(*_goArrayObject)
+		if object.writable {
+			if self.value.(*_goArrayObject).setValue(index, descriptor.value.(Value)) {
 				return true
 			}
 		}
-		return obj.runtime.typeErrorResult(throw)
+		return self.runtime.typeErrorResult(throw)
 	}
-	return objectDefineOwnProperty(obj, name, descriptor, throw)
+	return objectDefineOwnProperty(self, name, descriptor, throw)
 }
 
-func goArrayDelete(obj *object, name string, throw bool) bool {
+func goArrayDelete(self *_object, name string, throw bool) bool {
 	// length
 	if name == propertyLength {
-		return obj.runtime.typeErrorResult(throw)
+		return self.runtime.typeErrorResult(throw)
 	}
 
 	// .0, .1, .2, ...
 	index := stringToArrayIndex(name)
 	if index >= 0 {
-		goObj := obj.value.(*goArrayObject)
-		if goObj.writable {
-			indexValue, exists := goObj.getValueIndex(index)
+		object := self.value.(*_goArrayObject)
+		if object.writable {
+			indexValue, exists := object.getValueIndex(index)
 			if exists {
-				indexValue.Set(reflect.Zero(reflect.Indirect(goObj.value).Type().Elem()))
+				indexValue.Set(reflect.Zero(reflect.Indirect(object.value).Type().Elem()))
 				return true
 			}
 		}
-		return obj.runtime.typeErrorResult(throw)
+		return self.runtime.typeErrorResult(throw)
 	}
 
-	return obj.delete(name, throw)
+	return self.delete(name, throw)
 }

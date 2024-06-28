@@ -7,34 +7,37 @@ import (
 	"unicode/utf16"
 )
 
-func (v Value) bool() bool {
-	if v.kind == valueBoolean {
-		return v.value.(bool)
+func (value Value) bool() bool {
+	if value.kind == valueBoolean {
+		return value.value.(bool)
 	}
-	if v.IsUndefined() || v.IsNull() {
+	if value.IsUndefined() {
 		return false
 	}
-	switch value := v.value.(type) {
+	if value.IsNull() {
+		return false
+	}
+	switch value := value.value.(type) {
 	case bool:
 		return value
 	case int, int8, int16, int32, int64:
-		return reflect.ValueOf(value).Int() != 0
+		return 0 != reflect.ValueOf(value).Int()
 	case uint, uint8, uint16, uint32, uint64:
-		return reflect.ValueOf(value).Uint() != 0
+		return 0 != reflect.ValueOf(value).Uint()
 	case float32:
-		return value != 0
+		return 0 != value
 	case float64:
 		if math.IsNaN(value) || value == 0 {
 			return false
 		}
 		return true
 	case string:
-		return len(value) != 0
+		return 0 != len(value)
 	case []uint16:
-		return len(utf16.Decode(value)) != 0
+		return 0 != len(utf16.Decode(value))
 	}
-	if v.IsObject() {
+	if value.IsObject() {
 		return true
 	}
-	panic(fmt.Sprintf("unexpected boolean type %T", v.value))
+	panic(fmt.Errorf("toBoolean(%T)", value.value))
 }
