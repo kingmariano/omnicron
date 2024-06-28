@@ -20,35 +20,25 @@ ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
 
 COPY . .
 
-# Install Go dependencies
-RUN go mod download
+# Install Go and Python dependencies
+RUN apk add --no-cache \
+        ffmpeg \
+        python3 \
+        py3-pip \
+        python3-dev \
+        build-base && \
+    go mod download && \
+    go get -u ./... && \
+    go mod vendor && \
+    go mod tidy && \
+    go build -o ./omnicron
 
-# Update Go dependencies to the latest version
-RUN go get -u ./...
-RUN go mod vendor
-RUN go mod tidy
-
-# Build Go binary
-RUN go build -o ./omnicron
-
-# Install ffmpeg
-RUN apk add --no-cache ffmpeg
-
-# Install Python 3.11 and dependencies
-RUN apk add --no-cache python3 py3-pip python3-dev build-base
-
-RUN python3 -m ensurepip
-
-RUN pip3 install --upgrade pip
-
+# Install Python dependencies
 COPY ./python/requirements.txt ./python/requirements.txt
+RUN pip3 install --upgrade --no-cache-dir -r ./python/requirements.txt && \
+    pip3 uninstall -y uvloop
 
-RUN pip install --upgrade --no-cache-dir -r ./python/requirements.txt
-
-# Remove the default uvloop.
-RUN pip uninstall -y uvloop
-
-# Deploy the application binary into a lean image
+# Deploy stage
 FROM gcr.io/distroless/base-debian11
 
 WORKDIR /app
