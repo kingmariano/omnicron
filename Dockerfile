@@ -1,7 +1,8 @@
-# Build stage
-FROM golang:1.22.4-alpine AS builder
+# Stage 1: Build stage with Ubuntu
+FROM ubuntu:22.04 AS builder
 
 WORKDIR /build
+
 # Set build arguments for API keys
 ARG MY_API_KEY
 ARG GROK_API_KEY
@@ -9,6 +10,7 @@ ARG GEMINI_PRO_API_KEY
 ARG REPLICATE_API_TOKEN
 ARG CLOUDINARY_URL
 ARG YOUTUBE_DEVELOPER_KEY
+
 # Set environment variables from build arguments
 ENV MY_API_KEY=${MY_API_KEY}
 ENV GROK_API_KEY=${GROK_API_KEY}
@@ -18,23 +20,31 @@ ENV YOUTUBE_DEVELOPER_KEY=${YOUTUBE_DEVELOPER_KEY}
 ENV PORT=9000
 ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
 
+# Install necessary packages
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    gcc \
+    g++ \
+    musl-dev \
+    golang \
+    ffmpeg \
+    build-essential \
+    curl \
+    cargo \
+    && apt-get clean
+
+# Copy Go module files
+COPY go.mod go.sum ./
+
+# Download Go dependencies
+RUN go mod download
+
+# Copy the entire project directory
 COPY . .
 
-# Install Go dependencies and required packages
-RUN apk add --no-cache \
-    go \
-    ffmpeg \
-    python3 \
-    py3-pip \
-    python3-dev \
-    build-base
-
-RUN go mod download
-RUN go get -u ./...
-RUN go mod vendor
-RUN go mod tidy
-
-# Build Go binary
+# Build the Go application
 RUN go build -o ./omnicron
 
 # Set up Python virtual environment
@@ -49,10 +59,13 @@ RUN /build/venv/bin/pip install --upgrade --no-cache-dir -r ./python/requirement
 # Remove the default uvloop
 RUN /build/venv/bin/pip uninstall -y uvloop
 
-# Deploy stage
-FROM gcr.io/distroless/base-debian11
+# Stage 2: Final stage with Alpine for a smaller image
+FROM alpine:latest
 
 WORKDIR /app
+
+# Install runtime packages
+RUN apk add --no-cache ffmpeg curl
 
 # Copy the built Go binary
 COPY --from=builder /build/omnicron ./omnicron

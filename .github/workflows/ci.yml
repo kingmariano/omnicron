@@ -103,5 +103,7 @@ jobs:
           build-args: |
             MY_API_KEY=${{ secrets.MY_API_KEY }}
             GROK_API_KEY=${{ secrets.GROK_API_KEY }}
+            REPLICATE_API_TOKEN=${{ secrets.REPLICATE_API_TOKEN }}
+            CLOUDINARY_URL=${{ secrets.CLOUDINARY_URL }}
             GEMINI_PRO_API_KEY=${{ secrets.GEMINI_PRO_API_KEY }}
             YOUTUBE_DEVELOPER_KEY=${{ secrets.YOUTUBE_DEVELOPER_KEY }}
