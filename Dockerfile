@@ -32,7 +32,7 @@ RUN go mod tidy
 RUN go build -o ./omnicron
 
 # Install ffmpeg
-RUN apt-get update && apt-get install -y ffmpeg
+RUN apk add --no-cache ffmpeg
 
 # Install Python 3.11 and dependencies
 RUN apk add --no-cache python3 py3-pip python3-dev build-base
