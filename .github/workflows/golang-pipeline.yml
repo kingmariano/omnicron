@@ -95,7 +95,7 @@ jobs:
         with:
           context: ./golang-server
           push: true
-          tags: kingmariano/omnicron-go:latest, kingmariano/omnicron-go:${{github.run_number}}
+          tags: charlesozo/omnicron-go:latest, charlesozo/omnicron-go:${{github.run_number}}
           build-args: |
             MY_API_KEY=${{ secrets.MY_API_KEY }}
             GROK_API_KEY=${{ secrets.GROK_API_KEY }}
