@@ -1,4 +1,4 @@
-package gpt
+package musicsearch
 
 import (
 	"bytes"
@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-const baseURL = "http://localhost:8000/api/v1/chat/completion" //url to the chat completion endpoint in the python server
+const baseURL = "http://localhost:8000/api/v1/search-song" //url to the music search endpoint in the python server
 // Calls the "/chatcompletion" endpoint from the fastAPI server
-func CallGPTFastAPI(request ChatRequest, apiKey string) (*ChatResponse, error) {
+func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey string) (*MusicSearchResponse, error) {
 	jsonData, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func CallGPTFastAPI(request ChatRequest, apiKey string) (*ChatResponse, error) {
 		}
 		return nil, errors.New(errorMessage.Detail)
 	}
-	var response ChatResponse
+	var response MusicSearchResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
