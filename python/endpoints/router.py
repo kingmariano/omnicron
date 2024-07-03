@@ -3,17 +3,23 @@ This module defines the FastAPI router for the omnicron python backend server.
 """
 
 import os
+import aiofiles
+import asyncio
 from pathlib import Path  # Standard library imports
+from tempfile import NamedTemporaryFile
 from typing import List
-
+from fastapi.responses import JSONResponse
 import requests  # Third-party imports
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from fastapi.security.api_key import APIKeyHeader
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from shazamio import Shazam
-
-from utils.g4f_utils import get_chat_completion_response  # Local application imports
+from PIL import Image
+import pytesseract
+from utils.g4f_utils import get_chat_completion_response
+from utils.doc_utils import process_page
+# Local application imports
 
 router = APIRouter()
 env_path = Path(__file__).resolve().parents[2] / ".env"
@@ -23,7 +29,20 @@ load_dotenv(env_path)
 api_key = os.getenv('MY_API_KEY')
 grok_api_key = os.getenv('GROK_API_KEY')
 gemini_api_key = os.getenv('GEMINI_PRO_API_KEY')
-# print(api_key, gemini_api_key, grok_api_key)
+tesseract_prefix = os.getenv('TESSERACT_PREFIX')
+# Check if essential environment variables are set
+if not api_key:
+    raise RuntimeError("MY_API_KEY environment variable is not set.")
+if not grok_api_key:
+    raise RuntimeError("GROK_API_KEY environment variable is not set.")
+if not gemini_api_key:
+    raise RuntimeError("GEMINI_PRO_API_KEY environment variable is not set.")
+if not tesseract_prefix:
+    raise RuntimeError("TESSERACT_PREFIX environment variable is not set.")
+
+os.environ['TESSDATA_PREFIX'] = tesseract_prefix
+import  fitz
+
 # Define the API key name
 API_KEY_NAME = "Api-Key"
 # Define a dependency to check for the API key in the headers
@@ -173,3 +192,65 @@ async def search_song(
         raise HTTPException(
             status_code=500,
             detail=f"Error searching song: {err}") from err
+@router.post("/doc_analyze")
+async def doc_analyze(file: UploadFile = File(...), _: str = Depends(check_api_key)):
+    """
+    Analyzes contents in a document file using the OCR engine if the document contains images and returns its text.
+    Note: Supported file formats are PDF, XPS, EPUB, MOBI, FB2, CBZ, SVG, TXT.
+    """
+    # Save the uploaded file to a temporary location
+    try:
+        temp_file_path = Path(f"temp_{file.filename}")
+        async with aiofiles.open(temp_file_path, "wb") as temp_file:
+            await temp_file.write(await file.read())
+
+        doc = fitz.open(str(temp_file_path))
+
+        text_output = []
+        for page in doc:
+            text_output.append(await process_page(page))
+
+        doc.close()
+        return JSONResponse(content={"text": text_output})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if temp_file_path.exists():
+            temp_file_path.unlink()
+
+
+@router.post("/image_to_text")
+async def image_to_text(file: UploadFile = File(...), _: str = Depends(check_api_key)):
+    """
+    Extract text from an uploaded image file using Tesseract OCR.
+
+    Args:
+        file (UploadFile): The image file to be processed.
+        _: The API key, validated by the check_api_key dependency.
+
+    Returns:
+        dict: The extracted text from the image.
+
+    Raises:
+        HTTPException: If an error occurs during processing.
+    """
+    try:
+        # Save the uploaded file to a temporary location
+        temp_file_path = Path(f"temp_{file.filename}")
+        async with aiofiles.open(temp_file_path, "wb") as temp_file:
+            await temp_file.write(await file.read())
+
+        # Open the image file using PIL
+        image = Image.open(temp_file_path)
+
+        # Use Tesseract to extract text from the image
+        text = pytesseract.image_to_string(image)
+
+        # Return the extracted text as JSON
+        return JSONResponse(content={"text": text})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Delete the temporary file
+        if temp_file_path.exists():
+            temp_file_path.unlink()       

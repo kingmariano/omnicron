@@ -13,17 +13,17 @@ type ChatRequest struct {
 		Role    string `json:"role"`
 		Content string `json:"content"`
 	} `json:"messages"`
-	Model    *string `json:"model,omitempty"`
-	Stream   *bool   `json:"stream,omitempty"`
-	Proxy    *string `json:"proxy,omitempty"`
-	Timeout  *int    `json:"timeout,omitempty"`
-	Shuffle  *bool   `json:"shuffle,omitempty"`
-	ImageURL *string `json:"image_url,omitempty"`
+	Model    string `json:"model,omitempty"`
+	Stream   bool   `json:"stream,omitempty"`
+	Proxy    string `json:"proxy,omitempty"`
+	Timeout  int    `json:"timeout,omitempty"`
+	Shuffle  bool   `json:"shuffle,omitempty"`
+	ImageURL string `json:"image_url,omitempty"`
 }
 type ChatResponse struct {
 	Response string `json:"response"`
 }
-type ChatError struct {
+type ErrorResponse struct {
 	Detail string `json:"detail"`
 }
 

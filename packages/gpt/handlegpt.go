@@ -32,7 +32,7 @@ func CallGPTFastAPI(request ChatRequest, apiKey string) (*ChatResponse, error) {
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		//handle error when status code is not 200
-		var errorMessage ChatError
+		var errorMessage ErrorResponse
 		if err := json.NewDecoder(resp.Body).Decode(&errorMessage); err != nil {
 			return nil, err
 		}

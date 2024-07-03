@@ -7,4 +7,6 @@ python-multipart
 shazamio
 pydub
 nest_asyncio
+pymupdf
+pytesseract
 # ffmpeg is a required file to run in the dockerfile
