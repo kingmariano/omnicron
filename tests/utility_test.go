@@ -63,7 +63,7 @@ func TestDownloadFileURL(t *testing.T) {
 }
 
 func TestConvertToMP3(t *testing.T) {
-	filePath := "../assets/videos/sample.mp4"
+	filePath := "../assets/audios/sample1.aiff"
 	file, err := utils.ConvertFileToMP3(filePath)
 	if err != nil {
 		t.Fatal(err)

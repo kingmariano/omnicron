@@ -120,11 +120,6 @@ func ConvertReaderToMP3(reader io.Reader, outputDir string) (string, error) {
 
 // isValidContentType checks if the content type is valid for conversion.
 func isValidContentType(contentType string) bool {
-	switch contentType {
-	case "video/mp4", "video/x-matroska", "video/avi", "video/webm",
-		"audio/wav", "audio/aac", "audio/flac":
-		return true
-	default:
-		return false
-	}
+	prefix := strings.SplitN(contentType, "/", 2)[0]
+	return prefix == "video" || prefix == "audio"
 }

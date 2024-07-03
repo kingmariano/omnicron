@@ -7,8 +7,10 @@ import (
 	"github.com/kingmariano/omnicron/config"
 	ware "github.com/kingmariano/omnicron/middleware"
 	"github.com/kingmariano/omnicron/packages/convert2mp3"
+	"github.com/kingmariano/omnicron/packages/docgpt"
 	"github.com/kingmariano/omnicron/packages/gpt"
 	"github.com/kingmariano/omnicron/packages/grok"
+	"github.com/kingmariano/omnicron/packages/image2text"
 	"github.com/kingmariano/omnicron/packages/musicdownloader"
 	"github.com/kingmariano/omnicron/packages/musicsearch"
 	"github.com/kingmariano/omnicron/packages/replicate/generateimages"
@@ -19,6 +21,7 @@ import (
 	"github.com/kingmariano/omnicron/packages/replicate/tts"
 	"github.com/kingmariano/omnicron/packages/shazam"
 	"github.com/kingmariano/omnicron/packages/videodownloader"
+	"github.com/kingmariano/omnicron/packages/youtubesummarize"
 	"github.com/kingmariano/omnicron/utils"
 	"log"
 	"net/http"
@@ -89,6 +92,9 @@ func main() {
 	v1Router.Post("/chatgpt", ware.MiddleWareAuth(gpt.ChatCompletion, cfg))
 	v1Router.Post("/shazam", ware.MiddleWareAuth(shazam.Shazam, cfg))
 	v1Router.Post("/musicsearch", ware.MiddleWareAuth(musicsearch.MusicSearch, cfg))
+	v1Router.Post("/youtubesummarization", ware.MiddleWareAuth(youtubesummarize.YoutubeSummarization, cfg))
+	v1Router.Post("/image2text", ware.MiddleWareAuth(image2text.Image2text, cfg))
+	v1Router.Post("/docgpt", ware.MiddleWareAuth(docgpt.DocGPT, cfg))
 	router.Mount("/api/v1", v1Router)
 
 	server := &http.Server{

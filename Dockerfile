@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     cargo \
+    tesseract-ocr \
     && apt-get clean
 
 # Copy Go module files
@@ -81,6 +82,10 @@ COPY --from=builder /build/omnicron ./omnicron
 # Copy ffmpeg binary from the builder stage
 COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=builder /usr/share/ffmpeg /usr/share/ffmpeg
+
+# Copy Tesseract binaries from the builder stage
+COPY --from=builder /usr/bin/tesseract /usr/bin/tesseract
+COPY --from=builder /usr/share/tesseract-ocr /usr/share/tesseract-ocr
 
 # Copy Python virtual environment
 COPY --from=builder /build/venv /app/venv

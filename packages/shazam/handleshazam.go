@@ -11,7 +11,7 @@ import (
 )
 
 const baseURL = "http://localhost:8000/api/v1/shazam" //url to the shazam endpoint in the python server
-//Calls the "/shazam" endpoint from the fastAPI server
+// Calls the "/shazam" endpoint from the fastAPI server
 func CallShazamFastAPI(file multipart.File, fileHeader *multipart.FileHeader, apiKey string) (*ShazamResponse, error) {
 	// Create a buffer to write our form data to
 	var b bytes.Buffer
@@ -31,7 +31,7 @@ func CallShazamFastAPI(file multipart.File, fileHeader *multipart.FileHeader, ap
 	}
 	//create the http client
 	client := &http.Client{
-		Timeout: time.Second * 30,
+		Timeout: time.Second * 300,
 	}
 
 	req, err := http.NewRequest("POST", baseURL, &b)
