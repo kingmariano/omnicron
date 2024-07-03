@@ -77,7 +77,7 @@ func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, pr
 	// Decode the document analysis response
 	var docResponse AnalyzeDocResponse
 	if err := json.NewDecoder(resp.Body).Decode(&docResponse); err != nil {
-		return "", fmt.Errorf("failed to decode document analysis response: %w", err)
+		return "", fmt.Errorf("failed to decode document analysi response: %w", err)
 	}
 	log.Println("done analyzing document returning text")
 	// Join the extracted text into a single string
