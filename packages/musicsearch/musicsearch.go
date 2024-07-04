@@ -1,3 +1,22 @@
+// Copyright (c) 2024 Charles Ozochukwu
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 package musicsearch
 
 import (
@@ -7,75 +26,6 @@ import (
 	"github.com/kingmariano/omnicron/utils"
 	"net/http"
 )
-
-type MusicSearchRequest struct {
-	Song  string `json:"song"`
-	Limit int    `json:"limit,omitempty"`
-	Proxy string `json:"proxy,omitempty"`
-}
-type MusicSearchResponse struct {
-	Tracks struct {
-		Hits []struct {
-			Type    string `json:"type"`
-			Key     string `json:"key"`
-			Heading struct {
-				Title    string `json:"title"`
-				Subtitle string `json:"subtitle"`
-			} `json:"heading"`
-			Images struct {
-				Default string `json:"default"`
-				Blurred string `json:"blurred"`
-				Play    string `json:"play"`
-			} `json:"images"`
-			Stores struct {
-				Apple struct {
-					Actions []struct {
-						Type string `json:"type"`
-						URI  string `json:"uri"`
-					} `json:"actions"`
-					Explicit    bool   `json:"explicit"`
-					Previewurl  string `json:"previewurl"`
-					Coverarturl string `json:"coverarturl"`
-					Trackid     string `json:"trackid"`
-					Productid   string `json:"productid"`
-				} `json:"apple"`
-			} `json:"stores"`
-			Streams struct {
-			} `json:"streams"`
-			Artists []struct {
-				Alias  string `json:"alias"`
-				ID     string `json:"id"`
-				Adamid string `json:"adamid"`
-			} `json:"artists"`
-			Share struct {
-				Subject  string `json:"subject"`
-				Text     string `json:"text"`
-				Href     string `json:"href"`
-				Image    string `json:"image"`
-				Twitter  string `json:"twitter"`
-				HTML     string `json:"html"`
-				Avatar   string `json:"avatar"`
-				Snapchat string `json:"snapchat"`
-			} `json:"share"`
-			Alias   string `json:"alias"`
-			URL     string `json:"url"`
-			Actions []struct {
-				Name string `json:"name"`
-				Type string `json:"type"`
-				ID   string `json:"id"`
-			} `json:"actions"`
-			Urlparams struct {
-				Tracktitle  string `json:"{tracktitle}"`
-				Trackartist string `json:"{trackartist}"`
-			} `json:"urlparams"`
-		} `json:"hits"`
-		Next string `json:"next"`
-	} `json:"tracks"`
-}
-
-type ErrorResponse struct {
-	Detail string `json:"detail"`
-}
 
 func MusicSearch(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 	decode := json.NewDecoder(r.Body)

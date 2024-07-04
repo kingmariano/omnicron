@@ -1,3 +1,23 @@
+// Copyright (c) 2024 Charles Ozochukwu
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package docgpt
 
 import (
@@ -13,19 +33,19 @@ import (
 	"github.com/jpoz/groq"
 )
 
-const baseURL = "http://localhost:8000/api/v1/doc_analyze" // URL to the doc analyze endpoint in the Python server
+const baseURL = "http://localhost:8000/api/v1/doc_analyze" // URL to the doc analyze endpoint in the FastAPI server
 
 // ErrorResponse represents the structure of error responses from the FastAPI server
 type ErrorResponse struct {
 	Detail string `json:"detail"`
 }
 
-// AnalyzeDocResponse represents the structure of the response from the document analysis
+// AnalyzeDocResponse represents the structure of the response from the "/doc_analyze" endpoint from the FastAPI server
 type AnalyzeDocResponse struct {
 	Text []string `json:"text"`
 }
 
-// CallDocGPTFastAPI calls the "/doc_analyze" endpoint from the FastAPI server and processes the response then uses the grok AI API client to act as a document gpt.
+// CallDocGPTFastAPI calls the "/doc_analyze" endpoint from the FastAPI server and processes the response then uses the grok AI API client to make a request acting as a document gpt.
 func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, prompt, grokApiKey, apiKey string) (string, error) {
 	// Create a buffer to write our form data to
 	var b bytes.Buffer
