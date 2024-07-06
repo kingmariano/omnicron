@@ -27,17 +27,19 @@ import (
 	"net/http"
 )
 
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
 type ChatRequest struct {
-	Messages []struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-	} `json:"messages"`
-	Model    string `json:"model,omitempty"`
-	Stream   bool   `json:"stream,omitempty"`
-	Proxy    string `json:"proxy,omitempty"`
-	Timeout  int    `json:"timeout,omitempty"`
-	Shuffle  bool   `json:"shuffle,omitempty"`
-	ImageURL string `json:"image_url,omitempty"`
+	Messages []Message `json:"messages"`
+	Model    string    `json:"model,omitempty"`
+	Stream   bool      `json:"stream,omitempty"`
+	Proxy    string    `json:"proxy,omitempty"`
+	Timeout  int       `json:"timeout,omitempty"`
+	Shuffle  bool      `json:"shuffle,omitempty"`
+	ImageURL string    `json:"image_url,omitempty"`
 }
 type ChatResponse struct {
 	Response string `json:"response"`

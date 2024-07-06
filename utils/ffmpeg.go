@@ -32,9 +32,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/h2non/filetype"
 	ffmpeg "github.com/u2takey/ffmpeg-go" // Import the ffmpeg-go package for video and audio processing
 )
-
+var UnsupportedFileFormat error = errors.New("unsupported file format")
 // DownloadFileURL downloads a file from the given URL and saves it to the specified path.
 func DownloadFileURL(url, dest string) (string, error) {
 	client := &http.Client{}                     // Create an HTTP client
@@ -100,25 +101,21 @@ func ConvertFileToMP3(inputFilePath string) (string, error) {
 
 // ConvertReaderToMP3 reads a video from an io.Reader and converts it to MP3.
 func ConvertReaderToMP3(reader io.Reader, outputDir string) (string, error) {
-	// Read the first 512 bytes to detect the file type
-	buffer := make([]byte, 512)
-	_, err := reader.Read(buffer)
-	if err != nil && err != io.EOF {
-		return "", fmt.Errorf("failed to read buffer: %w", err) // Return an error if reading fails
-	}
+   // read the content of the file being given convert to bytes to detect file type
+   fileBytes, err := io.ReadAll(reader)
+   if err != nil {
+	    return "", fmt.Errorf("failed to read file content: %w", err) // Return an error if reading fails
+   }
 
-	// Detect the file type based on the first 512 bytes
-	contentType := http.DetectContentType(buffer)
-	if !isValidContentType(contentType) {
-		return "", fmt.Errorf("unsupported content type: %s", contentType) // Return an error if content type is not valid
-	}
-
-	// Reset the reader to read the content again
-	reader = io.MultiReader(bytes.NewReader(buffer), reader)
-
+   // Detect the file type based on the content type
+    contentType, err :=  getSupportedFileType(fileBytes)
+	if err!= nil {
+        return "", err
+    }
+	
 	videoExtension := filepath.Ext(contentType)
 	tempVideoFile := filepath.Clean(filepath.Join(outputDir, "input_video"+videoExtension)) // Clean and join the temp video file path
-	out, err := os.Create(tempVideoFile)                                                    // Create the temporary video file
+	out, err := os.Create(tempVideoFile) // Create the temporary video file
 	if err != nil {
 		return "", fmt.Errorf("failed to create video file: %w", err)
 	}
@@ -127,9 +124,11 @@ func ConvertReaderToMP3(reader io.Reader, outputDir string) (string, error) {
 			log.Println(err) // Log an error if closing the file fails
 		}
 	}()
+	// Create a new reader from the fileBytes
+	newReader := bytes.NewReader(fileBytes)
 
 	// Copy the content of the reader to the video file
-	_, err = io.Copy(out, reader)
+	_, err = io.Copy(out, newReader)
 	if err != nil {
 		return "", fmt.Errorf("failed to copy content to video file: %w", err)
 	}
@@ -142,9 +141,21 @@ func ConvertReaderToMP3(reader io.Reader, outputDir string) (string, error) {
 
 	return mp3File, nil // Return the MP3 file path
 }
-
-// isValidContentType checks if the content type is valid for conversion.
-func isValidContentType(contentType string) bool {
-	prefix := strings.SplitN(contentType, "/", 2)[0] // Get the prefix of the content type
-	return prefix == "video" || prefix == "audio"    // Check if the prefix is either video or audio
+//supported file format for conversion to Mp3
+func supportedFileFormats()[]string{
+  return []string{"video", "audio"}
+}
+// retrieves the content type of the file if the file is supported
+func getSupportedFileType(fileType []byte) (string, error){
+	fileFormat, err := filetype.Get(fileType)
+	if err!= nil {
+        return "", fmt.Errorf("failed to get file type: %w", err)
+    }
+	supportedFileFormat := supportedFileFormats()
+	for _, fileType := range supportedFileFormat{
+       if fileFormat.MIME.Type == fileType{
+		return fileFormat.MIME.Value, nil
+	   }
+	}
+    return "", UnsupportedFileFormat
 }

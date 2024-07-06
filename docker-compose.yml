@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  omnicron:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MY_API_KEY: ${MY_API_KEY}
+        GROK_API_KEY: ${GROK_API_KEY}
+        GEMINI_PRO_API_KEY: ${GEMINI_PRO_API_KEY}
+        REPLICATE_API_TOKEN: ${REPLICATE_API_TOKEN}
+        CLOUDINARY_URL: ${CLOUDINARY_URL}
+        YOUTUBE_DEVELOPER_KEY: ${YOUTUBE_DEVELOPER_KEY}
+    environment:
+      MY_API_KEY: ${MY_API_KEY}
+      GROK_API_KEY: ${GROK_API_KEY}
+      GEMINI_PRO_API_KEY: ${GEMINI_PRO_API_KEY}
+      REPLICATE_API_TOKEN: ${REPLICATE_API_TOKEN}
+      CLOUDINARY_URL: ${CLOUDINARY_URL}
+      YOUTUBE_DEVELOPER_KEY: ${YOUTUBE_DEVELOPER_KEY}
+      PORT: ${PORT}
+      HEALTHCHECK_ENDPOINT: http://localhost:${PORT}/api/v1/readiness
+    ports: 
+      - "9000:9000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/api/v1/readiness"]
+      interval: 1m
+      timeout: 10s
+      retries: 10
+    env_file:
+      - .env

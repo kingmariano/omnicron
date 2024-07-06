@@ -30,7 +30,9 @@ import (
 	"mime/multipart"
 	"net/http"
 
+	"github.com/h2non/filetype"
 	"github.com/jpoz/groq"
+	"github.com/kingmariano/omnicron/packages/gpt"
 )
 
 const baseURL = "http://localhost:8000/api/v1/doc_analyze" // URL to the doc analyze endpoint in the FastAPI server
@@ -51,6 +53,26 @@ func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, pr
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 
+	// Read the file into a byte slice
+	filebytes, err := io.ReadAll(file)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Check if the file is empty
+	if len(filebytes) == 0 {
+		return "", errors.New("file is empty")
+	}
+
+	// Check file format if it's supported
+	fileContentType, err := filetype.Get(filebytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file type: %w", err)
+	}
+	if !checkContentType(fileContentType.Extension) {
+		return "", fmt.Errorf("unsupported file format. supported formats are: %s", supportedFileTypes())
+	}
+
 	// Create a form file field
 	fw, err := w.CreateFormFile("file", fileHeader.Filename)
 	if err != nil {
@@ -58,7 +80,7 @@ func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, pr
 	}
 
 	// Copy the file into the form field
-	if _, err = io.Copy(fw, file); err != nil {
+	if _, err = io.Copy(fw, bytes.NewReader(filebytes)); err != nil {
 		return "", fmt.Errorf("failed to copy file to form field: %w", err)
 	}
 
@@ -97,7 +119,7 @@ func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, pr
 	// Decode the document analysis response
 	var docResponse AnalyzeDocResponse
 	if err := json.NewDecoder(resp.Body).Decode(&docResponse); err != nil {
-		return "", fmt.Errorf("failed to decode document analysi response: %w", err)
+		return "", fmt.Errorf("failed to decode document analysis response: %w", err)
 	}
 	log.Println("done analyzing document returning text")
 	// Join the extracted text into a single string
@@ -105,7 +127,10 @@ func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, pr
 	for _, text := range docResponse.Text {
 		docOutputText += text + "\n"
 	}
-
+	if docOutputText == ""{
+		return "", errors.New("document analysis returned empty text")
+	}
+    docGptPrompt := docGPTPrompt(docOutputText)
 	// Use the Groq library to create a chat completion request with the Groq API key
 	grokClient := groq.NewClient(groq.WithAPIKey(grokApiKey))
 	response, err := grokClient.CreateChatCompletion(
@@ -113,13 +138,8 @@ func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, pr
 			Model: "mixtral-8x7b-32768",
 			Messages: []groq.Message{
 				{
-					Role: "system",
-					Content: fmt.Sprintf(`You are DocGPT, an advanced AI model specialized in interacting with and analyzing documents. Below is the text extracted from a document. Your task is to assist the user by responding to their queries about this document, providing clear and concise answers, summaries, and key points.
-
-Document Text:
-%s
-
-Please respond to the following user query:`, docOutputText),
+					Role:    "system",
+					Content: docGptPrompt,
 				},
 				{
 					Role:    "user",
@@ -129,9 +149,49 @@ Please respond to the following user query:`, docOutputText),
 		},
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to create chat completion request: %w", err)
+		log.Println("error occurred using the grok api; retrying with the g4f library")
+		// if the grok AI model fails try using the g4f api Library.
+		chatRequest := gpt.ChatRequest{
+			Messages: []gpt.Message{
+				{
+					Role:    "system",
+					Content: docGptPrompt,
+				},
+				{
+					Role:    "user",
+					Content: prompt,
+				},
+			},
+		}
+		g4fResponse, err := gpt.CallGPTFastAPI(chatRequest, apiKey)
+		if err != nil {
+			return "", fmt.Errorf("failed to call gpt fast API: %w", err)
+		}
+		return g4fResponse.Response, nil
 	}
 
 	// Return the response from the Groq API
 	return response.Choices[0].Message.Content, nil
+}
+
+func supportedFileTypes() []string {
+	return []string{"pdf", "xps", "epub", "mobi", "fb2", "cbz", "svg", "txt"}
+}
+
+// function contains file types that are supported for document analyzing:
+func checkContentType(fileExtension string) bool {
+	supportedFileTypes := supportedFileTypes()
+	for _, fileType := range supportedFileTypes {
+		if fileExtension == fileType {
+			return true
+		}
+	}
+	return false
+}
+
+// input prompt to make the AI model behave as expected
+func docGPTPrompt(documentText string) string {
+	return fmt.Sprintf(`You are DocGPT, an advanced AI model specialized in interacting with and analyzing documents. Below is the text extracted from a document. Your task is to assist the user by responding to their queries about this document, providing clear and concise answers, summaries, and key points.
+
+	Document Text: %s `, documentText)
 }
