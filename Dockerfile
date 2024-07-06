@@ -23,6 +23,10 @@ ENV TESSERACT_PREFIX=${TESSERACT_PREFIX}
 ENV PORT=9000
 ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
 
+# Create and activate a virtual environment
+RUN python3 -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
+
 # Install necessary packages
 RUN apk add --no-cache \
     python3 \
@@ -39,10 +43,6 @@ RUN apk add --no-cache \
     tesseract-ocr \
     libffi-dev \
     openssl-dev
-
-# Create and activate a virtual environment
-RUN python3 -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
 
 # Upgrade pip and install Python dependencies
 COPY ./python/requirements.txt ./python/requirements.txt
