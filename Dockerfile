@@ -56,7 +56,7 @@ COPY . .
 # Install Python dependencies
 COPY ./python/requirements.txt ./python/requirements.txt
 RUN pip3 install --upgrade pip
-RUN pip3 install --upgrade --no-cache-dir -r ./python/requirements.txt --target /build/python-packages
+RUN pip3 install --upgrade --no-cache-dir -r ./python/requirements.txt
 
 # Remove the default uvloop
 RUN pip3 uninstall -y uvloop
@@ -88,8 +88,8 @@ RUN chmod +x /app/omnicron
 COPY --from=builder /build/python-version.txt /app/python-version.txt
 RUN PYTHON_VERSION=$(cat /app/python-version.txt)
 
-# Install Python dependencies
-COPY --from=builder /build/python-packages /usr/local/lib/python$PYTHON_VERSION/site-packages
+# Copy Python site-packages from the build stage
+COPY --from=builder /usr/local/lib/python${PYTHON_VERSION}/site-packages /usr/local/lib/python${PYTHON_VERSION}/site-packages
 
 # Copy Python scripts
 COPY ./python /app/python
