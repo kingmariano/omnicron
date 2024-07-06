@@ -41,13 +41,13 @@ RUN apk add --no-cache \
     tesseract-ocr 
 
 
-# # Create and activate a virtual environment
-# RUN python3 -m venv /app/venv
-# ENV PATH="/app/venv/bin:$PATH"
+# Create and activate a virtual environment
+RUN python3 -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
 
 # Upgrade pip and install Python dependencies
 COPY ./python/requirements.txt ./python/requirements.txt
-# RUN pip install --upgrade pip
+RUN pip install --upgrade pip
 RUN pip install --upgrade --no-cache-dir -r ./python/requirements.txt
 
 # Remove the default uvloop
