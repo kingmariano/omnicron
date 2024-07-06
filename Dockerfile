@@ -47,7 +47,7 @@ RUN apk add --no-cache \
 
 # Upgrade pip and install Python dependencies
 COPY ./python/requirements.txt ./python/requirements.txt
-RUN pip install --upgrade pip
+# RUN pip install --upgrade pip
 RUN pip install --upgrade --no-cache-dir -r ./python/requirements.txt
 
 # Remove the default uvloop
