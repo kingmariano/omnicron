@@ -1,7 +1,7 @@
-# Stage 1: Build stage with Ubuntu
-FROM ubuntu:22.04 AS builder
+# Use the Ubuntu Slim base image
+FROM ubuntu:22.04-slim
 
-WORKDIR /build
+WORKDIR /app
 
 # Set build arguments for API keys
 ARG MY_API_KEY
@@ -11,6 +11,7 @@ ARG REPLICATE_API_TOKEN
 ARG CLOUDINARY_URL
 ARG YOUTUBE_DEVELOPER_KEY
 ARG TESSERACT_PREFIX
+
 # Set environment variables from build arguments
 ENV MY_API_KEY=${MY_API_KEY}
 ENV GROK_API_KEY=${GROK_API_KEY}
@@ -21,6 +22,7 @@ ENV YOUTUBE_DEVELOPER_KEY=${YOUTUBE_DEVELOPER_KEY}
 ENV TESSERACT_PREFIX=${TESSERACT_PREFIX}
 ENV PORT=9000
 ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
+ENV PATH="/app/venv/bin:$PATH"
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y \
@@ -33,12 +35,14 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     cargo \
+    ffmpeg \
+    tesseract-ocr \
+    libffi-dev \
+    openssl-dev \
     && apt-get clean
 
-# Copy Go module files
+# Extract Go version from go.mod and install Go
 COPY go.mod go.sum ./
-
-# Extract Go version from go.mod
 RUN grep '^go ' go.mod | awk '{print $2}' > goversion.txt
 RUN curl -OL https://golang.org/dl/go$(cat goversion.txt).linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go$(cat goversion.txt).linux-amd64.tar.gz && \
@@ -53,53 +57,35 @@ RUN go mod download
 # Copy the entire project directory
 COPY . .
 
-
-# Set up Python virtual environment
-RUN python3 -m venv /build/venv
-ENV PATH="/build/venv/bin:$PATH"
-
-# Install Python dependencies in virtual environment
+# Set up Python virtual environment and install dependencies
 COPY ./python/requirements.txt ./python/requirements.txt
-RUN /build/venv/bin/pip install --upgrade pip
-RUN /build/venv/bin/pip install --upgrade --no-cache-dir -r ./python/requirements.txt
+RUN python3 -m venv /app/venv && \
+    /app/venv/bin/pip install --upgrade pip && \
+    /app/venv/bin/pip install --upgrade --no-cache-dir -r ./python/requirements.txt && \
+    /app/venv/bin/pip uninstall -y uvloop
 
-# Remove the default uvloop
-RUN /build/venv/bin/pip uninstall -y uvloop
-
-# Build the Go application
-RUN CGO_ENABLED=0 GOOS=linux go build -o ./omnicron
-# Stage 2: Final stage with Alpine for a smaller image
-FROM alpine:latest
-
-WORKDIR /app
-
-# Install runtime packages including tesseract-ocr
-RUN apk add --no-cache ffmpeg curl python3 py3-pip tesseract-ocr
-
-# Copy .env file
-# COPY .env /app/.env
-
-# Copy the built Go binary
-COPY --from=builder /build/omnicron ./omnicron
-
-# Ensure the binary is executable
-RUN chmod +x /app/omnicron
-
-# Copy Python virtual environment
-COPY --from=builder /build/venv /app/venv
+# Verify installations
+RUN python3 --version
+RUN /app/venv/bin/pip --version
+RUN go version
+RUN ffmpeg -version
+RUN tesseract --version
 
 # Copy Python scripts
 COPY ./python /app/python
 
-# Verify Python installation
-RUN python3 --version
+# Build the Go application
+RUN CGO_ENABLED=0 GOOS=linux go build -o ./omnicron
 
-# Verify Tesseract installation and version
-RUN tesseract --version
+# Ensure the Go binary is executable
+RUN chmod +x /app/omnicron
 
 # Define the health check command
 HEALTHCHECK --interval=1m --timeout=10s --retries=10 \
   CMD curl -f $HEALTHCHECK_ENDPOINT || exit 1
+
+# Expose port 8000 for the FastAPI server
+EXPOSE 8000
 
 # Expose port 9000
 EXPOSE 9000
