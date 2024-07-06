@@ -100,3 +100,12 @@ jobs:
           context: .
           push: true
           tags: charlesozo/omnicron:latest, charlesozo/omnicron:${{github.run_number}}
+          build-args: |
+              MY_API_KEY=${{env.MY_API_KEY }}
+              GROK_API_KEY=${{env.GROK_API_KEY }}
+              GEMINI_PRO_API_KEY=${{env.GEMINI_PRO_API_KEY}}
+              REPLICATE_API_TOKEN=${{env.REPLICATE_API_TOKEN }}
+              CLOUDINARY_URL=${{env.CLOUDINARY_URL}}
+              YOUTUBE_DEVELOPER_KEY=${{env.YOUTUBE_DEVELOPER_KEY}}
+              TESSERACT_PREFIX=${{env.TESSERACT_PREFIX}}
+          
