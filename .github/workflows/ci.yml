@@ -11,6 +11,15 @@ on:
 jobs:
   setup_and_build:
     runs-on: ubuntu-latest
+    env:
+      MY_API_KEY: ${{ secrets.MY_API_KEY }}
+      GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+      GEMINI_PRO_API_KEY: ${{ secrets.GEMINI_PRO_API_KEY }}
+      REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+      CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
+      YOUTUBE_DEVELOPER_KEY: ${{ secrets.YOUTUBE_DEVELOPER_KEY }}
+      TESSERACT_PREFIX: "/usr/share/tesseract-ocr/4.00/tessdata"
+      PORT: 9000
     steps:
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -48,15 +57,6 @@ jobs:
         run: |
           source venv/bin/activate
           pip install -r ./python/requirements.txt
-
-      - name: Set environment variables
-        run: |
-          echo "API_KEY=${{ secrets.MY_API_KEY }}" >> $GITHUB_ENV
-          echo "GROK_API_KEY=${{ secrets.GROK_API_KEY }}" >> $GITHUB_ENV
-          echo "REPLICATE_API_TOKEN=${{ secrets.REPLICATE_API_TOKEN }}" >> $GITHUB_ENV
-          echo "CLOUDINARY_URL=${{ secrets.CLOUDINARY_URL }}" >> $GITHUB_ENV
-          echo "YOUTUBE_DEVELOPER_KEY=${{ secrets.YOUTUBE_DEVELOPER_KEY }}" >> $GITHUB_ENV
-          echo "PORT=8000" >> $GITHUB_ENV
 
       - name: Fetch dependencies
         run: make deps
@@ -100,10 +100,3 @@ jobs:
           context: .
           push: true
           tags: charlesozo/omnicron:latest, charlesozo/omnicron:${{github.run_number}}
-          build-args: |
-            MY_API_KEY=${{ secrets.MY_API_KEY }}
-            GROK_API_KEY=${{ secrets.GROK_API_KEY }}
-            REPLICATE_API_TOKEN=${{ secrets.REPLICATE_API_TOKEN }}
-            CLOUDINARY_URL=${{ secrets.CLOUDINARY_URL }}
-            GEMINI_PRO_API_KEY=${{ secrets.GEMINI_PRO_API_KEY }}
-            YOUTUBE_DEVELOPER_KEY=${{ secrets.YOUTUBE_DEVELOPER_KEY }}

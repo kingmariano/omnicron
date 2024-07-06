@@ -22,9 +22,9 @@ package docgpt
 
 import (
 	"fmt"
+	"net/http"
 	"github.com/kingmariano/omnicron/config"
 	"github.com/kingmariano/omnicron/utils"
-	"net/http"
 )
 
 func DocGPT(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
@@ -33,8 +33,7 @@ func DocGPT(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error parsing multipart form, %v", err))
 	}
-
-	file, fileHeader, err := r.FormFile("file")
+  	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, fmt.Sprintf("Error retrieving the file, %v", err))
 		return

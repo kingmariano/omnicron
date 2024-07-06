@@ -44,14 +44,14 @@ func TestDownloadVideoData(t *testing.T) {
 		// 		resolution: "",
 		// 	},
 		// },
-		// {
-		// 	name: "Download 720p video",
-		// 	args: args{
-		// 		url:        "https://youtu.be/ZT0yQgUIZho",
-		// 		outputName: "test_video_720p",
-		// 		resolution: "720p",
-		// 	},
-		// },
+		{
+			name: "Download 720p video",
+			args: args{
+				url:        "https://youtu.be/ZT0yQgUIZho",
+				outputName: "test_video_720p",
+				resolution: "720p",
+			},
+		},
 
 		{
 			name: "Download 240p video",
@@ -73,7 +73,6 @@ func TestDownloadVideoData(t *testing.T) {
 			_, err = DownloadVideoData(tt.args.url, tt.args.outputName, folderPath, tt.args.resolution)
 			if err != nil {
 				t.Errorf("DownloadVideoData() error = %v", err)
-				return
 			}
 			//delete folder after downloading
 			err = utils.DeleteFolder(folderPath)

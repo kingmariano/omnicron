@@ -73,23 +73,47 @@ func TestConvertToMP3(t *testing.T) {
 }
 
 func TestConvertReaderToMP3(t *testing.T) {
-	filePath := "../assets/videos/sample.mp4"
-	folderPath, err := utils.CreateUniqueFolder(utils.BasePath)
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		FilePath        string
+		ExpectedOutcome error
+	}{
+		{
+			FilePath:        "../assets/audios/sample1.aiff",
+			ExpectedOutcome: nil,
+		},
+		{
+			FilePath:        "../assets/videos/sample.mp4",
+			ExpectedOutcome: nil,
+		},
+		{
+			FilePath:        "../assets/documents/sample1.pdf",
+			ExpectedOutcome: utils.UnsupportedFileFormat,
+		},
 	}
-	videoFile, err := os.Open(filePath)
-	if err != nil {
-		t.Fatal(err)
+	for _, test := range tests {
+		t.Run(test.FilePath, func(t *testing.T) {
+			folderPath, err := utils.CreateUniqueFolder(utils.BasePath)
+			if err != nil {
+				t.Fatalf("unexpected error creating  directory: %v", err)
+			}
+			videoFile, err := os.Open(test.FilePath)
+			if err != nil {
+				//remove the existing folder created
+				err = utils.DeleteFolder(folderPath)
+				assert.NoError(t, err)
+				t.Fatalf("unexpected error opening file: %v", err)
+			}
+			// Convert the reader to MP3 and check the outcome
+			outputFileName, err := utils.ConvertReaderToMP3(videoFile, folderPath)
+			assert.Equal(t, test.ExpectedOutcome, err)
+			if err == nil {
+				assert.NotEmpty(t, outputFileName)
+			}
+			//clean up the directory
+			err = utils.DeleteFolder(folderPath)
+			assert.NoError(t, err)
+		})
 	}
-	outputFileName, err := utils.ConvertReaderToMP3(videoFile, folderPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.NotEmpty(t, outputFileName)
-	// Clean up
-	err = utils.DeleteFolder(folderPath)
-	assert.NoError(t, err)
 
 }
 

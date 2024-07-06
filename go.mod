@@ -9,6 +9,7 @@ require (
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/google/uuid v1.6.0
+	github.com/h2non/filetype v1.1.3
 	github.com/iawia002/lux v0.24.1
 	github.com/joho/godotenv v1.5.1
 	github.com/jpoz/groq v0.0.0-20240513145022-7a02894105a0
