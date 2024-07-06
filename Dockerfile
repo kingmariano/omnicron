@@ -1,5 +1,5 @@
-# Use the Alpine base image
-FROM alpine:latest
+# Use the Python 3.11 slim base image
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -23,27 +23,24 @@ ENV TESSERACT_PREFIX=${TESSERACT_PREFIX}
 ENV PORT=9000
 ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
 
-
-
 # Install necessary packages
-RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    python3-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    ffmpeg \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    libtesseract-dev \
+    libleptonica-dev \
     gcc \
     g++ \
-    musl-dev \
-    build-base \
-    curl \
     cargo \
-    go \
-    ffmpeg \
-    tesseract-ocr 
-
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create and activate a virtual environment
-RUN python3 -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
+# RUN python3 -m venv /app/venv
+# ENV PATH="/app/venv/bin:$PATH"
 
 # Upgrade pip and install Python dependencies
 COPY ./python/requirements.txt ./python/requirements.txt
@@ -71,7 +68,7 @@ RUN ffmpeg -version
 RUN tesseract --version
 
 # Copy .env file
-# COPY .env /app/.env
+COPY .env /app/.env
 
 # Ensure the Go binary is executable
 RUN chmod +x /app/omnicron
