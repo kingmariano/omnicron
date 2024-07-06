@@ -31,11 +31,10 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
 	"github.com/h2non/filetype"
 	ffmpeg "github.com/u2takey/ffmpeg-go" // Import the ffmpeg-go package for video and audio processing
 )
-var UnsupportedFileFormat error = errors.New("unsupported file format")
+var ErrUnsupportedFileFormat = errors.New("unsupported file format")
 // DownloadFileURL downloads a file from the given URL and saves it to the specified path.
 func DownloadFileURL(url, dest string) (string, error) {
 	client := &http.Client{}                     // Create an HTTP client
@@ -157,5 +156,5 @@ func getSupportedFileType(fileType []byte) (string, error){
 		return fileFormat.MIME.Value, nil
 	   }
 	}
-    return "", UnsupportedFileFormat
+    return "", ErrUnsupportedFileFormat
 }

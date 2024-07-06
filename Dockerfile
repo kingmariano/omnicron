@@ -11,12 +11,13 @@ ARG REPLICATE_API_TOKEN
 ARG CLOUDINARY_URL
 ARG YOUTUBE_DEVELOPER_KEY
 ARG TESSERACT_PREFIX
+
 # Set environment variables from build arguments
 ENV MY_API_KEY=${MY_API_KEY}
 ENV GROK_API_KEY=${GROK_API_KEY}
 ENV GEMINI_PRO_API_KEY=${GEMINI_PRO_API_KEY}
 ENV REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN}
-ENV CLOUDINARY_URL = ${CLOUDINARY_URL}
+ENV CLOUDINARY_URL=${CLOUDINARY_URL}
 ENV YOUTUBE_DEVELOPER_KEY=${YOUTUBE_DEVELOPER_KEY}
 ENV TESSERACT_PREFIX=${TESSERACT_PREFIX}
 ENV PORT=9000
@@ -26,15 +27,12 @@ ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
-    python3-venv \
     gcc \
     g++ \
     musl-dev \
-    ffmpeg \
     build-essential \
     curl \
     cargo \
-    tesseract-ocr \
     && apt-get clean
 
 # Copy Go module files
@@ -55,52 +53,69 @@ RUN go mod download
 # Copy the entire project directory
 COPY . .
 
-# Build the Go application
-RUN go build -o ./omnicron
-
-# Set up Python virtual environment
-RUN python3 -m venv /build/venv
-ENV PATH="/build/venv/bin:$PATH"
-
-# Install Python dependencies in virtual environment
+# Install Python dependencies
 COPY ./python/requirements.txt ./python/requirements.txt
-RUN /build/venv/bin/pip install --upgrade pip
-RUN /build/venv/bin/pip install --upgrade --no-cache-dir -r ./python/requirements.txt
+RUN pip3 install --upgrade pip
+RUN pip3 install --upgrade --no-cache-dir -r ./python/requirements.txt --target /build/python-packages
 
 # Remove the default uvloop
-RUN /build/venv/bin/pip uninstall -y uvloop
+RUN pip3 uninstall -y uvloop
+
+# Determine the Python version
+RUN python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2 > python-version.txt
+
+# Build the Go application
+RUN CGO_ENABLED=0 GOOS=linux go build -o ./omnicron
 
 # Stage 2: Final stage with Alpine for a smaller image
 FROM alpine:latest
 
 WORKDIR /app
 
-# Install runtime packages
-RUN apk add --no-cache ffmpeg curl
+# Install runtime packages including tesseract-ocr
+RUN apk add --no-cache ffmpeg curl python3 py3-pip tesseract-ocr
+
+# Copy .env file
+COPY .env /app/.env
 
 # Copy the built Go binary
 COPY --from=builder /build/omnicron ./omnicron
 
-# Copy ffmpeg binary from the builder stage
-COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
-COPY --from=builder /usr/share/ffmpeg /usr/share/ffmpeg
+# Ensure the binary is executable
+RUN chmod +x /app/omnicron
 
-# Copy Tesseract binaries from the builder stage
-COPY --from=builder /usr/bin/tesseract /usr/bin/tesseract
-COPY --from=builder /usr/share/tesseract-ocr /usr/share/tesseract-ocr
+# Determine the Python version from the build stage
+COPY --from=builder /build/python-version.txt /app/python-version.txt
+RUN PYTHON_VERSION=$(cat /app/python-version.txt)
 
-# Copy Python virtual environment
-COPY --from=builder /build/venv /app/venv
+# Install Python dependencies
+COPY --from=builder /build/python-packages /usr/local/lib/python$PYTHON_VERSION/site-packages
 
 # Copy Python scripts
 COPY ./python /app/python
+
+# Ensure the correct interpreter is used
+RUN ln -sf /usr/bin/python3 /usr/local/bin/python3
+RUN ln -sf /usr/bin/pip3 /usr/local/bin/pip3
+
+# Verify ffmpeg installation
+RUN ffmpeg -version
+
+# Verify Python installation
+RUN python3 --version
+
+# Verify Tesseract installation and version
+RUN tesseract --version
 
 # Define the health check command
 HEALTHCHECK --interval=1m --timeout=10s --retries=10 \
   CMD curl -f $HEALTHCHECK_ENDPOINT || exit 1
 
+# Expose port 8000 for the FastAPI server
+EXPOSE 8000
+
 # Expose port 9000
 EXPOSE 9000
 
 # Run the application
-CMD ["/app/omnicron"]
+ENTRYPOINT ["/app/omnicron"]

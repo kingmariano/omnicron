@@ -72,7 +72,7 @@ func main() {
 	// Load environment variables
 	apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, err := utils.LoadEnv(".env")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("error opening .env %v ", err)
 	}
 
 	// Start the FastAPI server

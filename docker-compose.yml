@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.6'
 
 services:
   omnicron:
@@ -12,6 +12,7 @@ services:
         REPLICATE_API_TOKEN: ${REPLICATE_API_TOKEN}
         CLOUDINARY_URL: ${CLOUDINARY_URL}
         YOUTUBE_DEVELOPER_KEY: ${YOUTUBE_DEVELOPER_KEY}
+    image: omnicron:latest  # Tag the image as 'latest'
     environment:
       MY_API_KEY: ${MY_API_KEY}
       GROK_API_KEY: ${GROK_API_KEY}
@@ -23,10 +24,5 @@ services:
       HEALTHCHECK_ENDPOINT: http://localhost:${PORT}/api/v1/readiness
     ports: 
       - "9000:9000"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/api/v1/readiness"]
-      interval: 1m
-      timeout: 10s
-      retries: 10
     env_file:
       - .env

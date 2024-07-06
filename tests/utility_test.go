@@ -87,7 +87,7 @@ func TestConvertReaderToMP3(t *testing.T) {
 		},
 		{
 			FilePath:        "../assets/documents/sample1.pdf",
-			ExpectedOutcome: utils.UnsupportedFileFormat,
+			ExpectedOutcome: utils.ErrUnsupportedFileFormat,
 		},
 	}
 	for _, test := range tests {

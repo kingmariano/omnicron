@@ -58,6 +58,8 @@ func LoadEnv(path string) (string, string, string, string, string, string, error
 	if youtubeDeveloperKey == "" {
 		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, "", errors.New("unable to getyoutube developer")
 	}
+	log.Printf("all env is set apikey: %s, repicateApiKey: %s, cloudinaryURL: %s", apiKey, replicateApiKey, cloudinaryURL)
+	
 	return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, nil
 
 }
