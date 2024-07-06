@@ -100,3 +100,4 @@ jobs:
           context: .
           push: true
           tags: charlesozo/omnicron:latest, charlesozo/omnicron:${{github.run_number}}
+          

@@ -63,7 +63,7 @@ RUN ffmpeg -version
 RUN tesseract --version
 
 # Copy .env file
-COPY .env /app/.env
+# COPY .env /app/.env
 
 # Ensure the Go binary is executable
 RUN chmod +x /app/omnicron
