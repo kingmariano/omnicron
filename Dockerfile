@@ -27,6 +27,7 @@ ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
 RUN apk add --no-cache \
     python3 \
     py3-pip \
+    python3-dev \
     gcc \
     g++ \
     musl-dev \
@@ -35,7 +36,21 @@ RUN apk add --no-cache \
     cargo \
     go \
     ffmpeg \
-    tesseract-ocr
+    tesseract-ocr \
+    libffi-dev \
+    openssl-dev
+
+# Create and activate a virtual environment
+RUN python3 -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
+
+# Upgrade pip and install Python dependencies
+COPY ./python/requirements.txt ./python/requirements.txt
+RUN pip install --upgrade pip
+RUN pip install --upgrade --no-cache-dir -r ./python/requirements.txt
+
+# Remove the default uvloop
+RUN pip uninstall -y uvloop
 
 # Copy Go module files and download dependencies
 COPY go.mod go.sum ./
@@ -44,20 +59,12 @@ RUN go mod download
 # Copy the entire project directory
 COPY . .
 
-# Install Python dependencies
-COPY ./python/requirements.txt ./python/requirements.txt
-RUN pip3 install --upgrade pip
-RUN pip3 install --upgrade --no-cache-dir -r ./python/requirements.txt
-
-# Remove the default uvloop
-RUN pip3 uninstall -y uvloop
-
 # Build the Go application
 RUN CGO_ENABLED=0 GOOS=linux go build -o ./omnicron
 
 # Verify installations
 RUN python3 --version
-RUN pip3 --version
+RUN pip --version
 RUN go version
 RUN ffmpeg -version
 RUN tesseract --version

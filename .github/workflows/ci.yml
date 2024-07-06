@@ -100,4 +100,6 @@ jobs:
           context: .
           push: true
           tags: charlesozo/omnicron:latest, charlesozo/omnicron:${{github.run_number}}
+          build-args: |
+              MY_API_KEY=${{env.MY_API_KEY }}
           
