@@ -1,5 +1,5 @@
 # Use the Ubuntu Slim base image
-FROM ubuntu:22.04-slim
+FROM ubuntu:22.04
 
 WORKDIR /app
 
@@ -43,7 +43,9 @@ RUN apt-get update && apt-get install -y \
 
 # Extract Go version from go.mod and install Go
 COPY go.mod go.sum ./
+
 RUN grep '^go ' go.mod | awk '{print $2}' > goversion.txt
+
 RUN curl -OL https://golang.org/dl/go$(cat goversion.txt).linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go$(cat goversion.txt).linux-amd64.tar.gz && \
     ln -s /usr/local/go/bin/go /usr/local/bin/go
