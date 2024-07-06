@@ -37,8 +37,6 @@ RUN apt-get update && apt-get install -y \
     cargo \
     ffmpeg \
     tesseract-ocr \
-    libffi-dev \
-    openssl-dev \
     && apt-get clean
 
 # Extract Go version from go.mod and install Go
