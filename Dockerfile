@@ -77,7 +77,7 @@ WORKDIR /app
 RUN apk add --no-cache ffmpeg curl python3 py3-pip tesseract-ocr
 
 # Copy .env file
-COPY .env /app/.env
+# COPY .env /app/.env
 
 # Copy the built Go binary
 COPY --from=builder /build/omnicron ./omnicron
