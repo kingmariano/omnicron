@@ -48,9 +48,6 @@ RUN rustup-init -y --profile minimal && \
     rustup update && \
     rustup default stable
 
-# Install maturin
-RUN pip install maturin
-
 # Create and activate a virtual environment
 RUN python3 -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
@@ -58,6 +55,8 @@ ENV PATH="/app/venv/bin:$PATH"
 # Upgrade pip and install Python dependencies
 COPY ./python/requirements.txt ./python/requirements.txt
 RUN pip install --upgrade pip
+# Install maturin
+RUN pip install maturin
 RUN pip install --upgrade --no-cache-dir -r ./python/requirements.txt
 
 # Remove the default uvloop
