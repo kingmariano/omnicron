@@ -1,5 +1,5 @@
-# Use the Python 3.11 slim base image
-FROM python:3.11-slim
+# Use the Alpine base image
+FROM alpine:latest
 
 WORKDIR /app
 
@@ -24,23 +24,36 @@ ENV PORT=9000
 ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
 
 # Install necessary packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    ffmpeg \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    libtesseract-dev \
-    libleptonica-dev \
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    python3-dev \
     gcc \
     g++ \
+    musl-dev \
+    build-base \
+    curl \
     cargo \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+    go \
+    ffmpeg \
+    tesseract-ocr \
+    libffi-dev \
+    openssl-dev \
+    rustup \
+    cargo
+
+# Install Rust
+RUN rustup-init -y --profile minimal && \
+    source $HOME/.cargo/env && \
+    rustup update && \
+    rustup default stable
+
+# Install maturin
+RUN pip install maturin
 
 # Create and activate a virtual environment
-# RUN python3 -m venv /app/venv
-# ENV PATH="/app/venv/bin:$PATH"
+RUN python3 -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
 
 # Upgrade pip and install Python dependencies
 COPY ./python/requirements.txt ./python/requirements.txt
