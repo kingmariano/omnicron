@@ -102,8 +102,11 @@ type ErrorResponse struct {
 	Detail string `json:"detail"`
 }
 
+// FilteredResponse is a map to store the filtered results
+type FilteredResponse  map[int]string
+
 // CallMusicSearchFastAPI makes a request to the FastAPI server endpoint for music search.
-func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey string) (*MusicSearchResponse, error) {
+func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey string) (*FilteredResponse, error) {
 	// Marshal request data to JSON
 	jsonData, err := json.Marshal(request)
 	if err != nil {
@@ -145,5 +148,12 @@ func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey string) (*MusicSe
 		return nil, err
 	}
 
-	return &response, nil
+	res := response
+	// Filter the results based on the share subject criteria
+	FiltRes := make(FilteredResponse)
+    for i, song := range res.Tracks.Hits {
+        FiltRes[i] = song.Share.Subject
+    }
+
+   	return &FiltRes, nil
 }

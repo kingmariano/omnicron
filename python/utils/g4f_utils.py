@@ -35,7 +35,6 @@ class Message(str, Enum):
 
 _PROVIDERS = [
     g4f.Provider.Liaobots,
-    g4f.Provider.DuckDuckGo,
     g4f.Provider.Feedough,
     g4f.Provider.Cnote,
     g4f.Provider.Blackbox,

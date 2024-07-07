@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y \
     cargo \
     ffmpeg \
     tesseract-ocr \
-    && apt-get clean
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Extract Go version from go.mod and install Go
 COPY go.mod go.sum ./
