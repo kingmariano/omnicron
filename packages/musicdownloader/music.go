@@ -57,7 +57,11 @@ func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig
 	maxLength = 1
 	audioDirectURL, err := downloadYoutubeLinkAndConvertToMp3(ctx, params.Song, maxLength, cfg.YoutubeDeveloperKey, cfg.CloudinaryUrl, folderPath)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		if cleanupErr := utils.DeleteFolder(folderPath); cleanupErr != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Failed to delete folder: "+cleanupErr.Error())
+			return
+		}
+		utils.RespondWithError(w, http.StatusInternalServerError, "Conversion failed: "+err.Error())
 		return
 	}
 	//clean up; remove folder after uploading

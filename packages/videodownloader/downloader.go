@@ -65,7 +65,11 @@ func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig
 	}
 	videoPath, err := DownloadVideoData(params.URL, utils.OutputName, folderPath, params.Resolution)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		if cleanupErr := utils.DeleteFolder(folderPath); cleanupErr != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Failed to delete folder: "+cleanupErr.Error())
+			return
+		}
+		utils.RespondWithError(w, http.StatusInternalServerError, "Conversion failed: "+err.Error())
 		return
 	}
 
