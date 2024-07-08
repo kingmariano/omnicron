@@ -42,7 +42,11 @@ func ConvertToMp3(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig)
 	// processes the uploaded file and converts it to mp3, then saves it to the unique folder path
 	outputfileName, err := handleRequestBodyAndConvertToMP3(r, folderPath)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		if cleanupErr := utils.DeleteFolder(folderPath); cleanupErr != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Failed to delete folder: "+cleanupErr.Error())
+			return
+		}
+		utils.RespondWithError(w, http.StatusInternalServerError, "Conversion failed: "+err.Error())
 		return
 	}
 	// uploads the file to cloudinary to get back the direct url link

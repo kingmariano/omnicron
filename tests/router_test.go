@@ -36,8 +36,6 @@ func setupRouter(t *testing.T) (*chi.Mux, *config.ApiConfig) {
 		youtubeDeveloperKey = os.Getenv("YOUTUBE_DEVELOPER_KEY")
 	}
 
-
-
 	if apiKey == "" || grokApiKey == "" || replicateApiKey == "" || cloudinaryURL == "" || port == "" || youtubeDeveloperKey == "" {
 		t.Fatal("unable to get API key or port from environment variables")
 	}

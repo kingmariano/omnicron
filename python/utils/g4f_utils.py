@@ -34,14 +34,18 @@ class Message(str, Enum):
 
 
 _PROVIDERS = [
+    g4f.Provider.FreeGpt,
+    g4f.Provider.PerplexityLabs,
     g4f.Provider.Liaobots,
+    g4f.Provider.Aichatos,
+    g4f.Provider.DeepInfra,
     g4f.Provider.Feedough,
     g4f.Provider.Cnote,
     g4f.Provider.Blackbox,
-    g4f.Provider.Aichatos,
     g4f.Provider.Llama,
     g4f.Provider.HuggingFace,
     g4f.Provider.Koala,
+    g4f.Provider.OpenaiChat,
     g4f.Provider.Replicate,
     g4f.Provider.Groq,
     g4f.Provider.FreeChatgpt,
@@ -49,7 +53,7 @@ _PROVIDERS = [
 ]
 
 g4f.debug.logging = True
-
+allowedG4FModels = ["gpt-3.5-turbo", "gpt-4", "gpt-4o"]
 
 def _create_message_list(messages: List[Message]) -> List[dict]:
     """Create a list of dictionaries from Message enum"""
@@ -88,22 +92,10 @@ def get_chat_completion_response(
     """
     try:
         message_list = _create_message_list(messages)
-
-        if model is not None and model not in ["gpt-3.5-turbo", "gpt-4"]:
-            raise ValueError(
-                "Invalid model. Only 'gpt-3.5-turbo' or 'gpt-4' are allowed.")
-        if model in ["gpt-3.5-turbo", "gpt-4"]:
-            response = g4f.ChatCompletion.create(
-                model=model,
-                messages=message_list,
-                stream=stream,
-                proxy=proxy,
-                timeout=timeout
-            )
+        # use the geminipro provider to handle image input
         if image is not None:
             response = g4f.ChatCompletion.create(
                 provider=GeminiPro,
-                model=model,
                 image=image,
                 api_key=gemini_api_key,
                 messages=message_list,
@@ -111,6 +103,19 @@ def get_chat_completion_response(
                 proxy=proxy,
                 timeout=timeout,
             )
+        # if model is specifed in the input but now among the allowedmodel throw error
+        if model is not None and model not in allowedG4FModels:
+            raise ValueError(
+                "Invalid model. Only 'gpt-3.5-turbo', 'gpt-4'  'g4f-4o' are allowed.")
+        elif model is not None and model in allowedG4FModels:
+            response = g4f.ChatCompletion.create(
+                model=model,
+                messages=message_list,
+                stream=stream,
+                proxy=proxy,
+                timeout=timeout
+            )
+            # model is not specified so the retryprovider is used
         else:
             response = g4f.ChatCompletion.create(
                 model=g4f.models.default,
@@ -129,9 +134,9 @@ def get_chat_completion_response(
 
     except ValueError as e:
         if model == "gpt-4":
-            print("Fallback to 'gpt-3.5-turbo'")
+            print("Fallback to 'gpt-3.5-turbo' ")
             return get_chat_completion_response(
-                messages, grok_api_key, proxy, stream, timeout, model="gpt-3.5-turbo"
+                messages, grok_api_key, proxy, stream, timeout, model="gpt-4o"
             )
         raise e
 
