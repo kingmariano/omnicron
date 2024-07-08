@@ -127,10 +127,10 @@ func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, pr
 	for _, text := range docResponse.Text {
 		docOutputText += text + "\n"
 	}
-	if docOutputText == ""{
+	if docOutputText == "" {
 		return "", errors.New("document analysis returned empty text")
 	}
-    docGptPrompt := docGPTPrompt(docOutputText)
+	docGptPrompt := docGPTPrompt(docOutputText)
 	// Use the Groq library to create a chat completion request with the Groq API key
 	grokClient := groq.NewClient(groq.WithAPIKey(grokApiKey))
 	response, err := grokClient.CreateChatCompletion(

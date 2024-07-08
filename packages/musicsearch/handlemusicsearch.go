@@ -104,7 +104,7 @@ type ErrorResponse struct {
 
 // FilteredResponse is a struct to store the filtered results it contains the SonName,ShazamURL,SongImage gotten from the shazam API
 type FilteredResponse struct {
-	SongName string `json:"song_name"`
+	SongName  string `json:"song_name"`
 	ShazamURL string `json:"shazam_url"`
 	SongImage string `json:"song_image"`
 }
@@ -155,13 +155,13 @@ func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey string) ([]Filter
 	res := response
 	// Filter the results based on the share subject criteria
 	FiltRes := make([]FilteredResponse, 0, len(res.Tracks.Hits))
-    for _, song := range res.Tracks.Hits {
-        FiltRes = append(FiltRes, FilteredResponse{
-            SongName: song.Share.Subject,
-            ShazamURL: song.Share.Href,
-            SongImage: song.Share.Image,
-        })
-    }
+	for _, song := range res.Tracks.Hits {
+		FiltRes = append(FiltRes, FilteredResponse{
+			SongName:  song.Share.Subject,
+			ShazamURL: song.Share.Href,
+			SongImage: song.Share.Image,
+		})
+	}
 
-   	return FiltRes, nil
+	return FiltRes, nil
 }
