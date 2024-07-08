@@ -102,11 +102,15 @@ type ErrorResponse struct {
 	Detail string `json:"detail"`
 }
 
-// FilteredResponse is a map to store the filtered results
-type FilteredResponse  map[int]string
+// FilteredResponse is a struct to store the filtered results it contains the SonName,ShazamURL,SongImage gotten from the shazam API
+type FilteredResponse struct {
+	SongName string `json:"song_name"`
+	ShazamURL string `json:"shazam_url"`
+	SongImage string `json:"song_image"`
+}
 
 // CallMusicSearchFastAPI makes a request to the FastAPI server endpoint for music search.
-func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey string) (*FilteredResponse, error) {
+func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey string) ([]FilteredResponse, error) {
 	// Marshal request data to JSON
 	jsonData, err := json.Marshal(request)
 	if err != nil {
@@ -150,10 +154,14 @@ func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey string) (*Filtere
 
 	res := response
 	// Filter the results based on the share subject criteria
-	FiltRes := make(FilteredResponse)
-    for i, song := range res.Tracks.Hits {
-        FiltRes[i] = song.Share.Subject
+	FiltRes := make([]FilteredResponse, 0, len(res.Tracks.Hits))
+    for _, song := range res.Tracks.Hits {
+        FiltRes = append(FiltRes, FilteredResponse{
+            SongName: song.Share.Subject,
+            ShazamURL: song.Share.Href,
+            SongImage: song.Share.Image,
+        })
     }
 
-   	return &FiltRes, nil
+   	return FiltRes, nil
 }

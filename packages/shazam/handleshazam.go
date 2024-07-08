@@ -30,7 +30,6 @@ import (
 )
 
 const baseURL = "http://localhost:8000/api/v1/shazam" //url to the shazam endpoint in the python server
-// Calls the "/shazam" endpoint from the fastAPI server
 
 // ShazamResponse defines the structure of the JSON response from the FastAPI server.
 type ShazamResponse struct {
@@ -139,7 +138,15 @@ type ErrorResponse struct {
 	Detail string `json:"detail"`
 }
 
-func CallShazamFastAPI(file multipart.File, fileHeader *multipart.FileHeader, apiKey string) (*ShazamResponse, error) {
+// FilteredResponse is a struct to store the filtered results it contains the SonName,ShazamURL,SongImage gotten from the shazam API
+type FilteredResponse struct {
+	SongName  string `json:"song_name"`
+	ShazamURL string `json:"shazam_url"`
+	SongImage string `json:"song_image"`
+}
+
+// Calls the "/shazam" endpoint from the fastAPI server
+func CallShazamFastAPI(file multipart.File, fileHeader *multipart.FileHeader, apiKey string) (*FilteredResponse, error) {
 	// Create a buffer to write our form data to
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -184,6 +191,10 @@ func CallShazamFastAPI(file multipart.File, fileHeader *multipart.FileHeader, ap
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
-
-	return &response, nil
+	res := response
+	// Filter the results based on the share subject criteria
+	return &FilteredResponse{
+		SongName:  res.Track.Share.Subject,
+		ShazamURL: res.Track.Share.Href,
+		SongImage: res.Track.Share.Image}, nil
 }
