@@ -34,12 +34,12 @@ class Message(str, Enum):
 
 
 _PROVIDERS = [
-    g4f.Provider.FreeGpt,
+    g4f.Provider.Feedough,
     g4f.Provider.PerplexityLabs,
     g4f.Provider.Liaobots,
+    g4f.Provider.FreeGpt,
     g4f.Provider.Aichatos,
     g4f.Provider.DeepInfra,
-    g4f.Provider.Feedough,
     g4f.Provider.Cnote,
     g4f.Provider.Blackbox,
     g4f.Provider.Llama,

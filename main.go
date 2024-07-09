@@ -109,7 +109,7 @@ func main() {
 	v1Router.Post("/downloadvideo", ware.MiddleWareAuth(videodownloader.DownloadVideo, cfg))
 	v1Router.Post("/convert2mp3", ware.MiddleWareAuth(convert2mp3.ConvertToMp3, cfg))
 	v1Router.Post("/downloadmusic", ware.MiddleWareAuth(musicdownloader.DownloadMusic, cfg))
-	v1Router.Post("/chatgpt", ware.MiddleWareAuth(gpt.ChatCompletion, cfg))
+	v1Router.Post("/gpt4free", ware.MiddleWareAuth(gpt.ChatCompletion, cfg))
 	v1Router.Post("/shazam", ware.MiddleWareAuth(shazam.Shazam, cfg))
 	v1Router.Post("/musicsearch", ware.MiddleWareAuth(musicsearch.MusicSearch, cfg))
 	v1Router.Post("/youtubesummarization", ware.MiddleWareAuth(youtubesummarize.YoutubeSummarization, cfg))
