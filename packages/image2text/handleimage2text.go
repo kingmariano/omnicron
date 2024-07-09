@@ -23,14 +23,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"time"
 )
 
-const baseURL = "http://localhost:8000/api/v1/image_to_text" //url to the image to text endpoint in the python server
-// Calls the "/image+to_text" endpoint from the fastAPI server
 type ImageToTextResponse struct {
 	Text string `json:"text"`
 }
@@ -38,7 +37,9 @@ type ErrorResponse struct {
 	Detail string `json:"detail"`
 }
 
-func CallImageToTextFastAPI(file multipart.File, fileHeader *multipart.FileHeader, apiKey string) (*ImageToTextResponse, error) {
+// Calls the "/image+to_text" endpoint from the fastAPI server
+func CallImageToTextFastAPI(file multipart.File, fileHeader *multipart.FileHeader, apiKey, fastAPIBaseURL string) (*ImageToTextResponse, error) {
+	fastAPIImageToTextEndpoint := fmt.Sprintf("%s/api/v1/image_to_text", fastAPIBaseURL) //url to the image to text endpoint in the python server
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 	// Create a form file field
@@ -58,7 +59,7 @@ func CallImageToTextFastAPI(file multipart.File, fileHeader *multipart.FileHeade
 	client := &http.Client{
 		Timeout: time.Second * 300,
 	}
-	req, err := http.NewRequest("POST", baseURL, &b)
+	req, err := http.NewRequest("POST", fastAPIImageToTextEndpoint, &b)
 	if err != nil {
 		return nil, err
 	}

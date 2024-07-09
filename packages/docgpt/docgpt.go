@@ -45,7 +45,7 @@ func DocGPT(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 		utils.RespondWithError(w, http.StatusBadRequest, "Prompt is required")
 		return
 	}
-	response, err := CallDocGPTFastAPI(file, fileHeader, prompt, cfg.GrokApiKey, cfg.ApiKey)
+	response, err := CallDocGPTFastAPI(file, fileHeader, prompt, cfg.GrokApiKey, cfg.ApiKey, cfg.FASTAPIBaseURL)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return

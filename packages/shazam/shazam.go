@@ -39,7 +39,7 @@ func Shazam(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 		return
 	}
 	defer file.Close()
-	response, err := CallShazamFastAPI(file, fileHeader, cfg.ApiKey)
+	response, err := CallShazamFastAPI(file, fileHeader, cfg.ApiKey, cfg.FASTAPIBaseURL)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error calling Shazam Endpoint, %v", err))
 		return

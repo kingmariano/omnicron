@@ -39,7 +39,7 @@ func Image2text(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 		return
 	}
 	defer file.Close()
-	response, err := CallImageToTextFastAPI(file, fileHeader, cfg.ApiKey)
+	response, err := CallImageToTextFastAPI(file, fileHeader, cfg.ApiKey, cfg.FASTAPIBaseURL)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error calling the Image To Text Endpoint, %v", err))
 		return

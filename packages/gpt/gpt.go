@@ -56,7 +56,7 @@ func ChatCompletion(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfi
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error unmarshalling json, %v", err))
 		return
 	}
-	response, err := CallGPTFastAPI(chatParams, cfg.ApiKey)
+	response, err := CallGPTFastAPI(chatParams, cfg.ApiKey, cfg.FASTAPIBaseURL)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error handling chat completion, %v", err))
 		return

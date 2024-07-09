@@ -28,38 +28,42 @@ import (
 )
 
 // this function loads the environment varaibles from the path
-func LoadEnv(path string) (string, string, string, string, string, string, error) {
+func LoadEnv(path string) (string, string, string, string, string, string, string, error) {
 	err := godotenv.Load(path)
 	if err != nil {
 		log.Print(err)
 	}
 	apiKey := os.Getenv("MY_API_KEY")
 	if apiKey == "" {
-		return "", "", "", "", "", "", errors.New("unable to get API key")
+		return "", "", "", "", "", "", "", errors.New("unable to get API key")
 	}
 
 	grokApiKey := os.Getenv("GROK_API_KEY")
 	if grokApiKey == "" {
-		return apiKey, "", "", "", "", "", errors.New("unable to get Grok API key")
+		return apiKey, "", "", "", "", "", "", errors.New("unable to get Grok API key")
 	}
 	replicateApiKey := os.Getenv("REPLICATE_API_TOKEN")
 	if replicateApiKey == "" {
-		return apiKey, grokApiKey, "", "", "", "", errors.New("unable to get Replicate API key")
+		return apiKey, grokApiKey, "", "", "", "", "", errors.New("unable to get Replicate API key")
 	}
 	cloudinaryURL := os.Getenv("CLOUDINARY_URL")
 	if cloudinaryURL == "" {
-		return apiKey, grokApiKey, replicateApiKey, "", "", "", errors.New("unable to get cloudinary URL")
+		return apiKey, grokApiKey, replicateApiKey, "", "", "", "", errors.New("unable to get cloudinary URL")
 	}
 	port := os.Getenv("PORT")
 	if port == "" {
-		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, "", "", errors.New("unable to get port")
+		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, "", "", "", errors.New("unable to get port")
 	}
 	youtubeDeveloperKey := os.Getenv("YOUTUBE_DEVELOPER_KEY")
 	if youtubeDeveloperKey == "" {
-		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, "", errors.New("unable to getyoutube developer")
+		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, "", "", errors.New("unable to getyoutube developer")
 	}
-	log.Printf("all env is set apikey: %s, repicateApiKey: %s, cloudinaryURL: %s", apiKey, replicateApiKey, cloudinaryURL)
+	fastAPIBaseURL := os.Getenv("FAST_API_BASE_URL")
+	if fastAPIBaseURL == "" {
+		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, "", errors.New("unable to get fastAPI private URL")
+	}
 
-	return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, nil
+	log.Printf("all env is set apikey: %s, repicateApiKey: %s, cloudinaryURL: %s", apiKey, replicateApiKey, cloudinaryURL)
+	return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, fastAPIBaseURL, nil
 
 }
