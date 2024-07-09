@@ -10,7 +10,7 @@ GOMOD = $(GOCMD) mod
 BINARY_NAME = omicron
 
 # Targets
-all: clean deps update build
+all: clean deps update build 
 
 build:
 	$(GOBUILD) -o $(BINARY_NAME) -v
