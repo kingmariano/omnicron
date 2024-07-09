@@ -23,13 +23,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 )
 
-const baseURL = "http://localhost:8000/api/v1/chat/completion" //url to the chat completion endpoint in the FastAPI server
 // Calls the "/chatcompletion" endpoint from the fastAPI server
-func CallGPTFastAPI(request ChatRequest, apiKey string) (*ChatResponse, error) {
+func CallGPTFastAPI(request ChatRequest, apiKey string, fastAPIBaseUrl string) (*ChatResponse, error) {
+	fastAPIGPTEndPoint := fmt.Sprintf("%s/api/v1/chat/completion", fastAPIBaseUrl) //url to the chat completion endpoint in the FastAPI server
+	// marshal the request to json format for sending to the server
 	jsonData, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -38,7 +40,7 @@ func CallGPTFastAPI(request ChatRequest, apiKey string) (*ChatResponse, error) {
 		Timeout: time.Second * 30,
 	}
 
-	req, err := http.NewRequest("POST", baseURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", fastAPIGPTEndPoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}

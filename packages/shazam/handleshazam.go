@@ -23,13 +23,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"time"
 )
-
-const baseURL = "http://0.0.0.0:8000/api/v1/shazam" //url to the shazam endpoint in the python server
 
 // ShazamResponse defines the structure of the JSON response from the FastAPI server.
 type ShazamResponse struct {
@@ -146,7 +145,8 @@ type FilteredResponse struct {
 }
 
 // Calls the "/shazam" endpoint from the fastAPI server
-func CallShazamFastAPI(file multipart.File, fileHeader *multipart.FileHeader, apiKey string) (*FilteredResponse, error) {
+func CallShazamFastAPI(file multipart.File, fileHeader *multipart.FileHeader, apiKey, fastAPIBaseURL string) (*FilteredResponse, error) {
+	fastAPIShazamEndpoint := fmt.Sprintf("%s/api/v1/shazam", fastAPIBaseURL) //url to the shazam endpoint in the python server
 	// Create a buffer to write our form data to
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -168,7 +168,7 @@ func CallShazamFastAPI(file multipart.File, fileHeader *multipart.FileHeader, ap
 		Timeout: time.Second * 300,
 	}
 
-	req, err := http.NewRequest("POST", baseURL, &b)
+	req, err := http.NewRequest("POST", fastAPIShazamEndpoint, &b)
 	if err != nil {
 		return nil, err
 	}

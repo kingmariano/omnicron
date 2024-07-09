@@ -26,5 +26,6 @@ type ApiConfig struct {
 	ReplicateAPIKey     string
 	CloudinaryUrl       string
 	YoutubeDeveloperKey string
+	FASTAPIBaseURL      string
 	Port                string
 }

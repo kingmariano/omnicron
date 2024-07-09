@@ -48,7 +48,7 @@ type AnalyzeDocResponse struct {
 }
 
 // CallDocGPTFastAPI calls the "/doc_analyze" endpoint from the FastAPI server and processes the response then uses the grok AI API client to make a request acting as a document gpt.
-func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, prompt, grokApiKey, apiKey string) (string, error) {
+func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, prompt, grokApiKey, apiKey, fastAPIBaseURL string) (string, error) {
 	// Create a buffer to write our form data to
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -163,7 +163,7 @@ func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, pr
 				},
 			},
 		}
-		g4fResponse, err := gpt.CallGPTFastAPI(chatRequest, apiKey)
+		g4fResponse, err := gpt.CallGPTFastAPI(chatRequest, apiKey, fastAPIBaseURL)
 		if err != nil {
 			return "", fmt.Errorf("failed to call gpt fast API: %w", err)
 		}

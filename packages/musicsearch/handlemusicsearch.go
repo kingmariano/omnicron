@@ -23,11 +23,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 )
-
-const baseURL = "http://localhost:8000/api/v1/search-song"
 
 // MusicSearchRequest defines the structure of the request sent to the FastAPI server.
 type MusicSearchRequest struct {
@@ -110,7 +109,8 @@ type FilteredResponse struct {
 }
 
 // CallMusicSearchFastAPI makes a request to the FastAPI server endpoint for music search.
-func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey string) ([]FilteredResponse, error) {
+func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey, FASTAPIBaseURL string) ([]FilteredResponse, error) {
+	fastAPIMusicSearchEndpoint := fmt.Sprintf("%s/api/v1/search-song", FASTAPIBaseURL)
 	// Marshal request data to JSON
 	jsonData, err := json.Marshal(request)
 	if err != nil {
@@ -123,7 +123,7 @@ func CallMusicSearchFastAPI(request MusicSearchRequest, apiKey string) ([]Filter
 	}
 
 	// Create HTTP request
-	req, err := http.NewRequest("POST", baseURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", fastAPIMusicSearchEndpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
