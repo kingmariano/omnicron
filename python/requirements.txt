@@ -9,4 +9,5 @@ pydub
 nest_asyncio
 pymupdf
 pytesseract
+nodriver
 # ffmpeg is a required file to run in the dockerfile
