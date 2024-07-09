@@ -19,6 +19,7 @@ jobs:
       CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
       YOUTUBE_DEVELOPER_KEY: ${{ secrets.YOUTUBE_DEVELOPER_KEY }}
       TESSERACT_PREFIX: "/usr/share/tesseract-ocr/4.00/tessdata"
+      FAST_API_BASE_URL: "http://0.0.0.0:8000"
       PORT: 9000
     steps:
       - name: Set up Go
