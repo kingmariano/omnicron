@@ -29,7 +29,7 @@ import (
 	"time"
 )
 
-const baseURL = "http://localhost:8000/api/v1/shazam" //url to the shazam endpoint in the python server
+const baseURL = "http://0.0.0.0:8000/api/v1/shazam" //url to the shazam endpoint in the python server
 
 // ShazamResponse defines the structure of the JSON response from the FastAPI server.
 type ShazamResponse struct {
