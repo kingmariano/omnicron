@@ -58,7 +58,10 @@ RUN apt-get update && apt-get install -y \
 
 # Verify installations    
 RUN ffmpeg -version
-RUN tesseract --version    
+RUN tesseract --version   
+
+# Log the Tesseract installation path
+RUN which tesseract
 
 # Ensure the Go binary is executable
 RUN chmod +x /app/omnicron
