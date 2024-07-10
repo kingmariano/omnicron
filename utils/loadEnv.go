@@ -63,7 +63,6 @@ func LoadEnv(path string) (string, string, string, string, string, string, strin
 		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, "", errors.New("unable to get fastAPI private URL")
 	}
 
-	log.Printf("all env is set apikey: %s, repicateApiKey: %s, cloudinaryURL: %s", apiKey, replicateApiKey, cloudinaryURL)
 	return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, fastAPIBaseURL, nil
 
 }
