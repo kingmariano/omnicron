@@ -12,6 +12,7 @@ services:
         REPLICATE_API_TOKEN: ${REPLICATE_API_TOKEN}
         CLOUDINARY_URL: ${CLOUDINARY_URL}
         YOUTUBE_DEVELOPER_KEY: ${YOUTUBE_DEVELOPER_KEY}
+        TESSDATA_PREFIX: ${TESSDATA_PREFIX}
     image: omnicron:latest  # Tag the image as 'latest'
     environment:
       MY_API_KEY: ${MY_API_KEY}
@@ -21,6 +22,7 @@ services:
       CLOUDINARY_URL: ${CLOUDINARY_URL}
       YOUTUBE_DEVELOPER_KEY: ${YOUTUBE_DEVELOPER_KEY}
       PORT: ${PORT}
+      TESSDATA_PREFIX: ${TESSDATA_PREFIX}
       HEALTHCHECK_ENDPOINT: http://localhost:${PORT}/api/v1/readiness
     ports: 
       - "9000:9000"

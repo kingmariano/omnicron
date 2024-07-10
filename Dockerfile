@@ -10,8 +10,7 @@ ARG GEMINI_PRO_API_KEY
 ARG REPLICATE_API_TOKEN
 ARG CLOUDINARY_URL
 ARG YOUTUBE_DEVELOPER_KEY
-ARG TESSERACT_PREFIX
-
+ARG TESSDATA_PREFIX
 # Set environment variables from build arguments
 ENV MY_API_KEY=${MY_API_KEY}
 ENV GROK_API_KEY=${GROK_API_KEY}
@@ -19,8 +18,9 @@ ENV GEMINI_PRO_API_KEY=${GEMINI_PRO_API_KEY}
 ENV REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN}
 ENV CLOUDINARY_URL=${CLOUDINARY_URL}
 ENV YOUTUBE_DEVELOPER_KEY=${YOUTUBE_DEVELOPER_KEY}
-ENV TESSERACT_PREFIX=${TESSERACT_PREFIX}
 ENV PORT=9000
+# Set the TESSDATA_PREFIX environment variable
+ENV TESSDATA_PREFIX=${TESSDATA_PREFIX}
 
 COPY go.mod go.sum ./
 
@@ -51,6 +51,7 @@ COPY ./python /app/python
 # Install additional dependencies for Tesseract OCR and FFmpeg
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
+    tesseract-ocr-eng \
     ffmpeg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
