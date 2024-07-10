@@ -48,7 +48,7 @@ load_dotenv(env_path)
 api_key = os.getenv('MY_API_KEY')
 grok_api_key = os.getenv('GROK_API_KEY')
 gemini_api_key = os.getenv('GEMINI_PRO_API_KEY')
-tesseract_prefix = os.getenv('TESSERACT_PREFIX')
+tessdata_prefix = os.getenv('TESSDATA_PREFIX')
 # Check if essential environment variables are set
 if not api_key:
     raise RuntimeError("MY_API_KEY environment variable is not set.")
@@ -56,10 +56,10 @@ if not grok_api_key:
     raise RuntimeError("GROK_API_KEY environment variable is not set.")
 if not gemini_api_key:
     raise RuntimeError("GEMINI_PRO_API_KEY environment variable is not set.")
-if not tesseract_prefix:
+if not tessdata_prefix:
     raise RuntimeError("TESSERACT_PREFIX environment variable is not set.")
 
-os.environ['TESSDATA_PREFIX'] = tesseract_prefix
+os.environ['TESSDATA_PREFIX'] = tessdata_prefix
 import  fitz
 
 # Define the API key name

@@ -27,8 +27,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from endpoints import router
 import uvicorn
 
-loop = asyncio.get_event_loop()
-print(f"Using evet loop: {type(loop)}\n")
+# Ensure that there is an event loop
+try:
+    loop = asyncio.get_running_loop()
+except RuntimeError:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+print(f"Using event loop: {type(loop)}\n")
 print(f"Current event loop policy: {asyncio.get_event_loop_policy()}")
 
 app = FastAPI(title="omnicron python backend server")
