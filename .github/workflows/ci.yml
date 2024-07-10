@@ -18,7 +18,7 @@ jobs:
       REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
       CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
       YOUTUBE_DEVELOPER_KEY: ${{ secrets.YOUTUBE_DEVELOPER_KEY }}
-      TESSDATA_PREFIX: "/usr/local/share/tessdata"
+      TESSDATA_PREFIX: "/usr/local/bin/tesseract"
       FAST_API_BASE_URL: "http://0.0.0.0:8000"
       PORT: 9000
     steps:
