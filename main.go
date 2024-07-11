@@ -51,7 +51,7 @@ import (
 	"syscall"
 	"time"
 )
-
+const version = "1.0.0"
 // starts the python fastAPI server
 func startFastAPIServer() *exec.Cmd {
 	cmd := exec.Command("python", "./python/main.py")

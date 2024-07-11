@@ -1,0 +1,92 @@
+name: Tag and Release Workflow
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.pull_request.title, 'Release:')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.18'
+          
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Build
+        run: go build -o myapp ./...
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Set up Git
+        run: |
+          git config user.name "kingmariano"
+          git config user.email "charlesozochukwu2004@gmail.com"
+
+      - name: Get tag
+        id: get_tag
+        run: |
+          git branch --show-current
+          git pull
+          echo "version=v$(grep 'const version =' main.go | awk -F\" '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Tag the commit
+        run: |
+          next_version=${{ steps.get_tag.outputs.version }}
+          git tag -a "$next_version" -m "Version $next_version"
+          git push --follow-tags
+
+      - name: Create changelog diff
+        id: changelog_diff
+        run: |
+          sed -n "/^## \[${{ steps.get_tag.outputs.version }}\]/,/^## \[$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1))\]/{/^## \[$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1))\]/!p;}" CHANGELOG.md > release_notes.md
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_tag.outputs.version }}
+          release_name: Release ${{ steps.get_tag.outputs.version }}
+          body_path: ./release_notes.md
+          draft: false
+          prerelease: false
+
+      - name: Create ZIP Archive
+        run: zip -r source_code.zip .
+
+      - name: Create TAR.GZ Archive
+        run: tar -czvf source_code.tar.gz .
+
+      - name: Upload ZIP Archive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./source_code.zip
+          asset_name: source_code.zip
+          asset_content_type: application/zip
+
+      - name: Upload TAR.GZ Archive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./source_code.tar.gz
+          asset_name: source_code.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Delete release_notes file
+        run: rm release_notes.md
