@@ -21,6 +21,7 @@
 This module defines the FastAPI router for the omnicron python backend server.
 """
 
+import fitz
 import os
 import subprocess
 import aiofiles
@@ -61,7 +62,6 @@ if not tessdata_prefix:
     raise RuntimeError("TESSERACT_PREFIX environment variable is not set.")
 
 os.environ['TESSDATA_PREFIX'] = tessdata_prefix
-import  fitz
 
 # Define the API key name
 API_KEY_NAME = "Api-Key"
@@ -212,6 +212,8 @@ async def search_song(
         raise HTTPException(
             status_code=500,
             detail=f"Error searching song: {err}") from err
+
+
 @router.post("/doc_analyze")
 async def doc_analyze(file: UploadFile = File(...), _: str = Depends(check_api_key)):
     """
@@ -273,38 +275,4 @@ async def image_to_text(file: UploadFile = File(...), _: str = Depends(check_api
     finally:
         # Delete the temporary file
         if temp_file_path.exists():
-            temp_file_path.unlink()     
-
-
-@router.get("/check_tesseract_installation_path")
-async def check_tesseract_installation_path(_: str = Depends(check_api_key)):
-    """
-    Check the installation path of Tesseract and if the eng.traineddata file exists.
-    """
-    try:
-        # Find the Tesseract installation path
-        tesseract_path = subprocess.check_output(['which', 'tesseract']).decode().strip()
-
-        # Check if the eng.traineddata file exists in the specified TESSDATA_PREFIX or common directories
-        traineddata_paths = [
-            Path(tessdata_prefix) / 'eng.traineddata',
-            Path('/usr/share/tesseract-ocr/4.00/tessdata') / 'eng.traineddata',
-            Path('/usr/share/tesseract-ocr/tessdata') / 'eng.traineddata',
-            Path('/usr/local/share/tessdata') / 'eng.traineddata',
-            Path('/usr/share/tessdata') / 'eng.traineddata',
-            Path('/usr/share/tesseract/tessdata') / 'eng.traineddata',
-            Path('/var/lib/tesseract-ocr/tessdata') / 'eng.traineddata'
-        ]
-
-        for path in traineddata_paths:
-            if path.exists():
-                eng_traineddata_path = path
-                break
-        else:
-            raise FileNotFoundError("eng.traineddata not found in any known directories")
-
-        return JSONResponse(content={"tesseract_path": tesseract_path, "eng_traineddata_path": str(eng_traineddata_path)})
-    except subprocess.CalledProcessError:
-        raise HTTPException(status_code=500, detail="Tesseract is not installed or not found in PATH")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+            temp_file_path.unlink()
