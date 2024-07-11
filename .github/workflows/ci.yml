@@ -1,4 +1,4 @@
-name: ci Pipeline
+name: CI Pipeline
 
 on:
   push:
@@ -89,6 +89,26 @@ jobs:
       - name: Security Scan
         run: make security-scan
 
+  push_to_docker:
+    if: github.ref == 'refs/heads/main'
+    needs: setup_and_build
+    runs-on: ubuntu-latest
+    env:
+      MY_API_KEY: ${{ secrets.MY_API_KEY }}
+      GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+      GEMINI_PRO_API_KEY: ${{ secrets.GEMINI_PRO_API_KEY }}
+      REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+      CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
+      YOUTUBE_DEVELOPER_KEY: ${{ secrets.YOUTUBE_DEVELOPER_KEY }}
+      TESSDATA_PREFIX: "/usr/local/share/tessdata "
+      FAST_API_BASE_URL: "http://0.0.0.0:8000"
+      PORT: 9000
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -109,4 +129,48 @@ jobs:
               CLOUDINARY_URL=${{env.CLOUDINARY_URL}}
               YOUTUBE_DEVELOPER_KEY=${{env.YOUTUBE_DEVELOPER_KEY}}
               TESSDATA_PREFIX=${{env.TESSDATA_PREFIX}}
-          
+
+  create_github_release:
+    if: github.ref == 'refs/heads/main'
+    needs: push_to_docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+
+      - name: Create ZIP Archive
+        run: zip -r source_code.zip .
+
+      - name: Create TAR.GZ Archive
+        run: tar -czvf source_code.tar.gz .
+
+      - name: Upload ZIP Archive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./source_code.zip
+          asset_name: source_code.zip
+          asset_content_type: application/zip
+
+      - name: Upload TAR.GZ Archive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./source_code.tar.gz
+          asset_name: source_code.tar.gz
+          asset_content_type: application/gzip
