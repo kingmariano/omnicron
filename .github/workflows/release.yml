@@ -26,6 +26,8 @@ jobs:
           echo "version=v$(grep 'const version =' main.go | awk -F\" '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Tag the commit
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           next_version=${{ steps.get_tag.outputs.version }}
           git tag -a "$next_version" -m "Version $next_version"
