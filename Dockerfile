@@ -48,17 +48,53 @@ RUN python3 -m venv /app/venv && \
 # copy python scripts
 COPY ./python /app/python
 
-# Install additional dependencies for Tesseract OCR and FFmpeg
-RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-eng \
+# Install FFmpeg and other dependencies
+RUN apt-get update && \
+    apt-get install -y \
     ffmpeg \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    wget \
+    unzip \
+    bc \
+    vim \
+    python3-pip \
+    libleptonica-dev \
+    git \
+    make \
+    g++ \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    libpng-dev \
+    libjpeg62-turbo-dev \
+    libtiff5-dev \
+    libicu-dev \
+    libpango1.0-dev \
+    autoconf-archive \
+    poppler-utils && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Tesseract OCR
+RUN mkdir -p /app/src && cd /app/src && \
+    wget https://github.com/tesseract-ocr/tesseract/archive/5.0.0-alpha-20201224.zip && \
+    unzip 5.0.0-alpha-20201224.zip && \
+    cd tesseract-5.0.0-alpha-20201224 && \
+    ./autogen.sh && \
+    ./configure && \
+    make && \
+    make install && \
+    ldconfig && \
+    make training && \
+    make training-install && \
+    cd /usr/local/share/tessdata && \
+    wget https://github.com/tesseract-ocr/tessdata_best/raw/main/eng.traineddata && \
+    cd /app && \
+    rm -rf /app/src
 
 # Verify installations    
 RUN ffmpeg -version
-RUN tesseract --version    
+RUN tesseract --version   
 
 # Ensure the Go binary is executable
 RUN chmod +x /app/omnicron

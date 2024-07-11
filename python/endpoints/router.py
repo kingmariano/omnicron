@@ -21,7 +21,9 @@
 This module defines the FastAPI router for the omnicron python backend server.
 """
 
+import fitz
 import os
+import subprocess
 import aiofiles
 import asyncio
 from pathlib import Path  # Standard library imports
@@ -60,7 +62,6 @@ if not tessdata_prefix:
     raise RuntimeError("TESSERACT_PREFIX environment variable is not set.")
 
 os.environ['TESSDATA_PREFIX'] = tessdata_prefix
-import  fitz
 
 # Define the API key name
 API_KEY_NAME = "Api-Key"
@@ -211,6 +212,8 @@ async def search_song(
         raise HTTPException(
             status_code=500,
             detail=f"Error searching song: {err}") from err
+
+
 @router.post("/doc_analyze")
 async def doc_analyze(file: UploadFile = File(...), _: str = Depends(check_api_key)):
     """
@@ -272,4 +275,4 @@ async def image_to_text(file: UploadFile = File(...), _: str = Depends(check_api
     finally:
         # Delete the temporary file
         if temp_file_path.exists():
-            temp_file_path.unlink()       
+            temp_file_path.unlink()

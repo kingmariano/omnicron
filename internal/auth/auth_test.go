@@ -21,48 +21,61 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 )
 
-func TestGetHeaderToken_MultipleValues(t *testing.T) {
+func TestGetHeaderToken(t *testing.T) {
 	tests := []struct {
-		name    string
-		headers http.Header
-		want    string
-		wantErr error
+		name        string
+		headers     http.Header
+		expected    string
+		expectedErr error
 	}{
 		{
-			name:    "Single value in Api-Key header",
-			headers: http.Header{"Api-Key": []string{"value1"}},
-			want:    "value1",
+			name:        "No Authorization header",
+			headers:     http.Header{},
+			expected:    "",
+			expectedErr: ErrNoAuthHeaderIncluded,
 		},
 		{
-			name:    "No Api-Key header",
-			headers: http.Header{},
-			wantErr: ErrNoAuthHeaderIncluded,
+			name: "Malformed Authorization header without Bearer",
+			headers: http.Header{
+				"Authorization": {"Token abcdef12345"},
+			},
+			expected:    "",
+			expectedErr: errors.New("malformed authorization header"),
 		},
 		{
-			name:    "Empty Api-Key header",
-			headers: http.Header{"Api-Key": []string{""}},
-			wantErr: ErrNoAuthHeaderIncluded,
+			name: "Malformed Authorization header with only Bearer",
+			headers: http.Header{
+				"Authorization": {"Bearer"},
+			},
+			expected:    "",
+			expectedErr: errors.New("malformed authorization header"),
 		},
 		{
-			name:    "Empty Api-Key header with other headers",
-			headers: http.Header{"Api-Key": []string{""}, "Other-Header": []string{"value"}},
-			wantErr: ErrNoAuthHeaderIncluded,
+			name: "Valid Authorization header",
+			headers: http.Header{
+				"Authorization": {"Bearer abcdef12345"},
+			},
+			expected:    "abcdef12345",
+			expectedErr: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetHeaderToken(tt.headers)
-			if err != tt.wantErr {
-				t.Errorf("GetHeaderToken() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			token, err := GetHeaderToken(tt.headers)
+			if token != tt.expected {
+				t.Errorf("expected token %v, got %v", tt.expected, token)
 			}
-			if got != tt.want {
-				t.Errorf("GetHeaderToken() got = %v, want %v", got, tt.want)
+			if err != nil && err.Error() != tt.expectedErr.Error() {
+				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
+			}
+			if err == nil && tt.expectedErr != nil {
+				t.Errorf("expected error %v, got nil", tt.expectedErr)
 			}
 		})
 	}
