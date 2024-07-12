@@ -1,1 +1,1 @@
-## The Official Omnicron BackEnd Server
+## Omnicron
