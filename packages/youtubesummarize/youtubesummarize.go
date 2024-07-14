@@ -32,7 +32,7 @@ type YoutubeRequest struct {
 	URL string `json:"url"`
 }
 
-func YoutubeSummarization(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func YoutubeSummarization(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	decode := json.NewDecoder(r.Body)
 	youtubeParams := YoutubeRequest{}
 	err := decode.Decode(&youtubeParams)
@@ -40,7 +40,7 @@ func YoutubeSummarization(w http.ResponseWriter, r *http.Request, cfg *config.Ap
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error unmarshalling json, %v", err))
 		return
 	}
-	summary, err := handleYoutubeSummariztion(youtubeParams.URL, cfg.ApiKey, cfg.GrokApiKey)
+	summary, err := handleYoutubeSummariztion(youtubeParams.URL, cfg.APIKey, cfg.GrokAPIKey)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return

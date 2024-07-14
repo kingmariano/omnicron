@@ -29,8 +29,8 @@ import (
 )
 
 // Calls the "/chatcompletion" endpoint from the fastAPI server
-func CallGPTFastAPI(request ChatRequest, apiKey string, fastAPIBaseUrl string) (*ChatResponse, error) {
-	fastAPIGPTEndPoint := fmt.Sprintf("%s/api/v1/chat/completion", fastAPIBaseUrl) //url to the chat completion endpoint in the FastAPI server
+func CallGPTFastAPI(request ChatRequest, apiKey string, fastAPIBaseURL string) (*ChatResponse, error) {
+	fastAPIGPTEndPoint := fmt.Sprintf("%s/api/v1/chat/completion", fastAPIBaseURL) //url to the chat completion endpoint in the FastAPI server
 	// marshal the request to json format for sending to the server
 	jsonData, err := json.Marshal(request)
 	if err != nil {

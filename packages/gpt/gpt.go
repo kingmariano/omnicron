@@ -48,7 +48,7 @@ type ErrorResponse struct {
 	Detail string `json:"detail"`
 }
 
-func ChatCompletion(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func ChatCompletion(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	decode := json.NewDecoder(r.Body)
 	chatParams := ChatRequest{}
 	err := decode.Decode(&chatParams)
@@ -56,7 +56,7 @@ func ChatCompletion(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfi
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error unmarshalling json, %v", err))
 		return
 	}
-	response, err := CallGPTFastAPI(chatParams, cfg.ApiKey, cfg.FASTAPIBaseURL)
+	response, err := CallGPTFastAPI(chatParams, cfg.APIKey, cfg.FASTAPIBaseURL)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error handling chat completion, %v", err))
 		return

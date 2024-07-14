@@ -31,7 +31,7 @@ type Response struct {
 	Response string `json:"response"`
 }
 
-func ConvertToMp3(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func ConvertToMp3(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	// creates a unique folder within the current directory
 	folderPath, err := utils.CreateUniqueFolder(utils.BasePath)
@@ -50,7 +50,7 @@ func ConvertToMp3(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig)
 		return
 	}
 	// uploads the file to cloudinary to get back the direct url link
-	urlLink, err := utils.HandleFileUpload(ctx, outputfileName, cfg.CloudinaryUrl)
+	urlLink, err := utils.HandleFileUpload(ctx, outputfileName, cfg.CloudinaryURL)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return

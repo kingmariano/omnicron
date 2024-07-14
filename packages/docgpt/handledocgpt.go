@@ -48,7 +48,7 @@ type AnalyzeDocResponse struct {
 }
 
 // CallDocGPTFastAPI calls the "/doc_analyze" endpoint from the FastAPI server and processes the response then uses the grok AI API client to make a request acting as a document gpt.
-func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, prompt, grokApiKey, apiKey, fastAPIBaseURL string) (string, error) {
+func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, prompt, grokAPIKey, apiKey, fastAPIBaseURL string) (string, error) {
 	// Create a buffer to write our form data to
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -132,7 +132,7 @@ func CallDocGPTFastAPI(file multipart.File, fileHeader *multipart.FileHeader, pr
 	}
 	docGptPrompt := docGPTPrompt(docOutputText)
 	// Use the Groq library to create a chat completion request with the Groq API key
-	grokClient := groq.NewClient(groq.WithAPIKey(grokApiKey))
+	grokClient := groq.NewClient(groq.WithAPIKey(grokAPIKey))
 	response, err := grokClient.CreateChatCompletion(
 		groq.CompletionCreateParams{
 			Model: "mixtral-8x7b-32768",

@@ -23,29 +23,29 @@ import (
 	"github.com/kingmariano/omnicron/utils"
 )
 
-func setupRouter(t *testing.T) (*chi.Mux, *config.ApiConfig) {
-	apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, fastAPIPrivateURL, err := utils.LoadEnv("../.env")
+func setupRouter(t *testing.T) (*chi.Mux, *config.APIConfig) {
+	apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, youtubeDeveloperKey, fastAPIPrivateURL, err := utils.LoadEnv("../.env")
 
 	if err != nil {
 		// if the given environment path is  not set. Get the variables from the root environment path
 		apiKey = os.Getenv("API_KEY")
-		grokApiKey = os.Getenv("GROK_API_KEY")
+		grokAPIKey = os.Getenv("GROK_API_KEY")
 		port = os.Getenv("PORT")
-		replicateApiKey = os.Getenv("REPLICATE_API_TOKEN")
+		replicateAPIKey = os.Getenv("REPLICATE_API_TOKEN")
 		cloudinaryURL = os.Getenv("CLOUDINARY_URL")
 		youtubeDeveloperKey = os.Getenv("YOUTUBE_DEVELOPER_KEY")
 		fastAPIPrivateURL = os.Getenv("FAST_API_PRIVATE_URL")
 	}
 
-	if apiKey == "" || grokApiKey == "" || replicateApiKey == "" || cloudinaryURL == "" || port == "" || youtubeDeveloperKey == "" || fastAPIPrivateURL == "" {
+	if apiKey == "" || grokAPIKey == "" || replicateAPIKey == "" || cloudinaryURL == "" || port == "" || youtubeDeveloperKey == "" || fastAPIPrivateURL == "" {
 		t.Fatal("unable to get API key or port from environment variables")
 	}
 
-	cfg := &config.ApiConfig{
-		ApiKey:              apiKey,
-		GrokApiKey:          grokApiKey,
-		ReplicateAPIKey:     replicateApiKey,
-		CloudinaryUrl:       cloudinaryURL,
+	cfg := &config.APIConfig{
+		APIKey:              apiKey,
+		GrokAPIKey:          grokAPIKey,
+		ReplicateAPIKey:     replicateAPIKey,
+		CloudinaryURL:       cloudinaryURL,
 		YoutubeDeveloperKey: youtubeDeveloperKey,
 		Port:                port,
 	}

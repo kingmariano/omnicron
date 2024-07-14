@@ -26,7 +26,7 @@ import (
 	"net/http"
 )
 
-func TTS(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func TTS(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	model := r.URL.Query().Get("model")
 	if model == "" {

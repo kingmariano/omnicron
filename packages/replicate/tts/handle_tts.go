@@ -31,7 +31,7 @@ import (
 	"net/http"
 )
 
-func processTTSModelInput(TTSModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processTTSModelInput(TTSModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	if TTSModel.Category == "Low" {
 		replicateInput, err := processLowTTSInput(ctx, r, cfg)
 		if err != nil {
@@ -54,7 +54,7 @@ func processTTSModelInput(TTSModel *rep.ReplicateModel, ctx context.Context, r *
 	return nil, errors.New("tts category unavailable")
 }
 
-func processLowTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processLowTTSInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	log.Println("This is  low TTS")
 	var LowTTSParams rep.LowTTSParams
 	err := r.ParseMultipartForm(10 << 20) // 10MB
@@ -87,7 +87,7 @@ func processLowTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiCon
 	return input, nil
 }
 
-func processMediumTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processMediumTTSInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	log.Println("This is  medium TTS")
 	var MediumTTSParams rep.MediumTTSParams
 	err := r.ParseMultipartForm(50 << 20) // 50MB
@@ -153,7 +153,7 @@ func processMediumTTSInput(ctx context.Context, r *http.Request, cfg *config.Api
 	}
 	return input, nil
 }
-func processHighTTSInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processHighTTSInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	log.Println("This is  High TTS")
 	var HighTTSParams rep.HighTTSParams
 	err := r.ParseMultipartForm(50 << 20) // 50MB

@@ -26,7 +26,7 @@ import (
 	"net/http"
 )
 
-func ImageGeneration(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func ImageGeneration(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	model := r.URL.Query().Get("model")
 	if model == "" {

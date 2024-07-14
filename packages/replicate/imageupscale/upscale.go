@@ -26,7 +26,7 @@ import (
 	"net/http"
 )
 
-func ImageUpscale(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func ImageUpscale(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	model := r.URL.Query().Get("model")
 	if model == "" {

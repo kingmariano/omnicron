@@ -29,8 +29,8 @@ import (
 )
 
 // searchYouTube performs a search for audio music on YouTube with the given query and filters out playlists.
-func SearchMusicOnYouTube(ctx context.Context, query string, maxResults int64, youtubeApiKey, _ string) ([]string, error) {
-	clientOptions := option.WithAPIKey(youtubeApiKey)
+func SearchMusicOnYouTube(ctx context.Context, query string, maxResults int64, youtubeAPIKey, _ string) ([]string, error) {
+	clientOptions := option.WithAPIKey(youtubeAPIKey)
 	service, err := youtube.NewService(ctx, clientOptions)
 	if err != nil {
 		return []string{}, fmt.Errorf("error creating new YouTube client for query %v: %v", query, err)
@@ -55,11 +55,11 @@ func SearchMusicOnYouTube(ctx context.Context, query string, maxResults int64, y
 	return videoURLs, nil
 }
 
-func downloadYoutubeLinkAndConvertToMp3(ctx context.Context, query string, maxResults int64, youtubeApiKey, cloudinaryURL, outputPath string) ([]string, error) {
+func downloadYoutubeLinkAndConvertToMp3(ctx context.Context, query string, maxResults int64, youtubeAPIKey, cloudinaryURL, outputPath string) ([]string, error) {
 	// Perform a search on YouTube for the given query and retrieve video URLs
 	//set output path to where the song will be downloaded
 
-	urlList, err := SearchMusicOnYouTube(ctx, query, maxResults, youtubeApiKey, cloudinaryURL)
+	urlList, err := SearchMusicOnYouTube(ctx, query, maxResults, youtubeAPIKey, cloudinaryURL)
 	if err != nil {
 		return []string{}, err
 	}

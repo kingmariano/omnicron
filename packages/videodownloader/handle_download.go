@@ -38,9 +38,9 @@ import (
 //
 // Returns:
 // A slice of pointers to extractors.Data, representing the extracted video data.
-func extractUrl(url string) ([]*extractors.Data, error) {
+func extractURL(URL string) ([]*extractors.Data, error) {
 
-	data, err := extractors.Extract(url, extractors.Options{})
+	data, err := extractors.Extract(URL, extractors.Options{})
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func handleStreamResolution(resolution string) string {
 // Returns:
 // An error if any error occurs during the process, otherwise nil.
 func DownloadVideoData(url string, outputName string, outputPath string, resolution string) (string, error) {
-	data, err := extractUrl(url)
+	data, err := extractURL(url)
 	if err != nil {
 		return "", err
 	}

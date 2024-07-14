@@ -27,7 +27,7 @@ import (
 	"net/http"
 )
 
-func DocGPT(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func DocGPT(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	// Parse the multipart form in the request
 	err := r.ParseMultipartForm(30 << 20) // 30MB max memory
 	if err != nil {
@@ -45,7 +45,7 @@ func DocGPT(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 		utils.RespondWithError(w, http.StatusBadRequest, "Prompt is required")
 		return
 	}
-	response, err := CallDocGPTFastAPI(file, fileHeader, prompt, cfg.GrokApiKey, cfg.ApiKey, cfg.FASTAPIBaseURL)
+	response, err := CallDocGPTFastAPI(file, fileHeader, prompt, cfg.GrokAPIKey, cfg.APIKey, cfg.FASTAPIBaseURL)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
