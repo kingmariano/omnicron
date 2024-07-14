@@ -28,16 +28,16 @@ import (
 	"net/http"
 )
 
-type authHandler func(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig)
+type authHandler func(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig)
 
-func MiddleWareAuth(handler authHandler, cfg *config.ApiConfig) http.HandlerFunc {
+func MiddleWareAuth(handler authHandler, cfg *config.APIConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, err := auth.GetHeaderToken(r.Header)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusUnauthorized, fmt.Sprint(err))
 			return
 		}
-		if token != cfg.ApiKey {
+		if token != cfg.APIKey {
 			utils.RespondWithError(w, http.StatusUnauthorized, "Api Key is invalid")
 			return
 		}

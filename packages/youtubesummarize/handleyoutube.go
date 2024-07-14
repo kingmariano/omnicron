@@ -67,7 +67,7 @@ type WhisperResponse struct {
 
 const baseURL = "http://localhost:9000/api/v1/replicate/stt" //
 // This function performs an api call to the replicate endpoint to transcribe the youtube video url and then sends the text to GPT AI MODEL to summarize.
-func handleYoutubeSummariztion(youtubeURL, apiKey, grokApiKey string) (string, error) {
+func handleYoutubeSummariztion(youtubeURL, apiKey, grokAPIKey string) (string, error) {
 	// Create a buffer to write our form data to
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -103,14 +103,14 @@ func handleYoutubeSummariztion(youtubeURL, apiKey, grokApiKey string) (string, e
 		}
 		return "", fmt.Errorf("error making api call to the whisper AI Model %v", WhisperResponseMessage.Error)
 	}
-	// The Api call succeded marshal the output and return the text.
+	// The Api call succeeded marshal the output and return the text.
 	//Use the grok AI model to process the summarization.
 	if err := json.NewDecoder(resp.Body).Decode(&WhisperResponseMessage); err != nil {
 		return "", err
 	}
 	youtubeTranscribedText := WhisperResponseMessage.Output.Text
 
-	grokClient := groq.NewClient(groq.WithAPIKey(grokApiKey))
+	grokClient := groq.NewClient(groq.WithAPIKey(grokAPIKey))
 	response, err := grokClient.CreateChatCompletion(groq.CompletionCreateParams{
 		Model: "llama3-70b-8192",
 		Messages: []groq.Message{

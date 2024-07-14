@@ -31,7 +31,7 @@ import (
 )
 
 // Transcription handles HTTP requests to perform transcription.
-func Transcription(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func Transcription(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	// Parse the multipart form with a max size of 10MB
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
@@ -81,7 +81,7 @@ func Transcription(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig
 	}
 
 	// Create a groq client with API key from config
-	client := groq.NewClient(groq.WithAPIKey(cfg.GrokApiKey))
+	client := groq.NewClient(groq.WithAPIKey(cfg.GrokAPIKey))
 	response, err := client.CreateTranscription(grokParams)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error transcribing: %v", err))

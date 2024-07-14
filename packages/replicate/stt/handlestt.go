@@ -31,7 +31,7 @@ import (
 	"net/http"
 )
 
-func processSTTModelInput(STTModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processSTTModelInput(STTModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	if STTModel.Category == "Low" {
 		replicateInput, err := processLowSTTInput(ctx, r, cfg)
 		if err != nil {
@@ -49,7 +49,7 @@ func processSTTModelInput(STTModel *rep.ReplicateModel, ctx context.Context, r *
 
 }
 
-func processLowSTTInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processLowSTTInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	log.Println("This is  low STT")
 	var LowSTTParams rep.LowSTTParams
 	err := r.ParseMultipartForm(10 << 20) // 10MB
@@ -89,7 +89,7 @@ func processLowSTTInput(ctx context.Context, r *http.Request, cfg *config.ApiCon
 	return input, nil
 
 }
-func processHighSTTInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processHighSTTInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	log.Println("This is  high STT")
 	var HighSTTParams rep.HighSTTParams
 	err := r.ParseMultipartForm(10 << 20) // 10MB

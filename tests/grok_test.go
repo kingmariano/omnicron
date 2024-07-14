@@ -17,7 +17,7 @@ func TestChatCompletion(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.ApiKey))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.APIKey))
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)

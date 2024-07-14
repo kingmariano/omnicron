@@ -27,7 +27,7 @@ import (
 	"net/http"
 )
 
-func MusicSearch(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func MusicSearch(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	decode := json.NewDecoder(r.Body)
 	musicSearchParams := MusicSearchRequest{}
 	err := decode.Decode(&musicSearchParams)
@@ -35,7 +35,7 @@ func MusicSearch(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) 
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error unmarshalling json, %v", err))
 		return
 	}
-	response, err := CallMusicSearchFastAPI(musicSearchParams, cfg.ApiKey, cfg.FASTAPIBaseURL)
+	response, err := CallMusicSearchFastAPI(musicSearchParams, cfg.APIKey, cfg.FASTAPIBaseURL)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return

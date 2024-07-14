@@ -18,16 +18,17 @@ jobs:
           git config user.name "kingmariano"
           git config user.email "charlesozochukwu2004@gmail.com"
 
-      - name: Get tag
+      - name: Get tag from CHANGELOG.md
         id: get_tag
         run: |
           git branch --show-current
           git pull
-          echo "version=v$(grep 'const version =' main.go | awk -F\" '{print $2}')" >> $GITHUB_OUTPUT
+          latest_version=$(grep -oP '(?<=## \[)[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -1)
+          echo "version=v${latest_version}" >> $GITHUB_OUTPUT
 
       - name: Tag the commit
         env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           next_version=${{ steps.get_tag.outputs.version }}
           git tag -a "$next_version" -m "Version $next_version"
@@ -36,7 +37,7 @@ jobs:
       - name: Create changelog diff
         id: changelog_diff
         run: |
-          sed -n "/^## \[${{ steps.get_tag.outputs.version }}\]/,/^## \[$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1))\]/{/^## \[$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1))\]/!p;}" CHANGELOG.md > release_notes.md
+          sed -n "/^## \[${{ steps.get_tag.outputs.version }}\]/,/^## \[/!p" CHANGELOG.md > release_notes.md
 
       - name: Create release
         id: create_release

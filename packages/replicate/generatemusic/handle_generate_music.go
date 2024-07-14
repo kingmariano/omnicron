@@ -31,7 +31,7 @@ import (
 	"net/http"
 )
 
-func processMusicModelInput(MusicModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processMusicModelInput(MusicModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	if MusicModel.Category == "Low" {
 		replicateInput, err := processLowMusicGenInput(ctx, r, cfg)
 		if err != nil {
@@ -48,7 +48,7 @@ func processMusicModelInput(MusicModel *rep.ReplicateModel, ctx context.Context,
 	return nil, errors.New("music model category unavailable")
 }
 
-func processLowMusicGenInput(_ context.Context, r *http.Request, _ *config.ApiConfig) (replicate.PredictionInput, error) {
+func processLowMusicGenInput(_ context.Context, r *http.Request, _ *config.APIConfig) (replicate.PredictionInput, error) {
 	log.Println("This is low music model generation")
 	var LowMusicGenerationModelsParams rep.LowMusicGenerationParams
 	decoder := json.NewDecoder(r.Body)
@@ -72,7 +72,7 @@ func processLowMusicGenInput(_ context.Context, r *http.Request, _ *config.ApiCo
 	return input, nil
 
 }
-func processHighMusicGenInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processHighMusicGenInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	log.Println("This is high music model generation")
 	var HighMusicGenerationParams rep.HighMusicGenerationParams
 	prompt := r.FormValue("prompt")

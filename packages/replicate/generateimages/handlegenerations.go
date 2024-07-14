@@ -31,7 +31,7 @@ import (
 	"net/http"
 )
 
-func processImageModelInput(imageModel *rep.ReplicateModel, ctx context.Context, r *http.Request, modelIndex int, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processImageModelInput(imageModel *rep.ReplicateModel, ctx context.Context, r *http.Request, modelIndex int, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	if imageModel.Category == "Low" {
 		replicateInput, err := processLowImageGenerationInput(ctx, r, modelIndex, cfg)
 		if err != nil {
@@ -49,7 +49,7 @@ func processImageModelInput(imageModel *rep.ReplicateModel, ctx context.Context,
 }
 
 // doesnt support image to image generation
-func processLowImageGenerationInput(_ context.Context, r *http.Request, modelIndex int, _ *config.ApiConfig) (replicate.PredictionInput, error) {
+func processLowImageGenerationInput(_ context.Context, r *http.Request, modelIndex int, _ *config.APIConfig) (replicate.PredictionInput, error) {
 	var lowImageGenerationParams rep.LowImageGenerationParams
 	decoder := json.NewDecoder(r.Body)
 	switch modelIndex {
@@ -79,7 +79,7 @@ func processLowImageGenerationInput(_ context.Context, r *http.Request, modelInd
 }
 
 // support imagetoimage generation
-func processHighImageGenerationInput(ctx context.Context, r *http.Request, modelIndex int, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processHighImageGenerationInput(ctx context.Context, r *http.Request, modelIndex int, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	var HighImageGenerationParams rep.HighImageGenerationParams
 	err := r.ParseMultipartForm(10 << 20) // 10MB
 	if err != nil {

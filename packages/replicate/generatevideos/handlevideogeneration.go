@@ -30,7 +30,7 @@ import (
 	"net/http"
 )
 
-func processVideoModelInput(imageModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processVideoModelInput(imageModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	if imageModel.Category == "High" {
 		replicateInput, err := processHighVideoInput(ctx, r, cfg)
 		if err != nil {
@@ -41,7 +41,7 @@ func processVideoModelInput(imageModel *rep.ReplicateModel, ctx context.Context,
 	return nil, errors.New("image category unavailable")
 }
 
-func processHighVideoInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processHighVideoInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	var HighVideoGenerationParams rep.HighVideoGenerationParams
 	err := r.ParseMultipartForm(50 << 20) // 50MB
 	if err != nil {

@@ -26,7 +26,7 @@ import (
 	"net/http"
 )
 
-func Shazam(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func Shazam(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	// Parse the multipart form in the request
 	err := r.ParseMultipartForm(30 << 20) // 30MB max memory
 	if err != nil {
@@ -39,7 +39,7 @@ func Shazam(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
 		return
 	}
 	defer file.Close()
-	response, err := CallShazamFastAPI(file, fileHeader, cfg.ApiKey, cfg.FASTAPIBaseURL)
+	response, err := CallShazamFastAPI(file, fileHeader, cfg.APIKey, cfg.FASTAPIBaseURL)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error calling Shazam Endpoint, %v", err))
 		return

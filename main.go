@@ -51,7 +51,7 @@ import (
 	"syscall"
 	"time"
 )
-const version = "1.0.0"
+
 // starts the python fastAPI server
 func startFastAPIServer() *exec.Cmd {
 	cmd := exec.Command("python", "./python/main.py")
@@ -70,7 +70,7 @@ func startFastAPIServer() *exec.Cmd {
 
 func main() {
 	// Load environment variables
-	apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, fastAPIBaseURL, err := utils.LoadEnv(".env")
+	apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, youtubeDeveloperKey, fastAPIBaseURL, err := utils.LoadEnv(".env")
 	if err != nil {
 		log.Fatalf("error opening .env %v ", err)
 	}
@@ -83,11 +83,11 @@ func main() {
 		}
 	}()
 
-	cfg := &config.ApiConfig{
-		ApiKey:              apiKey,
-		GrokApiKey:          grokApiKey,
-		ReplicateAPIKey:     replicateApiKey,
-		CloudinaryUrl:       cloudinaryURL,
+	cfg := &config.APIConfig{
+		APIKey:              apiKey,
+		GrokAPIKey:          grokAPIKey,
+		ReplicateAPIKey:     replicateAPIKey,
+		CloudinaryURL:       cloudinaryURL,
 		YoutubeDeveloperKey: youtubeDeveloperKey,
 		FASTAPIBaseURL:      fastAPIBaseURL,
 		Port:                port,

@@ -38,7 +38,7 @@ type SongResponse struct {
 }
 
 var maxLength int64 //specifies the maxmium length of data returned from the youtube sdk
-func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	decode := json.NewDecoder(r.Body)
 	params := SongRequest{}
@@ -55,7 +55,7 @@ func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig
 	}
 	//for accurate and precise result maxlength should be set to one.
 	maxLength = 1
-	audioDirectURL, err := downloadYoutubeLinkAndConvertToMp3(ctx, params.Song, maxLength, cfg.YoutubeDeveloperKey, cfg.CloudinaryUrl, folderPath)
+	audioDirectURL, err := downloadYoutubeLinkAndConvertToMp3(ctx, params.Song, maxLength, cfg.YoutubeDeveloperKey, cfg.CloudinaryURL, folderPath)
 	if err != nil {
 		if cleanupErr := utils.DeleteFolder(folderPath); cleanupErr != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Failed to delete folder: "+cleanupErr.Error())

@@ -39,7 +39,7 @@ func validateParams(g groq.CompletionCreateParams) error {
 }
 
 // ChatCompletion handles HTTP requests to create a chat completion.
-func ChatCompletion(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func ChatCompletion(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	decode := json.NewDecoder(r.Body) // Create a JSON decoder for decoding request body
 	grokParams := groq.CompletionCreateParams{}
 	err := decode.Decode(&grokParams) // Decode JSON request body into grokParams struct
@@ -56,7 +56,7 @@ func ChatCompletion(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfi
 	}
 
 	// Create a new groq client with API key from config
-	client := groq.NewClient(groq.WithAPIKey(cfg.GrokApiKey))
+	client := groq.NewClient(groq.WithAPIKey(cfg.GrokAPIKey))
 	response, err := client.CreateChatCompletion(grokParams) // Call groq API to create chat completion
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error handling chat completion, %v", err))

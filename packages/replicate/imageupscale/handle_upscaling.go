@@ -31,7 +31,7 @@ import (
 	"net/http"
 )
 
-func processImageUpscaleModelInput(imageModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processImageUpscaleModelInput(imageModel *rep.ReplicateModel, ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	if imageModel.Category == "High" {
 		replicateInput, err := processHighUpscalingInput(ctx, r, cfg)
 		if err != nil {
@@ -47,7 +47,7 @@ func processImageUpscaleModelInput(imageModel *rep.ReplicateModel, ctx context.C
 	}
 	return nil, errors.New("image category unavailable")
 }
-func processLowUpscalingInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processLowUpscalingInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	log.Println("This is  low upscaling")
 	var LowImageUpscaleGenerationParams rep.LowImageUpscaleGenerationParams
 	err := r.ParseMultipartForm(10 << 20) // 10MB
@@ -75,7 +75,7 @@ func processLowUpscalingInput(ctx context.Context, r *http.Request, cfg *config.
 	return input, nil
 }
 
-func processHighUpscalingInput(ctx context.Context, r *http.Request, cfg *config.ApiConfig) (replicate.PredictionInput, error) {
+func processHighUpscalingInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
 	log.Println("This is  high upscaling")
 	var HighImageUpscaleGenerationParams rep.HighImageUpscaleGenerationParams
 	err := r.ParseMultipartForm(10 << 20) // 10MB

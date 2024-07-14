@@ -27,7 +27,7 @@ import (
 	"os"
 )
 
-// this function loads the environment varaibles from the path
+// this function loads the environment variables from the path
 func LoadEnv(path string) (string, string, string, string, string, string, string, error) {
 	err := godotenv.Load(path)
 	if err != nil {
@@ -38,31 +38,31 @@ func LoadEnv(path string) (string, string, string, string, string, string, strin
 		return "", "", "", "", "", "", "", errors.New("unable to get API key")
 	}
 
-	grokApiKey := os.Getenv("GROK_API_KEY")
-	if grokApiKey == "" {
+	grokAPIKey := os.Getenv("GROK_API_KEY")
+	if grokAPIKey == "" {
 		return apiKey, "", "", "", "", "", "", errors.New("unable to get Grok API key")
 	}
-	replicateApiKey := os.Getenv("REPLICATE_API_TOKEN")
-	if replicateApiKey == "" {
-		return apiKey, grokApiKey, "", "", "", "", "", errors.New("unable to get Replicate API key")
+	replicateAPIKey := os.Getenv("REPLICATE_API_TOKEN")
+	if replicateAPIKey == "" {
+		return apiKey, grokAPIKey, "", "", "", "", "", errors.New("unable to get Replicate API key")
 	}
 	cloudinaryURL := os.Getenv("CLOUDINARY_URL")
 	if cloudinaryURL == "" {
-		return apiKey, grokApiKey, replicateApiKey, "", "", "", "", errors.New("unable to get cloudinary URL")
+		return apiKey, grokAPIKey, replicateAPIKey, "", "", "", "", errors.New("unable to get cloudinary URL")
 	}
 	port := os.Getenv("PORT")
 	if port == "" {
-		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, "", "", "", errors.New("unable to get port")
+		return apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, "", "", "", errors.New("unable to get port")
 	}
 	youtubeDeveloperKey := os.Getenv("YOUTUBE_DEVELOPER_KEY")
 	if youtubeDeveloperKey == "" {
-		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, "", "", errors.New("unable to getyoutube developer")
+		return apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, "", "", errors.New("unable to getyoutube developer")
 	}
 	fastAPIBaseURL := os.Getenv("FAST_API_BASE_URL")
 	if fastAPIBaseURL == "" {
-		return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, "", errors.New("unable to get fastAPI private URL")
+		return apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, youtubeDeveloperKey, "", errors.New("unable to get fastAPI private URL")
 	}
 
-	return apiKey, grokApiKey, replicateApiKey, cloudinaryURL, port, youtubeDeveloperKey, fastAPIBaseURL, nil
+	return apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, youtubeDeveloperKey, fastAPIBaseURL, nil
 
 }

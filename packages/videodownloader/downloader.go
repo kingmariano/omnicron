@@ -48,7 +48,7 @@ type Responseparams struct {
 // Return values:
 //  None.
 
-func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig) {
+func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	decode := json.NewDecoder(r.Body)
 	params := DownloadParams{}
@@ -74,7 +74,7 @@ func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.ApiConfig
 	}
 
 	//upload the video file to cloudinary and return the file URL
-	urlLink, err := utils.HandleFileUpload(ctx, videoPath, cfg.CloudinaryUrl)
+	urlLink, err := utils.HandleFileUpload(ctx, videoPath, cfg.CloudinaryURL)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
