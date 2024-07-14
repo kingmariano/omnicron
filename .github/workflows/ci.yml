@@ -62,9 +62,6 @@ jobs:
       - name: Fetch dependencies
         run: make deps
 
-      - name: Update dependencies
-        run: make update
-
       - name: Format code
         run: make fmt
 
