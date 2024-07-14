@@ -77,11 +77,11 @@ jobs:
       - name: Echo Go version
         run: go version
 
-      - name: Install staticcheck
-        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+      - name: Install golint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
-      - name: Static Check
-        run: make static-check
+      - name: Go lint
+        run: make lint
 
       - name: Install gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
