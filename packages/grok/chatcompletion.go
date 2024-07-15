@@ -64,8 +64,8 @@ func ChatCompletion(w http.ResponseWriter, r *http.Request, cfg *config.APIConfi
 	}
 
 	// Get the response message content from the first choice
-	res := response.Choices[0].Message.Content
-
+	
+    // new release for grok response
 	// Respond with JSON containing the response message
-	utils.RespondWithJSON(w, http.StatusOK, res)
+	utils.RespondWithJSON(w, http.StatusOK, response)
 }
