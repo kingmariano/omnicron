@@ -18,79 +18,63 @@ jobs:
           git config user.name "kingmariano"
           git config user.email "charlesozochukwu2004@gmail.com"
 
-      - name: Get latest version from CHANGELOG.md
-        id: get_latest_version
+      - name: Get tag from CHANGELOG.md
+        id: get_tag
         run: |
+          git pull
           latest_version=$(grep -oP '(?<=## \[)[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -1)
-          echo "::set-output name=version::$latest_version"
-
-      - name: Check if tag already exists
-        id: tag_exists
-        run: |
-          if git rev-parse "${{ steps.get_latest_version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_ENV
-          else
-            echo "exists=false" >> $GITHUB_ENV
-          fi
+          echo "::set-output name=version::v${latest_version}"
 
       - name: Tag the commit
-        if: steps.tag_exists.outputs.exists == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          next_version=${{ steps.get_latest_version.outputs.version }}
+          next_version=${{ steps.get_tag.outputs.version }}
           git tag -a "$next_version" -m "Version $next_version"
           git push --follow-tags
 
       - name: Create changelog diff
-        if: steps.tag_exists.outputs.exists == 'false'
         id: changelog_diff
         run: |
-          sed -n "/^## \[${{ steps.get_latest_version.outputs.version }}\]/,/^## \[/!p" CHANGELOG.md > release_notes.md
+          sed -n "/^## \[${{ steps.get_tag.outputs.version }}\]/,/^## \[/!p" CHANGELOG.md > release_notes.md
 
       - name: Create release
-        if: steps.tag_exists.outputs.exists == 'false'
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.get_latest_version.outputs.version }}
-          release_name: Release ${{ steps.get_latest_version.outputs.version }}
+          tag_name: ${{ steps.get_tag.outputs.version }}
+          release_name: Release ${{ steps.get_tag.outputs.version }}
           body_path: ./release_notes.md
           draft: false
           prerelease: false
 
-      - name: Create ZIP Archive
-        if: steps.tag_exists.outputs.exists == 'false'
-        run: zip -r source_code.zip .
+      # - name: Create ZIP Archive
+      #   run: zip -r source_code.zip .
 
-      - name: Create TAR.GZ Archive
-        if: steps.tag_exists.outputs.exists == 'false'
-        run: tar -czvf source_code.tar.gz .
+      # - name: Create TAR.GZ Archive
+      #   run: tar -czvf source_code.tar.gz .
 
-      - name: Upload ZIP Archive
-        if: steps.tag_exists.outputs.exists == 'false'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./source_code.zip
-          asset_name: source_code.zip
-          asset_content_type: application/zip
+      # - name: Upload ZIP Archive
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./source_code.zip
+      #     asset_name: source_code.zip
+      #     asset_content_type: application/zip
 
-      - name: Upload TAR.GZ Archive
-        if: steps.tag_exists.outputs.exists == 'false'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./source_code.tar.gz
-          asset_name: source_code.tar.gz
-          asset_content_type: application/gzip
+      # - name: Upload TAR.GZ Archive
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./source_code.tar.gz
+      #     asset_name: source_code.tar.gz
+      #     asset_content_type: application/gzip
 
-      - name: Delete release_notes file
-        if: steps.tag_exists.outputs.exists == 'false'
-        run: rm release_notes.md
+      # - name: Delete release_notes file
+      #   run: rm release_notes.md
