@@ -29,7 +29,7 @@ run:
 	./$(BINARY_NAME)
 
 deps:
-	$(GOMOD) tidy
+	$(GOMOD) download
 	$(GOMOD) vendor
 
 lint:
