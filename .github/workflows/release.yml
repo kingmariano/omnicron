@@ -46,12 +46,9 @@ jobs:
         with:
           tag_name: ${{ steps.get_tag.outputs.version }}
           release_name: Release ${{ steps.get_tag.outputs.version }}
-          body: |
-            - Changed the groq chat Response to the default groq client instance.
           body_path: ./release_notes.md
           draft: false
           prerelease: false
-
 
       # - name: Create ZIP Archive
       #   run: zip -r source_code.zip .
