@@ -4,3 +4,5 @@ omnicron
 waste.txt
 tests/replicate_test.go
 vendor/
+
+dist/

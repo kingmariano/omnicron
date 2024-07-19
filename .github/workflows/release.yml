@@ -1,50 +1,37 @@
-name: Tag and Create Release Workflow
+name: Release with GoReleaser
 
 on:
-  pull_request:
-    types:
-      - closed
+  push:
+    branches:
+      - 'main'
+      - 'release/*'  
+    tags:
+      - 'v*.*.*'
 
 jobs:
-  release:
+  goreleaser:
     runs-on: ubuntu-latest
-    if: startsWith(github.event.pull_request.title, 'Release:')
+
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
-
-      - name: Set up Git
-        run: |
-          git config user.name "kingmariano"
-          git config user.email "charlesozochukwu2004@gmail.com"
-
-      - name: Get tag from CHANGELOG.md
-        id: get_tag
-        run: |
-          git pull
-          latest_version=$(grep -oP '(?<=## \[)[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -1)
-          echo "::set-output name=version::v${latest_version}"
-
-      - name: Create changelog diff
-        id: changelog_diff
-        run: |
-          sed -n "1,/^## \[${{ steps.get_tag.outputs.version }}\]/p" CHANGELOG.md > release_notes.md
-
-      - name: Read latest change from CHANGELOG.md
-        id: read_latest_change
-        run: |
-          latest_change=$(sed -n "/## \[${{ steps.get_tag.outputs.version }}\]/,/^## \[/p" CHANGELOG.md | grep -v "## \[${{ steps.get_tag.outputs.version }}\]" | grep -v "^\s*$" | sed '1d;$d')
-          echo "::set-output name=change::${latest_change}"
-
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
+        with:
+          fetch-depth: 0
+      
+      - name: Fetch all tags
+        run: git fetch --force --tags
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      
+      - name: Release via GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          distribution: goreleaser
+          version: 2
+          args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.get_tag.outputs.version }}
-          release_name: Release ${{ steps.get_tag.outputs.version }}
-          body: ${{ steps.read_latest_change.outputs.change }}
-          body_path: ./release_notes.md
-          draft: false
-          prerelease: false
