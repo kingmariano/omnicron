@@ -55,14 +55,13 @@ func processTTSModelInput(TTSModel *rep.ReplicateModel, ctx context.Context, r *
 }
 
 func processLowTTSInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
-	log.Println("This is  low TTS")
 	var LowTTSParams rep.LowTTSParams
 	err := r.ParseMultipartForm(10 << 20) // 10MB
 	if err != nil {
 		return nil, fmt.Errorf("error parsing multipart form: %v", err)
 	}
 	LowTTSParams = rep.LowTTSParams{}.XTTSV2()
-	_, audioFileHeader, err := r.FormFile("audio")
+	_, audioFileHeader, err := r.FormFile("speaker")
 	if err != nil {
 		return nil, fmt.Errorf("provide audio file: %v", err)
 	}
