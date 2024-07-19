@@ -5,11 +5,9 @@ updates:
     directory: "/" # Location of the go.mod file
     schedule:
       interval: "weekly" # Options: daily, weekly, monthly
-    open-pull-requests-limit: 5
 
   # Configuration for Python dependencies
   - package-ecosystem: "pip"
-    directory: "/python" # 
+    directory: "./python" # 
     schedule:
       interval: "weekly" # Options: daily, weekly, monthly
-    open-pull-requests-limit: 5

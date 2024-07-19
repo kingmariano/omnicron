@@ -26,8 +26,7 @@ import (
 	"github.com/kingmariano/omnicron/config"
 	rep "github.com/kingmariano/omnicron/packages/replicate"
 	"github.com/kingmariano/omnicron/utils"
-	replicate "github.com/replicate/replicate-go"
-	"log"
+	"github.com/replicate/replicate-go"
 	"net/http"
 )
 
@@ -50,7 +49,6 @@ func processSTTModelInput(STTModel *rep.ReplicateModel, ctx context.Context, r *
 }
 
 func processLowSTTInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
-	log.Println("This is  low STT")
 	var LowSTTParams rep.LowSTTParams
 	err := r.ParseMultipartForm(10 << 20) // 10MB
 	if err != nil {
@@ -90,7 +88,6 @@ func processLowSTTInput(ctx context.Context, r *http.Request, cfg *config.APICon
 
 }
 func processHighSTTInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
-	log.Println("This is  high STT")
 	var HighSTTParams rep.HighSTTParams
 	err := r.ParseMultipartForm(10 << 20) // 10MB
 	if err != nil {

@@ -95,9 +95,9 @@ func processMediumTTSInput(ctx context.Context, r *http.Request, cfg *config.API
 		return nil, fmt.Errorf("error parsing multipart form: %v", err)
 	}
 	MediumTTSParams = rep.MediumTTSParams{}.RealisticVoiceCloning()
-	_, audioFileHeader, err := r.FormFile("audio")
+	_, audioFileHeader, err := r.FormFile("song_input")
 	if err != nil {
-		return nil, fmt.Errorf("provide audio file: %v", err)
+		return nil, fmt.Errorf("provide song_input file: %v", err)
 	}
 	repFile, err := rep.RequestFileToReplicateFile(ctx, audioFileHeader, cfg.ReplicateAPIKey)
 	if err != nil {
@@ -154,7 +154,6 @@ func processMediumTTSInput(ctx context.Context, r *http.Request, cfg *config.API
 	return input, nil
 }
 func processHighTTSInput(ctx context.Context, r *http.Request, cfg *config.APIConfig) (replicate.PredictionInput, error) {
-	log.Println("This is  High TTS")
 	var HighTTSParams rep.HighTTSParams
 	err := r.ParseMultipartForm(50 << 20) // 50MB
 	if err != nil {

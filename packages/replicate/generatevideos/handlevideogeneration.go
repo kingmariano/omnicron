@@ -67,7 +67,7 @@ func processHighVideoInput(ctx context.Context, r *http.Request, cfg *config.API
 	utils.SetIntValue(r.FormValue("batch_size"), &HighVideoGenerationParams.BatchSize)
 	utils.SetBoolValue(r.FormValue("remove_watermark"), &HighVideoGenerationParams.RemoveWatermark)
 	// Handle initial video file
-	videoFile, videoFileHeader, err := r.FormFile("video")
+	videoFile, videoFileHeader, err := r.FormFile("init_video")
 	if err == nil {
 		repFile, err := rep.RequestFileToReplicateFile(ctx, videoFileHeader, cfg.ReplicateAPIKey)
 		if err != nil {

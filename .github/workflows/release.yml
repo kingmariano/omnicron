@@ -48,32 +48,3 @@ jobs:
           body_path: ./release_notes.md
           draft: false
           prerelease: false
-
-      # - name: Create ZIP Archive
-      #   run: zip -r source_code.zip .
-
-      # - name: Create TAR.GZ Archive
-      #   run: tar -czvf source_code.tar.gz .
-
-      # - name: Upload ZIP Archive
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #     asset_path: ./source_code.zip
-      #     asset_name: source_code.zip
-      #     asset_content_type: application/zip
-
-      # - name: Upload TAR.GZ Archive
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #     asset_path: ./source_code.tar.gz
-      #     asset_name: source_code.tar.gz
-      #     asset_content_type: application/gzip
-
-      # - name: Delete release_notes file
-      #   run: rm release_notes.md
