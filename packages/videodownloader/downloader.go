@@ -31,9 +31,6 @@ type DownloadParams struct {
 	URL        string `json:"url"`
 	Resolution string `json:"resolution"`
 }
-type Responseparams struct {
-	Response string `json:"response"`
-}
 
 // DownloadVideo handles the video download process.
 // It accepts a POST request with JSON body containing URL and resolution.
@@ -87,5 +84,5 @@ func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, Responseparams{Response: urlLink})
+	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: urlLink})
 }

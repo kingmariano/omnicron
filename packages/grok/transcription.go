@@ -88,7 +88,5 @@ func Transcription(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig
 		return
 	}
 
-	// Retrieve and respond with the transcription result
-	transcriptionResult := response.Choices[0].Message.Content
-	utils.RespondWithJSON(w, http.StatusOK, transcriptionResult)
+	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: response})
 }

@@ -54,6 +54,6 @@ func MusicGen(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, MusicGenPrediction)
+	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: MusicGenPrediction})
 
 }

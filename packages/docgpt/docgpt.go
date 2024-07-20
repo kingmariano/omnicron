@@ -51,5 +51,5 @@ func DocGPT(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 		return
 	}
 	//responds with JSON
-	utils.RespondWithJSON(w, http.StatusOK, response)
+	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: response})
 }

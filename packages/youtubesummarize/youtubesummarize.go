@@ -45,5 +45,5 @@ func YoutubeSummarization(w http.ResponseWriter, r *http.Request, cfg *config.AP
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, summary)
+	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: summary})
 }
