@@ -18,7 +18,7 @@ build:
 	$(GOBUILD) -o $(BINARY_NAME) -v
 
 test:
-	$(GOTEST) -v ./...
+	$(GOTEST) -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
 clean:
 	$(GOCLEAN)
