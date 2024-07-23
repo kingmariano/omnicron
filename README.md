@@ -7,7 +7,7 @@
 
 ## 📜Description
 
-Omnicron is a powerful multimodel API designed to cater to a wide range of advanced capabilities. Think of it as an all in one package that suites all your needs. Here is a list of following features:
+Omnicron is a powerful multimodel API designed to cater to a wide range of advanced capabilities. Think of it as an all in one package that suites all your needs. Here is a list of its features:
 
 1. **Chat Completion**: Includes models like the open ai gpt-4 and gpt-40 to handle chat completion.
 2. **Image Generation**: Image Generation is handled by [replicate](https://replicate.com/) state of the art models for  image generations like the [sdxl-lightning-4step](https://replicate.com/bytedance/sdxl-lightning-4step) and more ...
@@ -21,7 +21,8 @@ Omnicron is a powerful multimodel API designed to cater to a wide range of advan
 10. **Video downloader tool**: Download videos from various website.
 11. **Music downloader tool**: Search and download song/music to your device. A drop in replacement for spotify.
 12. **Doc GPT**: Chat with your pdf files.
-13. **Text To Image**: Scan text written in your image using the tesseract ocr engine.
+13. **MP3 Converter**: Convert your video and audio files to mp3.
+14. **Text To Image**: Scan text written in your image using the tesseract ocr engine.
 
 ### Efficiency and Model Strength
 
@@ -71,7 +72,7 @@ To install Omnicron, follow these steps:
 
    - **YOUTUBE DEVELOPER KEY**: Retrieve your youtube developer key. You can check this [post](https://blog.hubspot.com/website/how-to-get-youtube-api-key) on how to get it.
 
-   - **TESSDATA PREFIX**: This is the location of where tesseract is installed on your machine. Install [tessract](https://tesseract-ocr.github.io/tessdoc/Installation.html) for your os and set the location to `/usr/local/share/tessdata` for linux or `C:\Program Files\Tesseract-OCR\tessdata` for windows. If yours is configured to a different file location. Set it to where the **tesdata** location is on your machine.
+   - **TESSDATA PREFIX**: This is the location of where tesseract is installed on your machine. Install [tessract](https://tesseract-ocr.github.io/tessdoc/Installation.html) for your os and set the location to `/usr/local/share/tessdata` for linux or `C:\Program Files\Tesseract-OCR\tessdata` for windows. If yours is configured to a different file location. Set it to where the **tessdata** location is on your machine.
    
    - **FAST API BASE URL**: Set this to `http://0.0.0.0:8000` or `http://localhost:8000` to connect the fast api server to the go code.
 
@@ -128,7 +129,7 @@ If you use Omnicron in your research or project, please cite it as follows:
   year = {2024},
   url = {https://github.com/kingmariano/omnicron}
 }
-
+```
 
 ## License
 
