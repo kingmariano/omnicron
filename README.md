@@ -2,7 +2,6 @@
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/kingmariano/omnicron/ci.yml?branch=main)](https://github.com/kingmariano/omnicron/actions)
 [![go Report](https://goreportcard.com/badge/github.com/kingmariano/omnicron)](https://goreportcard.com/report/github.com/kingmariano/omnicron)
-![Version](https://badge.fury.io/gh/kingmariano%2omnicron.svg)
 [![License](https://img.shields.io/github/license/kingmariano/omnicron)](https://github.com/kingmariano/omnicron/blob/main/LICENSE)
 
 ## 📜Description
