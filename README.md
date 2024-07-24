@@ -1,5 +1,6 @@
 ## Omnicron
-![Omnicron](omnicron_logo.jpg "Omnicron")
+
+![Omnicron](omnicron_logo.png "Omnicron")
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/kingmariano/omnicron/ci.yml?branch=main)](https://github.com/kingmariano/omnicron/actions)
 [![go Report](https://goreportcard.com/badge/github.com/kingmariano/omnicron)](https://goreportcard.com/report/github.com/kingmariano/omnicron)
@@ -93,8 +94,14 @@ To install Omnicron, follow these steps:
    ```
 
 3. **Build and run the Application**:
-   First install all the python dependencies by running `pip install --upgrade -r ./python/requirements.txt `
-    then run
+   First install all the python dependencies by running
+
+   ```sh
+   pip install --upgrade -r ./python/requirements.txt
+   ```
+
+   then run
+
    ```sh
    go build -o omnicron &&  ./omnicron
    ```
