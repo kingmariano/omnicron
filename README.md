@@ -6,7 +6,7 @@
 
 <div class="column" align="middle">
   <a href="https://github.com/kingmariano/omnicron/actions"><img src="https://img.shields.io/github/actions/workflow/status/kingmariano/omnicron/ci.yml?branch=main" alt="Build Status"/></a>
-  <a href="https://goreportcard.com/report/github.com/kingmariano/omnicron"><img src="https://goreportcard.com/badge/github.com/kingmariano/omnicron" alt="Go Report Card"/></a>
+  <a href="https://goreportcard.com/report/github.com/kingmariano/omnicron"><img src="https://goreportcard.com/badge/github.com/kingmariano/omnicron?refresh=1" alt="Go Report Card"/></a>
   <a href="https://github.com/kingmariano/omnicron/releases"><img src="https://img.shields.io/github/release/kingmariano/omnicron.svg?label=Release" alt="Release"/></a>
   <a href="https://github.com/kingmariano/omnicron/blob/main/LICENSE"><img src="https://img.shields.io/github/license/kingmariano/omnicron" alt="License"/></a>
 </div>
