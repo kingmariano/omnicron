@@ -1,11 +1,16 @@
 ## Omnicron
 
-![Omnicron](omnicron_logo.jpg "omnicron")
+<p align="center">
+    <img src="omnicron_logo.png" alt="Omnicron" title="omnicron">
+</p>
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/kingmariano/omnicron/ci.yml?branch=main)](https://github.com/kingmariano/omnicron/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kingmariano/omnicron)](https://goreportcard.com/report/github.com/kingmariano/omnicron)
-[![Release](https://img.shields.io/github/release/kingmariano/omnicron.svg?label=Release)](https://github.com/kingmariano/omnicron/releases)
-[![License](https://img.shields.io/github/license/kingmariano/omnicron)](https://github.com/kingmariano/omnicron/blob/main/LICENSE)
+<div class="column" align="middle">
+  <a href="https://github.com/kingmariano/omnicron/actions"><img src="https://img.shields.io/github/actions/workflow/status/kingmariano/omnicron/ci.yml?branch=main" alt="Build Status"/></a>
+  <a href="https://goreportcard.com/report/github.com/kingmariano/omnicron"><img src="https://goreportcard.com/badge/github.com/kingmariano/omnicron" alt="Go Report Card"/></a>
+  <a href="https://github.com/kingmariano/omnicron/releases"><img src="https://img.shields.io/github/release/kingmariano/omnicron.svg?label=Release" alt="Release"/></a>
+  <a href="https://github.com/kingmariano/omnicron/blob/main/LICENSE"><img src="https://img.shields.io/github/license/kingmariano/omnicron" alt="License"/></a>
+</div>
+
 
 ## 📜Description
 
