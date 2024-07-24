@@ -1,6 +1,6 @@
 ## Omnicron
 
-![Omnicron](omnicron_logo.png "Omnicron")
+![Omnicron](omnicron_logo.jpg "")
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/kingmariano/omnicron/ci.yml?branch=main)](https://github.com/kingmariano/omnicron/actions)
 [![go Report](https://goreportcard.com/badge/github.com/kingmariano/omnicron)](https://goreportcard.com/report/github.com/kingmariano/omnicron)
