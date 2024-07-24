@@ -1,8 +1,10 @@
 ## Omnicron
 
-![Omnicron](omnicron_logo.jpg "")
+![Omnicron](omnicron_logo.jpg "omnicron")
+
 [![Build Status](https://img.shields.io/github/actions/workflow/status/kingmariano/omnicron/ci.yml?branch=main)](https://github.com/kingmariano/omnicron/actions)
-[![go Report](https://goreportcard.com/badge/github.com/kingmariano/omnicron)](https://goreportcard.com/report/github.com/kingmariano/omnicron)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kingmariano/omnicron)](https://goreportcard.com/report/github.com/kingmariano/omnicron)
+[![Release](https://img.shields.io/github/release/kingmariano/omnicron.svg?label=Release)](https://github.com/kingmariano/omnicron/releases)
 [![License](https://img.shields.io/github/license/kingmariano/omnicron)](https://github.com/kingmariano/omnicron/blob/main/LICENSE)
 
 ## 📜Description
