@@ -32,11 +32,6 @@ type SongRequest struct {
 	Song string `json:"song"`
 }
 
-// SongResponse represents the structure of the response
-type SongResponse struct {
-	Response []string `json:"response"`
-}
-
 var maxLength int64 //specifies the maxmium length of data returned from the youtube sdk
 func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
@@ -70,5 +65,5 @@ func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, SongResponse{Response: audioDirectURL})
+	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: audioDirectURL})
 }

@@ -21,7 +21,6 @@ package videodownloader
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -112,7 +111,6 @@ func DownloadVideoData(url string, outputName string, outputPath string, resolut
 		MultiThread:  true,
 		ThreadNumber: 50,
 	})
-	log.Printf("the output is %v", outputPath)
 	err = download.Download(data[0])
 	if err != nil {
 		log.Println("cleaning up, deleting folder...")
@@ -121,7 +119,6 @@ func DownloadVideoData(url string, outputName string, outputPath string, resolut
 		}
 		return "", err
 	}
-	fmt.Println("this is final output path", outputPath+outputName+".*")
 	files, err := filepath.Glob(outputPath + "/" + outputName + ".*")
 	if err != nil {
 		return "", err

@@ -58,5 +58,5 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, cfg *config.APIConf
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, ImagePrediction)
+	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: ImagePrediction})
 }

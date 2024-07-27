@@ -48,10 +48,10 @@ func VideoGeneration(w http.ResponseWriter, r *http.Request, cfg *config.APIConf
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	videoPrediction, err := predictionFunc(ctx, cfg.ReplicateAPIKey, repVideoModel.Version, predictionInput, nil, false)
+	videoGenPrediction, err := predictionFunc(ctx, cfg.ReplicateAPIKey, repVideoModel.Version, predictionInput, nil, false)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, videoPrediction)
+	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: videoGenPrediction})
 }
