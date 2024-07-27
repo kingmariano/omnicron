@@ -57,3 +57,6 @@ changelog:
       order: 99
 release:
   name_template: "v{{ .Version }}"
+  github:
+    owner: ${{ github.repository_owner }}
+    name: ${{ github.repository }}
