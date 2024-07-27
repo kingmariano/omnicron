@@ -58,5 +58,5 @@ changelog:
 release:
   name_template: "v{{ .Version }}"
   github:
-    owner: ${{ github.repository_owner }}
-    name: ${{ github.repository }}
+    owner: kingmariano
+    name: omnicron
