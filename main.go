@@ -99,8 +99,8 @@ func main() {
 
 	v1Router := chi.NewRouter()
 	v1Router.Get("/readiness", utils.HandleReadiness())
-	v1Router.Post("/grok/chatcompletion", ware.MiddleWareAuth(grok.ChatCompletion, cfg))
-	v1Router.Post("/grok/transcription", ware.MiddleWareAuth(grok.Transcription, cfg)) // deprecated
+	v1Router.Post("/groq/chatcompletion", ware.MiddleWareAuth(grok.ChatCompletion, cfg))
+	v1Router.Post("/groq/transcription", ware.MiddleWareAuth(grok.Transcription, cfg)) // deprecated
 	v1Router.Post("/replicate/imagegeneration", ware.MiddleWareAuth(generateimages.ImageGeneration, cfg))
 	v1Router.Post("/replicate/imageupscale", ware.MiddleWareAuth(imageupscale.ImageUpscale, cfg))
 	v1Router.Post("/replicate/videogeneration", ware.MiddleWareAuth(generatevideos.VideoGeneration, cfg))
