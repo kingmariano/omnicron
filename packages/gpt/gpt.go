@@ -61,6 +61,6 @@ func ChatCompletion(w http.ResponseWriter, r *http.Request, cfg *config.APIConfi
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error handling chat completion, %v", err))
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: response})
+	utils.RespondWithJSON(w, http.StatusOK,  response)
 
 }

@@ -54,5 +54,5 @@ func ImageUpscale(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig)
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: ImageUpscalePrediction})
+	utils.RespondWithJSON(w, http.StatusOK, ImageUpscalePrediction)
 }

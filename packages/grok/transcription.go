@@ -88,5 +88,5 @@ func Transcription(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: response})
+	utils.RespondWithJSON(w, http.StatusOK,  response)
 }

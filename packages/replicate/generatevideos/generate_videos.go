@@ -53,5 +53,5 @@ func VideoGeneration(w http.ResponseWriter, r *http.Request, cfg *config.APIConf
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: videoGenPrediction})
+	utils.RespondWithJSON(w, http.StatusOK,  videoGenPrediction)
 }

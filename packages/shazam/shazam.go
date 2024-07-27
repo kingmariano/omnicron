@@ -44,5 +44,5 @@ func Shazam(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error calling Shazam Endpoint, %v", err))
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: response})
+	utils.RespondWithJSON(w, http.StatusOK,  response)
 }

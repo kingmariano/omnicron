@@ -26,9 +26,6 @@ import (
 	"net/http"
 )
 
-type ResponseMsg struct {
-	Response interface{} `json:"response"`
-}
 
 func RespondWithError(w http.ResponseWriter, code int, errmessage string) {
 	if code < 499 {

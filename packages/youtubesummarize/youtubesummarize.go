@@ -31,7 +31,9 @@ import (
 type YoutubeRequest struct {
 	URL string `json:"url"`
 }
-
+type ResponseMsg struct {
+	Response string `json:"response"`
+}
 func YoutubeSummarization(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	decode := json.NewDecoder(r.Body)
 	youtubeParams := YoutubeRequest{}
@@ -45,5 +47,5 @@ func YoutubeSummarization(w http.ResponseWriter, r *http.Request, cfg *config.AP
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: summary})
+	utils.RespondWithJSON(w, http.StatusOK, ResponseMsg{Response: summary})
 }

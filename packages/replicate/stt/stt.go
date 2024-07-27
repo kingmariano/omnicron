@@ -54,6 +54,6 @@ func STT(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: STTPrediction})
+	utils.RespondWithJSON(w, http.StatusOK, STTPrediction)
 
 }

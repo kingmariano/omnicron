@@ -26,7 +26,9 @@ import (
 	"github.com/kingmariano/omnicron/utils"
 	"net/http"
 )
-
+type ResponseMsg struct{
+	Response string `json:"response"`
+}
 func DocGPT(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	// Parse the multipart form in the request
 	err := r.ParseMultipartForm(30 << 20) // 30MB max memory
@@ -51,5 +53,5 @@ func DocGPT(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 		return
 	}
 	//responds with JSON
-	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: response})
+	utils.RespondWithJSON(w, http.StatusOK, ResponseMsg{Response: response})
 }

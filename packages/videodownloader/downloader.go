@@ -44,7 +44,9 @@ type DownloadParams struct {
 //
 // Return values:
 //  None.
-
+type ResponseMsg struct{
+	Response string `json:"response"`
+}
 func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	decode := json.NewDecoder(r.Body)
@@ -84,5 +86,5 @@ func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: urlLink})
+	utils.RespondWithJSON(w, http.StatusOK, ResponseMsg{Response: urlLink})
 }

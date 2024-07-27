@@ -26,7 +26,9 @@ import (
 	"github.com/kingmariano/omnicron/config"
 	"github.com/kingmariano/omnicron/utils"
 )
-
+type ResponseMsg struct {
+	URL string `json:"url"`
+}
 func ConvertToMp3(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	// creates a unique folder within the current directory
@@ -58,5 +60,5 @@ func ConvertToMp3(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig)
 		return
 	}
 	//returns back the response in JSON format
-	utils.RespondWithJSON(w, http.StatusOK, utils.ResponseMsg{Response: urlLink})
+	utils.RespondWithJSON(w, http.StatusOK, ResponseMsg{URL: urlLink})
 }
