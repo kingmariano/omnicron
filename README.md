@@ -79,8 +79,6 @@ To install Omnicron, follow these steps:
 
    - **CLOUDINARY URL**: Signup/Login to Cloudinary. Navigate to the [cloudinary console](https://console.cloudinary.com/) and get your cloudinary URL secret. It should look like this `cloudinary://<your_api_key>:<your_api_secret>@djagytapi`
 
-   - **YOUTUBE DEVELOPER KEY**: Retrieve your youtube developer key. You can check this [post](https://blog.hubspot.com/website/how-to-get-youtube-api-key) on how to get it.
-
    - **TESSDATA PREFIX**: This is the location of where tesseract is installed on your machine. Install [tessract](https://tesseract-ocr.github.io/tessdoc/Installation.html) for your os and set the location to `/usr/local/share/tessdata` for linux or `C:\Program Files\Tesseract-OCR\tessdata` for windows. If yours is configured to a different file location. Set it to where the **tessdata** location is on your machine.
 
    - **FAST API BASE URL**: Set this to `http://0.0.0.0:8000` or `http://localhost:8000` to connect the fast api server to the go code.
