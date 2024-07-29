@@ -17,11 +17,11 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/u2takey/ffmpeg-go v0.5.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/api v0.188.0
+	google.golang.org/api v0.189.0
 )
 
 require (
-	cloud.google.com/go/auth v0.7.1 // indirect
+	cloud.google.com/go/auth v0.7.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.3 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	github.com/EDDYCJY/fake-useragent v0.2.0 // indirect
@@ -93,8 +93,8 @@ require (
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240617180043-68d350f18fd4 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240711142825-46eb208f015d // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240722135656-d784300faade // indirect
 	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
