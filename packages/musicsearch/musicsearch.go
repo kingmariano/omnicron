@@ -40,5 +40,5 @@ func MusicSearch(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) 
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK,  response)
+	utils.RespondWithJSON(w, http.StatusOK, response)
 }

@@ -26,7 +26,6 @@ import (
 	"net/http"
 )
 
-
 func RespondWithError(w http.ResponseWriter, code int, errmessage string) {
 	if code < 499 {
 		log.Printf("Responding with 5XX error: %s", errmessage)

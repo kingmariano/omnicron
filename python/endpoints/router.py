@@ -40,6 +40,7 @@ from PIL import Image
 import pytesseract
 from utils.g4f_utils import get_chat_completion_response
 from utils.doc_utils import process_page
+from utils.search_youtube import search_youtube_video_url
 # Local application imports
 
 router = APIRouter()
@@ -112,7 +113,13 @@ class SearchSongRequest(BaseModel):
     song: str
     limit: int = 6
     proxy: str = None
-
+    
+class SearchYoutubeRequest(BaseModel):
+    """
+   Represents a YouTube search request.
+    """
+    query: str
+    limit: int = 1
 
 @router.post("/chat/completion")
 async def chat_completion(request: ChatCompletionRequest, _: str = Depends(check_api_key)):
@@ -276,3 +283,14 @@ async def image_to_text(file: UploadFile = File(...), _: str = Depends(check_api
         # Delete the temporary file
         if temp_file_path.exists():
             temp_file_path.unlink()
+            
+@router.post("/search_youtube")
+async def search_youtube(request: SearchYoutubeRequest,
+        _: str = Depends(check_api_key)):
+    try:
+        video_url = await search_youtube_video_url(query=request.query, limit=request.limit)
+        return JSONResponse(content={"response": video_url})
+    except Exception as err:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error searching youtube {err}") from err

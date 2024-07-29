@@ -29,12 +29,17 @@ import (
 )
 
 type SongRequest struct {
-	Song string `json:"song"`
+	Query string `json:"query"`
+	Limit int    `json:"limit,omitempty"`
 }
-type ResponseMsg struct {
-	Response []string `json:"response"`
+type SongResponse struct {
+	Response string `json:"response"`
 }
-var maxLength int64 //specifies the maxmium length of data returned from the youtube sdk
+
+type ErrorResponse struct {
+	Detail string `json:"detail"`
+}
+
 func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	decode := json.NewDecoder(r.Body)
@@ -51,8 +56,7 @@ func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig
 		return
 	}
 	//for accurate and precise result maxlength should be set to one.
-	maxLength = 1
-	audioDirectURL, err := downloadYoutubeLinkAndConvertToMp3(ctx, params.Song, maxLength, cfg.YoutubeDeveloperKey, cfg.CloudinaryURL, folderPath)
+	audioDirectURL, err := CallSearchYoutubeFastdownloadYoutubeLink(ctx, params, cfg.APIKey, cfg.FASTAPIBaseURL, folderPath, cfg.CloudinaryURL)
 	if err != nil {
 		if cleanupErr := utils.DeleteFolder(folderPath); cleanupErr != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Failed to delete folder: "+cleanupErr.Error())
@@ -67,5 +71,5 @@ func DownloadMusic(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.RespondWithJSON(w, http.StatusOK, ResponseMsg{Response: audioDirectURL})
+	utils.RespondWithJSON(w, http.StatusOK, SongResponse{Response: audioDirectURL})
 }

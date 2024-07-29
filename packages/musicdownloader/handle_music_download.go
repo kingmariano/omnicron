@@ -20,85 +20,68 @@
 package musicdownloader
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/kingmariano/omnicron/packages/videodownloader"
 	"github.com/kingmariano/omnicron/utils"
-	"google.golang.org/api/option"
-	"google.golang.org/api/youtube/v3"
+	"net/http"
+	"time"
 )
 
-// searchYouTube performs a search for audio music on YouTube with the given query and filters out playlists.
-func SearchMusicOnYouTube(ctx context.Context, query string, maxResults int64, youtubeAPIKey, _ string) ([]string, error) {
-	clientOptions := option.WithAPIKey(youtubeAPIKey)
-	service, err := youtube.NewService(ctx, clientOptions)
+func CallSearchYoutubeFastdownloadYoutubeLink(ctx context.Context, request SongRequest, apiKey, fastAPIBaseURL, outputPath, cloudinaryURL string) (string, error) {
+	fastAPISearchYoutubeEndPoint := fmt.Sprintf("%s/api/v1/search_youtube", fastAPIBaseURL) //url to the search_youtube endpoint in the FastAPI server
+	// marshal the request to json format for sending to the server
+	jsonData, err := json.Marshal(request)
 	if err != nil {
-		return []string{}, fmt.Errorf("error creating new YouTube client for query %v: %v", query, err)
+		return "", err
 	}
-
-	// Make the API call to YouTube with the search filter to exclude playlists.
-	call := service.Search.List([]string{"id,snippet"}).
-		Q(query).
-		MaxResults(maxResults).
-		Type("video") // This will filter out channels and playlists
-	response, err := call.Do()
+	client := &http.Client{
+		Timeout: time.Second * 300,
+	}
+	req, err := http.NewRequest("POST", fastAPISearchYoutubeEndPoint, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return []string{}, fmt.Errorf("failed to make request to youtube client %v", err)
+		return "", err
 	}
-
-	// Collect video URLs
-	videoURLs := make([]string, 0)
-	for _, item := range response.Items {
-		videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", item.Id.VideoId)
-		videoURLs = append(videoURLs, videoURL)
-	}
-	return videoURLs, nil
-}
-
-func downloadYoutubeLinkAndConvertToMp3(ctx context.Context, query string, maxResults int64, youtubeAPIKey, cloudinaryURL, outputPath string) ([]string, error) {
-	// Perform a search on YouTube for the given query and retrieve video URLs
-	//set output path to where the song will be downloaded
-
-	urlList, err := SearchMusicOnYouTube(ctx, query, maxResults, youtubeAPIKey, cloudinaryURL)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Api-Key", apiKey)
+	resp, err := client.Do(req)
 	if err != nil {
-		return []string{}, err
+		return "", err
 	}
-
-	// If no video URLs are found, return an empty list
-	if len(urlList) == 0 {
-		return []string{}, nil
+	defer resp.Body.Close()
+	//handle error when status code is not 200
+	if resp.StatusCode != 200 {
+		var errorMessage ErrorResponse
+		if err := json.NewDecoder(resp.Body).Decode(&errorMessage); err != nil {
+			return "", err
+		}
+		return "", errors.New(errorMessage.Detail)
 	}
-
+	var response SongResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return "", err
+	}
+	if response.Response == "" {
+		return "", errors.New("no results found")
+	}
 	// Download all the video in the list
-	videoPathList := make([]string, 0)
-	for _, url := range urlList {
-		videopath, err := videodownloader.DownloadVideoData(url, utils.OutputName, outputPath, "")
-		if err != nil {
-			return []string{}, err
-		}
-		videoPathList = append(videoPathList, videopath)
+	videopath, err := videodownloader.DownloadVideoData(response.Response, utils.OutputName, outputPath, "")
+	if err != nil {
+		return "", err
 	}
-
 	// Convert the downloaded videos to MP3 format
-	audioPathList := make([]string, 0)
-	for _, videopath := range videoPathList {
-		audiopath, err := utils.ConvertFileToMP3(videopath)
-		if err != nil {
-			return []string{}, err
-		}
-		audioPathList = append(audioPathList, audiopath)
+	audiopath, err := utils.ConvertFileToMP3(videopath)
+	if err != nil {
+		return "", err
 	}
-
 	// Upload the converted audio file to Cloudinary and retrieve direct URLs
-	audioFileURLList := make([]string, 0)
-	for _, audiopath := range audioPathList {
-		audioDirectURL, err := utils.HandleFileUpload(ctx, audiopath, cloudinaryURL)
-		if err != nil {
-			return []string{}, err
-		}
-		audioFileURLList = append(audioFileURLList, audioDirectURL)
+	audioDirectURL, err := utils.HandleFileUpload(ctx, audiopath, cloudinaryURL)
+	if err != nil {
+		return "", err
 	}
-
-	// Return the list of direct URLs to the uploaded audio files on Cloudinary
-	return audioFileURLList, nil
+	// Return the direct URL to the uploaded audio file on Cloudinary
+	return audioDirectURL, nil
 }

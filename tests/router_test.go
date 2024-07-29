@@ -24,7 +24,7 @@ import (
 )
 
 func setupRouter(t *testing.T) (*chi.Mux, *config.APIConfig) {
-	apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, youtubeDeveloperKey, _, err := utils.LoadEnv("../.env")
+	apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, _, err := utils.LoadEnv("../.env")
 
 	if err != nil {
 		// if the given environment path is  not set. Get the variables from the root environment path
@@ -33,20 +33,18 @@ func setupRouter(t *testing.T) (*chi.Mux, *config.APIConfig) {
 		port = os.Getenv("PORT")
 		replicateAPIKey = os.Getenv("REPLICATE_API_TOKEN")
 		cloudinaryURL = os.Getenv("CLOUDINARY_URL")
-		youtubeDeveloperKey = os.Getenv("YOUTUBE_DEVELOPER_KEY")
 	}
 
-	if apiKey == "" || grokAPIKey == "" || replicateAPIKey == "" || cloudinaryURL == "" || port == "" || youtubeDeveloperKey == ""{
+	if apiKey == "" || grokAPIKey == "" || replicateAPIKey == "" || cloudinaryURL == "" || port == "" {
 		t.Fatal("unable to get API key or port from environment variables")
 	}
 
 	cfg := &config.APIConfig{
-		APIKey:              apiKey,
-		GrokAPIKey:          grokAPIKey,
-		ReplicateAPIKey:     replicateAPIKey,
-		CloudinaryURL:       cloudinaryURL,
-		YoutubeDeveloperKey: youtubeDeveloperKey,
-		Port:                port,
+		APIKey:          apiKey,
+		GrokAPIKey:      grokAPIKey,
+		ReplicateAPIKey: replicateAPIKey,
+		CloudinaryURL:   cloudinaryURL,
+		Port:            port,
 	}
 
 	router := chi.NewRouter()

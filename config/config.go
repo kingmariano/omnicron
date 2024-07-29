@@ -21,11 +21,10 @@ package config
 
 // ApiConfig struct contains all necessary API keys and configurations for the API server
 type APIConfig struct {
-	APIKey              string
-	GrokAPIKey          string
-	ReplicateAPIKey     string
-	CloudinaryURL       string
-	YoutubeDeveloperKey string
-	FASTAPIBaseURL      string
-	Port                string
+	APIKey          string
+	GrokAPIKey      string
+	ReplicateAPIKey string
+	CloudinaryURL   string
+	FASTAPIBaseURL  string
+	Port            string
 }

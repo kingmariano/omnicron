@@ -70,7 +70,7 @@ func startFastAPIServer() *exec.Cmd {
 
 func main() {
 	// Load environment variables
-	apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, youtubeDeveloperKey, fastAPIBaseURL, err := utils.LoadEnv(".env")
+	apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, fastAPIBaseURL, err := utils.LoadEnv(".env")
 	if err != nil {
 		log.Fatalf("error opening .env %v ", err)
 	}
@@ -84,13 +84,12 @@ func main() {
 	}()
 
 	cfg := &config.APIConfig{
-		APIKey:              apiKey,
-		GrokAPIKey:          grokAPIKey,
-		ReplicateAPIKey:     replicateAPIKey,
-		CloudinaryURL:       cloudinaryURL,
-		YoutubeDeveloperKey: youtubeDeveloperKey,
-		FASTAPIBaseURL:      fastAPIBaseURL,
-		Port:                port,
+		APIKey:          apiKey,
+		GrokAPIKey:      grokAPIKey,
+		ReplicateAPIKey: replicateAPIKey,
+		CloudinaryURL:   cloudinaryURL,
+		FASTAPIBaseURL:  fastAPIBaseURL,
+		Port:            port,
 	}
 
 	router := chi.NewRouter()

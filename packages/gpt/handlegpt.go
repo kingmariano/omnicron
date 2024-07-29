@@ -37,7 +37,7 @@ func CallGPTFastAPI(request ChatRequest, apiKey string, fastAPIBaseURL string) (
 		return nil, err
 	}
 	client := &http.Client{
-		Timeout: time.Second * 30,
+		Timeout: time.Second * 300,
 	}
 
 	req, err := http.NewRequest("POST", fastAPIGPTEndPoint, bytes.NewBuffer(jsonData))

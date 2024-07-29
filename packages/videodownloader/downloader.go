@@ -44,9 +44,10 @@ type DownloadParams struct {
 //
 // Return values:
 //  None.
-type ResponseMsg struct{
+type ResponseMsg struct {
 	Response string `json:"response"`
 }
+
 func DownloadVideo(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	decode := json.NewDecoder(r.Body)

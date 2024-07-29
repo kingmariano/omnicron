@@ -26,9 +26,11 @@ import (
 	"github.com/kingmariano/omnicron/config"
 	"github.com/kingmariano/omnicron/utils"
 )
+
 type ResponseMsg struct {
 	URL string `json:"url"`
 }
+
 func ConvertToMp3(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	ctx := r.Context()
 	// creates a unique folder within the current directory

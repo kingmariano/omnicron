@@ -34,6 +34,7 @@ type YoutubeRequest struct {
 type ResponseMsg struct {
 	Response string `json:"response"`
 }
+
 func YoutubeSummarization(w http.ResponseWriter, r *http.Request, cfg *config.APIConfig) {
 	decode := json.NewDecoder(r.Body)
 	youtubeParams := YoutubeRequest{}
