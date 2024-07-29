@@ -191,8 +191,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
-github.com/replicate/replicate-go v0.21.0 h1:37eWInQH7rRr14Epj5axfh/Iko+vsOqsS1JKm9DEhr4=
-github.com/replicate/replicate-go v0.21.0/go.mod h1:D2x8SztjeUKcaYnSgVu3H2DechufLJWZJB4+TLA3Rag=
+github.com/replicate/replicate-go v0.22.0 h1:LUHmTc1rP+MebCInP9Fr7zuwb4Crh/VwkHl4kCE9oD0=
+github.com/replicate/replicate-go v0.22.0/go.mod h1:D2x8SztjeUKcaYnSgVu3H2DechufLJWZJB4+TLA3Rag=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.4.7 h1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=
 github.com/rivo/uniseg v0.4.7/go.mod h1:FN3SvrM+Zdj16jyLfmOkMNblXMcoc8DfTHruCPUcx88=
