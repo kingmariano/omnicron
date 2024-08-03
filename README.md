@@ -119,7 +119,7 @@ To install Omnicron, follow these steps:
 
 After setting up and running the application, you can navigate to `http://localhost:9000/readiness` to check the health of the application.
 
-**Check out the full api documentation [here](https://omnicron-docs.com)**
+**Check out the full api documentation [here](https://omnicron.mintlify.app)**
 
 ## Client Libraries📚
 
