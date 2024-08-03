@@ -27,7 +27,6 @@ Omnicron is a powerful multimodel API designed to cater to a wide range of advan
 9. **Youtube Summarization**
 10. **Video downloader tool**: Download videos from various website.
 11. **Music downloader tool**: Search and download song/music to your device. A drop in replacement for spotify.
-12. **Doc GPT**: Chat with your pdf files.
 13. **MP3 Converter**: Convert your video and audio files to mp3.
 14. **Text To Image**: Scan text written in your image using the tesseract ocr engine.
 
