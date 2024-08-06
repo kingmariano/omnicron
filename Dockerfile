@@ -105,6 +105,6 @@ ENV HEALTHCHECK_ENDPOINT=http://localhost:${PORT}/api/v1/readiness
 HEALTHCHECK --interval=1m --timeout=10s --retries=10 \
   CMD curl -f $HEALTHCHECK_ENDPOINT || exit 1
 
-EXPOSE 8000 9000
+EXPOSE 9000
 
 ENTRYPOINT ["/app/omnicron"]
