@@ -28,8 +28,8 @@ import (
 )
 
 // this function loads the environment variables from the path
-func LoadEnv(path string) (string, string, string, string, string, string, error) {
-	err := godotenv.Load(path)
+func LoadEnv() (string, string, string, string, string, string, error) {
+	err := godotenv.Load()
 	if err != nil {
 		log.Print(err)
 	}

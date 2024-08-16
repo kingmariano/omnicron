@@ -24,7 +24,7 @@ import (
 )
 
 func setupRouter(t *testing.T) (*chi.Mux, *config.APIConfig) {
-	apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, _, err := utils.LoadEnv("../.env")
+	apiKey, grokAPIKey, replicateAPIKey, cloudinaryURL, port, _, err := utils.LoadEnv()
 
 	if err != nil {
 		// if the given environment path is  not set. Get the variables from the root environment path
