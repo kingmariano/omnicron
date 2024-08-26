@@ -13,7 +13,7 @@ require (
 	github.com/iawia002/lux v0.24.1
 	github.com/joho/godotenv v1.5.1
 	github.com/jpoz/groq v0.0.0-20240513145022-7a02894105a0
-	github.com/replicate/replicate-go v0.22.0
+	github.com/replicate/replicate-go v0.23.0
 	github.com/stretchr/testify v1.9.0
 	github.com/u2takey/ffmpeg-go v0.5.0
 	go.uber.org/zap v1.27.0
